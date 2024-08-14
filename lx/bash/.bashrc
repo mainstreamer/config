@@ -24,12 +24,4 @@ if [ -d ~/.bashrc.d ]; then
 fi
 unset rc
 
-function change_docker_context {
-if [ -z "$1" ]; then
-docker context use desktop-linux
-else
-docker context use "$1"
-fi
-}
-
-alias 'cdc'='change_docker_context'
+#Built Thu 15 Aug 00:30:07 BST 2024
