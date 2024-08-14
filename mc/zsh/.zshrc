@@ -45,4 +45,4 @@ bindkey '^F' fzf-cd-widget
 #Glasgow Haskell Compiler
 #[ -f "/Users/artem/.ghcup/env" ] && source "/Users/artem/.ghcup/env" # ghcup-envexport PATH="/usr/local/sbin:$PATH"
 
-#Built Wed Aug 14 22:45:32 BST 2024 
+#Built Wed Aug 14 22:57:11 BST 2024
