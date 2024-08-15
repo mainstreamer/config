@@ -24,3 +24,4 @@ function docker_shell {
 
 alias 'dsh'='docker_shell'
 alias 'con'='docker context show'
+alias 'ds'='docker stop $(docker ps -q)'
