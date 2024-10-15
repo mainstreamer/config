@@ -1,9 +1,9 @@
-build:
+build-mc:
 	@echo "building..."
 	@sed -i.bak '$$s/.*/#Built $(shell date)/' ./mc/zsh/.zshrc
 	@cd ./mc/zsh && tar -cvzf ../../cfgmc.tar.gz .zshrc .zshrc.d/
 	@cd ./../../
-	@echo "Done! To install type:"
+	@echo "Done! To install 'make i-mc' or type:"
 	@echo "tar -xvzf `pwd`/cfgmc.tar.gz"
 
 build-lx:
@@ -17,4 +17,9 @@ build-lx:
 i-lx:
 	@echo "installing linux bash profile..."
 	@tar -xvzf `pwd`/cfglx.tar.gz -C ~/
+	@echo "done"
+
+i-mc:
+	@echo "installing mac bash profile..."
+	@tar -xvzf `pwd`/cfgmc.tar.gz -C ~/
 	@echo "done"
