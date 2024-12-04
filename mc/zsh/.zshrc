@@ -21,23 +21,16 @@ if [ -d ~/.zshrc.d ]; then
 fi
 unset rc
 
-
 autoload -Uz compinit promptinit # loads autocomplete features
-
 
 
 # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
 # export PATH="$PATH:$HOME/.rvm/bin"
 autoload -Uz compinit && compinit
 
-
-
-
-
-
 # autoload -Uz compinit && compinit
 export PATH="/usr/local/opt/node@18/bin:$PATH"
-# export PATH="/usr/local/opt/node@14/bin:$PATH"
+export PATH="$PATH:$HOME/.composer/vendor/bin"
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 bindkey '^F' fzf-cd-widget
@@ -45,4 +38,4 @@ bindkey '^F' fzf-cd-widget
 #Glasgow Haskell Compiler
 #[ -f "/Users/artem/.ghcup/env" ] && source "/Users/artem/.ghcup/env" # ghcup-envexport PATH="/usr/local/sbin:$PATH"
 
-#Built Wed  6 Nov 2024 16:05:50 GMT
+#Built Sat 30 Nov 2024 14:30:18 GMT
