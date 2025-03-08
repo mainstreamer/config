@@ -15,13 +15,23 @@ export PATH
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
 
+EXCLUDE_FILES=("dep.lst")
 # User specific aliases and functions
 if [ -d ~/.bashrc.d ]; then
     for rc in ~/.bashrc.d/*; do
         if [ -f "$rc" ]; then
-            . "$rc"
+            # Extract the filename from the full path
+            filename=$(basename "$rc")
+            
+            # Check if the file is in the exclusion list
+            if [[ " ${EXCLUDE_FILES[@]} " =~ " $filename " ]]; then
+                echo "Skipping $filename (excluded)"
+            else
+                # Source the file if it's not excluded
+                . "$rc"
+            fi
         fi
     done
 fi
 unset rc
-#Built Sat  8 Mar 21:31:09 GMT 2025
+#Built Sat  8 Mar 21:40:37 GMT 2025

@@ -1,0 +1,16 @@
+# Required system utilities
+git
+curl
+wget
+jq
+
+# Development tools
+gcc
+make
+python3
+pip3
+
+# Optional tools (uncomment as needed)
+# docker
+# npm
+# rustc

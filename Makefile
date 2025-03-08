@@ -26,8 +26,8 @@ BUILD_CMD_mac = \
 	echo "tar -xvzf `pwd`/cfgmc.tar.gz"
 
 INSTALL_CMD_mac = \
-	echo "Installing mac bash profile..."
-	tar -xvzf `pwd`/cfgmc.tar.gz -C ~/
+	echo "Installing mac bash profile..." && \
+	tar -xvzf `pwd`/cfgmc.tar.gz -C ~/ && \
 	echo "done"
 
 # Default target shows help
