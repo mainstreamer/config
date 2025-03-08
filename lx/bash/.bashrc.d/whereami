@@ -1,5 +1,5 @@
 function get_country {
-    curl ipinfo.io/$(curl -s ifconfig.me) | jq '.country'
+    curl -s ipinfo.io/$(curl -s ifconfig.me) | jq '.country'
 }
 
-alias 'whereami'='get_country'
+alias 'whe'='get_country'

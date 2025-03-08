@@ -2,6 +2,13 @@
 
 enc() {
 ## TODO NEEDS SOME POLISHING v0.1
+  # Check if key inserted
+  if [ ! -f "/mnt/kstor/kkey" ]; then
+      echo "Key required"
+      clean_and_exit
+      return 1
+  fi
+
   # Variables for flags
   DECRYPT=false
   DEFAULT_OUT_PATH="."  # Default output path: current folder

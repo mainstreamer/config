@@ -48,7 +48,11 @@ case "$COMMAND" in
         echo "no key"
     fi
     ;;
-    
+   path)
+    echo "$KEY_MOUNT_POINT/kkey"
+    return 0
+    ;;
+   
   *)
     echo "Invalid command argument. Usage: key <insert[-w]|remove|stat>"
     return 1

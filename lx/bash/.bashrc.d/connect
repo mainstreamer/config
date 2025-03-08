@@ -1,0 +1,112 @@
+#!/bin/bash
+
+hidevpn() {
+## TODO NEEDS SOME POLISHING v0.1
+## deps - key + enc
+  # Variables for flags
+# Display help menu if no arguments are provided
+  if [[ "$#" -eq 0 ]]; then
+    echo "Usage: hidevpn [-d] [-s] [-c encrypted.conf]"
+    echo
+    echo "Options:"
+    echo "  -d                 Disconnect"
+    echo "  -c encrypted.conf  Connect with encrypted config file"
+    echo
+    return 0
+  fi
+# Parse flags and handle shifting
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -d)
+        sudo killall openvpn # TODO maybe some custom naming?
+        shift
+        ;;
+      -c)
+        if [[ -n "$2" ]]; then
+          CONF_PATH="$2"
+          mkfifo confpipe && enc -d "$CONF_PATH" -o confpipe &
+          sudo openvpn --config confpipe --daemon
+          rm confpipe
+          shift 2  # Shift both -o and its argument
+        else
+          echo "Error: -c requires config path."
+        clean_and_exit
+        return 1
+        fi
+        ;;
+      -*)
+        echo "Error: Invalid option '$1'."
+        echo "Usage: $0 [-d] [-s] [-c filepath]"
+        clean_and_exit 
+        return 1
+        ;;
+      *)
+        # Assume the first non-flag argument is the input file
+        if [[ -z "$FILEPATH" ]]; then
+          FILEPATH="$1"
+          shift
+        else
+          echo "Error: Multiple input files provided. $FILEPATH"
+          echo "Usage: $0 [-d] [-o output_path] filepath"
+        clean_and_exit
+        return 1
+        fi
+        ;;
+    esac
+  done
+    clean_and_exit
+}
+
+
+# Function to clean up variables
+clean_and_exit() {
+  unset DECRYPT
+  unset DEFAULT_OUT_PATH
+  unset OUT_PATH
+  unset FILEPATH
+  unset OUTPUT_FILE
+  unset BASENAME
+  unset CONF_PATH
+}
+
+
+# Generate random keys: 256 bit and 64 bit in hexadecimal format
+# openssl rand -hex 32 > kkey
+# openssl rand -hex 16 > iv
+## sudo openvpn --config ua.hideservers2.net.ovpn
+
+## Works with tmpfs !
+# sudo mount -m -t tmpfs -o size=256K,noswap,nosuid,nodev,uid=$(id -u),gid=$(id -g),mode=0700 tmpfs /mnt/ramdisk
+
+# sudo openvpn --config /mnt/ramdisk/vpnconf --daemon
+
+# Also works with named pipe!
+# mkfifo vpipe && enc -d ua.hide.vpn.enc -o vpipe&
+# sudo openvpn --config vpipe --daemon
+
+# Cleanup
+# sudo killall openvpn && shred -u /mnt/ramdisk/* && sudo umount /mnt/ramdisk
+
+
+# -----------------
+
+# insert usb
+# mount drive /mnt/kstor
+
+# possible actions:
+# - encrypt
+    # a) output as text
+    # b) output into file
+# - decrypt
+    # a) get value (by name)
+    # b) to file
+    # c) to file on /mnt/ramdisk (auto mount if selected)
+
+# - how to cleanup ?
+# - how to organize encrypted files ? - separate files - in json ?
+# - values can have metadata stored in json
+# - some scaffolding generation
+#
+#
+#
+

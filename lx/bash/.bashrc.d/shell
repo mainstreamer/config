@@ -1,0 +1,50 @@
+alias ll='ls -lah'
+
+# Alias for file extension based auto-opening
+alias run="i"
+
+function i { if [[ -f $1 ]]; 
+    then case $1 in
+        *.jpg|*.jpeg|*.png) feh $1 ;; 
+        *) echo 'Unsupported file type or no handler found for this file';;
+    esac; 
+    else echo 'File not found'; fi }
+
+
+command_not_found_handle() {
+    local filename="$1"
+
+    if [[ -f "$filename" ]]; then
+        # Use `file` command to determine file type and open accordingly
+        mime_type=$(file --mime-type -b "$filename")
+
+        case "$mime_type" in
+            image/*) run "$filename" ;;  # Open image files
+            video/*) run "$filename" ;;  # Open video files
+            text/*) run "$filename" ;;  # Open text files
+            application/pdf) run "$filename" ;;  # Open PDFs
+            *) echo "No handler for MIME type: $mime_type" ;;  # Default handler
+        esac
+    else
+        echo "File or command not found!"
+    fi
+}
+
+# Enable file completion without a command prefix
+complete -f *
+
+if [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+fi
+
+
+# Automatically complete the first match
+#bind 'TAB:menu-complete'  # or 'bind "TAB:menu-complete"'
+#bind 'set show-all-if-ambiguous on'
+#bind 'set menu-complete-display-prefix on'
+
+bind 'set colored-stats on'         # Colorize the common prefix
+bind 'set colored-completion-prefix on'  # Colorize the completion prefix
+bind 'set menu-complete-display-prefix on'  # Display the common prefix while cycling
+bind 'set visible-stats on'         # Show file type indicators
+bind 'set mark-symlinked-directories on'  # Add slash to symlinked directories

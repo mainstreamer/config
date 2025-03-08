@@ -1,0 +1,4 @@
+rec() {
+    timestamp=$(date +%Y%m%d%H%M%S)
+    ffmpeg -f v4l2 -i /dev/video1 -i $1 -filter_complex "[0:v]scale=1280:720[webcam];[1:v]scale=1280:720[stream];[stream][webcam]vstack=inputs=2" -c:v libx264 -f mp4 "$timestamp".mp4
+}

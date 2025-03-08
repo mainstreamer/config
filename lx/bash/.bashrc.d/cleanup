@@ -1,0 +1,33 @@
+function cleanup(){
+
+if [ "$#" -lt 1 ]; then
+    DAYS=1
+else
+    DAYS=$1
+fi
+
+echo "running $DAYS day(s) cleanup..."
+
+# Define the target directory where the files will be copied
+TARGET_BASE_DIR="/home/$(whoami)"
+
+
+# Get the current date in DDMMYYYY format
+DATE=$(date +%d%m%Y)
+
+# Create a target directory for today
+TARGET_DIR="$TARGET_BASE_DIR/Documents/$DATE"
+mkdir -p "$TARGET_DIR"
+
+
+echo "moving files to $TARGET_DIR..."
+# Find all *.mp4 files modified in the last 24 hours and copy them to the target directory
+# find "$TARGET_BASE_DIR" -type f -iname "*.mp4" -mtime -"$DAYS" -exec mv {} "$TARGET_DIR" \;
+find "$TARGET_BASE_DIR" -type f -iname "*.mp4" -mtime -"$DAYS" ! -path "$TARGET_DIR/*" -print0 | xargs -0 -I {} mv {} "$TARGET_DIR" && echo "mp4s moved to $TARGET_DIR."
+
+find "$TARGET_BASE_DIR/Projects" "$TARGET_BASE_DIR/Desktop" "$TARGET_BASE_DIR/Pictures" "$TARGET_BASE_DIR/Videos" "$TARGET_BASE_DIR/Downloads"  "$TARGET_BASE_DIR/Documents" -type f \( -iname "*.jpeg" -o -iname "*.jpg" -o -iname "*.gif" -o -iname "*.png" \) -mtime -"$DAYS" ! -path "$TARGET_DIR/*" -print0 | xargs -0 -I {} mv {} "$TARGET_DIR" && echo "pics moved to $TARGET_DIR."
+
+echo "done"
+}
+
+
