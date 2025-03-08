@@ -13,8 +13,8 @@ BUILD_CMD_linux = \
 INSTALL_CMD_linux = \
 	echo "Installing linux bash profile..." && \
 	tar -xvzf `pwd`/cfglx.tar.gz -C ~/ && \
-	source ~/.bashrc && \
-	echo "Done"
+	echo "Loading new profile..." && \
+	source ~/.bashrc
 
 # NEEDS TO BE REWISED - NOT YET TESTED ON MAC
 BUILD_CMD_mac = \

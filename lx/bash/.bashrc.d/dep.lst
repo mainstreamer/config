@@ -4,11 +4,15 @@ curl
 wget
 jq
 
+# Images
+feh
+
 # Development tools
 gcc
 make
 python3
 pip3
+php
 
 # Optional tools (uncomment as needed)
 # docker

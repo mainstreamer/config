@@ -43,8 +43,14 @@ fi
 #bind 'set show-all-if-ambiguous on'
 #bind 'set menu-complete-display-prefix on'
 
-bind 'set colored-stats on'         # Colorize the common prefix
-bind 'set colored-completion-prefix on'  # Colorize the completion prefix
-bind 'set menu-complete-display-prefix on'  # Display the common prefix while cycling
-bind 'set visible-stats on'         # Show file type indicators
-bind 'set mark-symlinked-directories on'  # Add slash to symlinked directories
+# Check if the shell is interactive
+if [[ $- == *i* ]]; then
+    bind 'set colored-stats on'         # Colorize the common prefix
+    bind 'set colored-completion-prefix on'  # Colorize the completion prefix
+    bind 'set menu-complete-display-prefix on'  # Display the common prefix while cycling
+    bind 'set visible-stats on'         # Show file type indicators
+    bind 'set mark-symlinked-directories on'  # Add slash to symlinked directories   bind 'set visible-stats on'  # Show file type indicators
+fi
+
+
+
