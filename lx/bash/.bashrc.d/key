@@ -6,8 +6,8 @@ KEY_MOUNT_POINT="/mnt/kstor"
 key() {
 # Check for at least one argument
 if [ "$#" -lt 1 ]; then
-  echo "Usage: key <insert[-w]|remove|stat>"
-  return 0
+  echo "Usage: key <insert[-w]|remove|stat|path>"
+  return 1
 fi
 
 # Parse the command
@@ -27,7 +27,7 @@ case "$COMMAND" in
     if [ $WRITE_MODE == "rw" ]; then
         sudo mount -t vfat -o rw,uid=$(id -u),gid=$(id -g),umask=0077 /dev/$(lsblk -o NAME,LABEL,FSTYPE,MOUNTPOINT -r | awk -v label="$KEY_DRIVE_LABEL" '$2 == label {print $1}') $KEY_MOUNT_POINT
     else
- sudo mount -t vfat -o rw,uid=$(id -u),gid=$(id -g),umask=0277 /dev/$(lsblk -o NAME,LABEL,FSTYPE,MOUNTPOINT -r | awk -v label="$KEY_DRIVE_LABEL" '$2 == label {print $1}') $KEY_MOUNT_POINT
+ sudo mount -t exfat -o rw,uid=$(id -u),gid=$(id -g),umask=0277 /dev/$(lsblk -o NAME,LABEL,FSTYPE,MOUNTPOINT -r | awk -v label="$KEY_DRIVE_LABEL" '$2 == label {print $1}') $KEY_MOUNT_POINT
     fi    
     echo "key inserted in mode: $WRITE_MODE"
     ;;
@@ -48,11 +48,10 @@ case "$COMMAND" in
         echo "no key"
     fi
     ;;
-   path)
+  path)
     echo "$KEY_MOUNT_POINT/kkey"
     return 0
     ;;
-   
   *)
     echo "Invalid command argument. Usage: key <insert[-w]|remove|stat>"
     return 1
