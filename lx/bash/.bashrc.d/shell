@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 alias ll='ls -lah'
 
 # Alias for file extension based auto-opening

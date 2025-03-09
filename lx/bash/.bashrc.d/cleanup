@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 function cleanup(){
 
 if [ "$#" -lt 1 ]; then

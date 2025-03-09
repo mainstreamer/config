@@ -3,9 +3,18 @@ git
 curl
 wget
 jq
+awk
+sed
+
+# Editor
+nvim
 
 # Images
 feh
+ffmpeg
+
+# Encryption
+openssl
 
 # Development tools
 gcc
@@ -16,5 +25,5 @@ php
 
 # Optional tools (uncomment as needed)
 # docker
-# npm
+# asusctl
 # rustc
