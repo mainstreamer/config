@@ -1,9 +1,11 @@
 #!/bin/bash
 
 enc() {
+
+KEY_FILE="pkey"    
 ## TODO NEEDS SOME POLISHING v0.1
   # Check if key inserted
-  if [ ! -f "/mnt/kstor/kkey" ]; then
+  if [ ! -f "/mnt/kstor/$KEY_FILE" ]; then
       echo "Key required"
       clean_and_exit
       return 1
@@ -80,7 +82,7 @@ enc() {
           OUTPUT_FILE="${DEFAULT_OUT_PATH}/${BASENAME%.enc}"  # Remove .enc extension
       fi
       echo "Decrypting: $FILEPATH -> $OUTPUT_FILE"
-      openssl enc -d -aes-256-ecb -in "$FILEPATH" -out "$OUTPUT_FILE" -K "$(cat /mnt/kstor/kkey)" # todo: Reduce coupling with key path
+      openssl enc -d -aes-256-ecb -in "$FILEPATH" -out "$OUTPUT_FILE" -K "$(cat /mnt/kstor/$KEY_FILE)" # todo: Reduce coupling with key path
   else
       if [ -n "$OUT_PATH" ]; then
           OUTPUT_FILE="$OUT_PATH"
@@ -88,7 +90,7 @@ enc() {
           OUTPUT_FILE="${DEFAULT_OUT_PATH}/${BASENAME}.enc"  # Add .enc extension
       fi
       echo "Encrypting: $FILEPATH -> $OUTPUT_FILE"
-      openssl enc -e -aes-256-ecb -in "$FILEPATH" -out "$OUTPUT_FILE" -K "$(cat /mnt/kstor/kkey)" # todo: Reduce coupling with key path
+      openssl enc -e -aes-256-ecb -in "$FILEPATH" -out "$OUTPUT_FILE" -K "$(cat /mnt/kstor/$KEY_FILE)" # todo: Reduce coupling with key path
   fi
     clean_and_exit
 }

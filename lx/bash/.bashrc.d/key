@@ -2,6 +2,7 @@
 
 KEY_DRIVE_LABEL="kstor"
 KEY_MOUNT_POINT="/mnt/kstor"
+KEY_NAME="pkey"
 
 key() {
 # Check for at least one argument
@@ -49,7 +50,7 @@ case "$COMMAND" in
     fi
     ;;
   path)
-    echo "$KEY_MOUNT_POINT/kkey"
+    echo "$KEY_MOUNT_POINT/$KEY_NAME"
     return 0
     ;;
   *)
