@@ -16,8 +16,63 @@ vim.g.mapleader = " " -- the leader key is used in many keymaps,
 local plugins = {
     -- plugins go here
 
--- LSP support for Python and other languages
+    -- LSP support for Python and other languages
+    -- }
+    --
+    --
+    --
+
+
+    {
+
+
     "neovim/nvim-lspconfig",
+    config = function()
+      local lspconfig = require("lspconfig")
+      lspconfig.phpactor.setup({
+                root_dir = lspconfig.util.root_pattern("composer.json", ".git", "index.php"),
+                cmd = { "phpactor", "language-server" },
+                on_attach = function(client, bufnr)
+                    local bufopts = { noremap = true, silent = true, buffer = bufnr }
+                    vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+                    vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
+                    vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+                    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
+                    vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
+                    -- Keybindings for LSP actions
+-- vim.api.nvim_set_keymap("n", "gd", "<cmd>lua vim.lsp.buf.definition()<CR>", { noremap = true, silent = true })
+-- vim.api.nvim_set_keymap("n", "gr", "<cmd>lua vim.lsp.buf.references()<CR>", { noremap = true, silent = true })
+-- vim.api.nvim_set_keymap("n", "K", "<cmd>lua vim.lsp.buf.hover()<CR>", { noremap = true, silent = true })
+
+                end,
+
+
+            })
+    end,
+    },
+
+  -- Install vim-zettel for Zettelkasten-style note-taking
+    --  DON'T USE IT - TOO COMPLEX NEEDS LEARNING MAYBE DELETE IT?
+  {
+    'michal-h21/vim-zettel',
+     config = function()
+      -- Any additional configuration for vim-zettel goes here
+      -- For example, setting up the directory where notes are stored
+      vim.g.zettel_directory = '~/Projects/notes'  -- Set the directory for your notes
+      vim.g.zettel_extension = '.md'  -- You can change the file extension, e.g., `.txt` or `.org`
+    end,
+  },
+
+
+--
+        -- config = function()
+            -- local lspconfig = require("lspconfig")
+            -- lspconfig.phpactor.setup({
+                -- on_attach= function(client, bufnr)
+                -- end
+            -- })
+        -- end
+    -- }
 
     -- Autocompletion and snippets
     "hrsh7th/nvim-cmp",
@@ -83,41 +138,85 @@ local plugins = {
         end,
     },
 
-    -- File explorer NERDTree
     {
-        "preservim/nerdtree",
-        cmd = "NERDTreeToggle",
-        config = function()
-            vim.api.nvim_set_keymap("n", "<leader>n", ":NERDTreeToggle<CR>", { noremap = true, silent = true })
-        end,
-    },
+    "nvim-tree/nvim-tree.lua",
+    config = function()
+      -- Set up nvim-tree with valid options
+      require("nvim-tree").setup({
+        -- Core settings
+        auto_reload_on_write = true,  -- Reload tree automatically when file is saved
+        update_cwd = true,           -- Update the working directory when opening a file
+        update_focused_file = {
+          enable = true,             -- Update the focused file automatically
+          update_cwd = true,
+        },
+
+        -- View settings
+        view = {
+          width = 30,                -- Width of the tree
+          side = "left",             -- Position of the tree (left or right)
+          number = false,            -- Disable line numbers in the file tree
+          relativenumber = false,    -- Disable relative line numbers
+        },
+
+        -- Git integration
+        git = {
+          enable = true,             -- Show git status in the tree
+          ignore = false,            -- Don't ignore untracked files
+        },
+
+        -- File filters
+        filters = {
+          dotfiles = false,          -- Don't hide dotfiles by default
+        },
+
+        -- Actions
+        actions = {
+          open_file = {
+            quit_on_open = false,     -- Keep nvim-tree open when opening a file
+          },
+        },
+      })
+    end,
+  },
+
+    -- File explorer NERDTree
+    -- {
+        -- "preservim/nerdtree",
+        -- cmd = "NERDTreeToggle",
+        -- config = function()
+            -- vim.api.nvim_set_keymap("n", "<leader>n", ":NERDTreeToggle<CR>", { noremap = true, silent = true })
+        -- end,
+    -- },
+    --
+    --
  
     -- Git signs
-    {
-        "lewis6991/gitsigns.nvim",
-        config = function()
-            require("gitsigns").setup()
-        end,
-    },
+    -- {
+    --     "lewis6991/gitsigns.nvim",
+    --     config = function()
+    --         require("gitsigns").setup()    --     end,
+    -- },
 
     -- PHP Language Server (Phpactor)
-    {
-        "phpactor/phpactor",
-        config = function()
-            local lspconfig = require("lspconfig")
-            lspconfig.phpactor.setup({
-                cmd = { "phpactor", "language-server" },
-                on_attach = function(client, bufnr)
-                    local bufopts = { noremap = true, silent = true, buffer = bufnr }
-                    vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-                    vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
-                    vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-                    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
-                    vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
-                end,
-            })
-        end,
-    },
+    -- {
+        -- "phpactor/phpactor",
+        -- config = function()
+            -- local lspconfig = require("lspconfig")
+            -- lspconfig.phpactor.setup({
+                -- root_dir = lspconfig.util.root_pattern("composer.json", ".git", "index.php"),
+                -- cmd = { "phpactor", "language-server" },
+                -- on_attach = function(client, bufnr)
+                    -- local bufopts = { noremap = true, silent = true, buffer = bufnr }
+                    -- vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+                    -- vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
+                    -- vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+                    -- vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
+                    -- vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
+                -- end,
+            -- })
+        -- end,
+    -- },
 
     -- Python-specific indenting
     "Vimjas/vim-python-pep8-indent",
@@ -138,15 +237,79 @@ local plugins = {
             require("Comment").setup()
         end,
     },
+
+    -- Harpoon (Fast File Navigation) - bind buffers to hotkeys
+    {
+        "ThePrimeagen/harpoon",
+        branch = "harpoon2",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        config = function() 
+            require("harpoon").setup()
+        end
+    },
+
+    -- Bufferline (Tab-like Buffer Display)
+    {
+        "akinsho/bufferline.nvim",
+        dependencies = "nvim-tree/nvim-web-devicons",
+        config = function()
+            require("bufferline").setup({
+                options = {
+                    numbers = "ordinal", -- show buffer number
+                    diagnostics = "nvim_lsp",
+                    show_buffer_close_icons = false,
+                    show_close_icon = false,
+                    separator_style = "slant",
+                },
+            })
+        end
+    },
+
+    { 'tpope/vim-commentary' },
+    { 'lewis6991/gitsigns.nvim',
+       config = function()
+            require('gitsigns').setup {
+                signs = {
+                    add          = { text = '▍' },
+                    change       = { text = '▍' },
+                    delete       = { text = '▍' },
+                    topdelete    = { text = '▍' },
+                    changedelete = { text = '▍' },
+                },
+                current_line_blame = true,  -- This will show blame inline as virtual text
+                current_line_blame_opts = {
+                    virt_text = true,          -- Display blame as virtual text
+                    virt_text_pos = 'eol',     -- Position it at the end of the line
+                    delay = 100,               -- Optional: delay in milliseconds before showing blame
+                },
+                keymaps = {
+                    noremap = true,
+                    buffer = true,
+                    ['n <leader>gh'] = { expr = true, "&diff ? 'diffget //2' : 'GitGutter'"},
+                },
+            }
+        end,
+    },
+    {
+      'tpope/vim-surround',  -- Add this line
+      config = function()
+        -- Optional: Custom configuration for vim-surround
+      end,
+    }
 }
 
 
 require("lazy").setup(plugins, {})
 
 
-
+local capabilities = require('cmp_nvim_lsp').default_capabilities()
 -- Autocompletion setup
 local cmp = require("cmp")
+
+require("lspconfig").phpactor.setup {
+    capabilitis = capabilities
+}
+
 cmp.setup({
     snippet = {
         expand = function(args)
@@ -166,17 +329,13 @@ cmp.setup({
 })
 
 
--- Keybindings for LSP actions
-vim.api.nvim_set_keymap("n", "gd", "<cmd>lua vim.lsp.buf.definition()<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "gr", "<cmd>lua vim.lsp.buf.references()<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "K", "<cmd>lua vim.lsp.buf.hover()<CR>", { noremap = true, silent = true })
-vim.api.nvim_create_autocmd("VimEnter", {
-    callback = function()
-        if #vim.fn.argv() == 0 then
-            vim.cmd("NERDTree")
-        end
-    end,
-})
+-- vim.api.nvim_set_keymap("n", "K", "<cmd>lua vim.lsp.buf.hover()<CR>", { noremap = true, silent = true })
+    -- callback = function()
+        -- if #vim.fn.argv() == 0 then
+            -- vim.cmd("NERDTree")
+        -- end
+    -- end,
+-- })
 
 vim.opt.tabstop = 4        -- Number of spaces that a tab represents
 vim.opt.shiftwidth = 4     -- Number of spaces used for auto-indentation
@@ -193,7 +352,7 @@ vim.opt.listchars = {
 }
 
 -- yank to system clipboard by default
--- vim.opt.clipboard = "unnamedplus"
+vim.opt.clipboard = "unnamedplus"
 
 -- Map <Esc> to exit Terminal mode and enter Normal mode
 -- vim.api.nvim_set_keymap("t", "<Esc>", "<C-\\><C-n>", { noremap = true })
@@ -207,7 +366,7 @@ vim.opt.listchars = {
 -- vim.api.nvim_set_keymap("n", "<leader>t", ":lua ToggleTerminal()<CR>", { noremap = true, silent = true })
 
 -- Toggle Terminal Function
--- function ToggleTerminal()
+-- functik//on ToggleTerminal()
 --     if terminal_winid and vim.api.nvim_win_is_valid(terminal_winid) then
 --         -- If terminal is open, close it
 --         -- vim.api.nvim_win_hide(terminal_winid)
@@ -236,3 +395,104 @@ vim.opt.listchars = {
 vim.api.nvim_set_keymap("n", "<C-_>", "<cmd>lua require('Comment.api').toggle.linewise.current()<CR>", { noremap = true, silent = true }) -- Normal mode
 vim.api.nvim_set_keymap("v", "<C-_>", "<cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<CR>", { noremap = true, silent = true }) -- Visual mode
 
+-- Key bindings for Harpoon
+local harpoon = require("harpoon")
+
+-- Add current file to Harpoon
+vim.keymap.set("n", "<leader>a", function() harpoon:list():add() end)
+
+-- Open Harpoon menu (Shows the list of marked files)
+vim.keymap.set("n", "<leader>h", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end)
+
+-- Navigate between Harpoon files
+vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end)
+vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end)
+vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end)
+vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end)
+vim.keymap.set("n", "<leader>5", function() harpoon:list():select(5) end)
+vim.keymap.set("n", "<leader>6", function() harpoon:list():select(6) end)
+
+-- Cycle through buffers (Bufferline)
+vim.keymap.set("n", "<Tab>", ":BufferLineCycleNext<CR>", { silent = true })
+vim.keymap.set("n", "<S-Tab>", ":BufferLineCyclePrev<CR>", { silent = true })
+vim.keymap.set("n", "<A-q>", ":bd<CR>", { silent = true }) -- Close current buffer
+
+-- Use Alt+1, Alt+2, ... to switch to buffer 1, buffer 2, ...
+vim.api.nvim_set_keymap('n', '<A-1>', ':BufferLineGoToBuffer 1<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-2>', ':BufferLineGoToBuffer 2<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-3>', ':BufferLineGoToBuffer 3<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-4>', ':BufferLineGoToBuffer 4<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-5>', ':BufferLineGoToBuffer 5<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-6>', ':BufferLineGoToBuffer 6<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-7>', ':BufferLineGoToBuffer 7<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-8>', ':BufferLineGoToBuffer 8<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<A-9>', ':BufferLineGoToBuffer 9<CR>', { noremap = true, silent = true })
+
+-- ALL BELOW IS EXPERIMENT WITH TABS MAANGEMENT, FEEL FREE TO MODIFY
+-- Autocmd to hide NERDTree from bufferline
+vim.cmd([[
+  autocmd BufEnter * if &ft == 'NERDTree' | setlocal nobuflisted | endif
+]])
+
+-- Function to prevent buffer commands in NERDTree
+function prevent_buffer_commands_in_nerdtree()
+    if vim.bo.filetype == 'NERDTree' then
+        -- Prevent switching buffers or closing the current buffer when in NERDTree
+        return true
+    end
+    return false
+end
+
+-- Disable buffer switching when in NERDTree
+vim.api.nvim_set_keymap('n', '<Leader>bb', [[:lua if not prevent_buffer_commands_in_nerdtree() then execute('BufferNext') end<CR>]], { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<Leader>bp', [[:lua if not prevent_buffer_commands_in_nerdtree() then execute('BufferPrevious') end<CR>]], { noremap = true, silent = true })
+
+-- Prevent closing the current buffer while in NERDTree
+vim.api.nvim_set_keymap('n', '<Leader>bd', [[:lua if not prevent_buffer_commands_in_nerdtree() then execute('bdelete') end<CR>]], { noremap = true, silent = true })
+----- END OF EXPERIMENTAL STUFF
+
+-- ZETTLE NOTES Create a new note
+vim.keymap.set('n', '<leader>zn', ':ZettelCreate<CR>', { noremap = true, silent = true })
+-- Open note from ID or title
+vim.keymap.set('n', '<leader>zo', ':ZettelOpen<CR>', { noremap = true, silent = true })
+
+
+
+-- Disable netrw (optional, recommended for preventing conflicts)
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+-- Keybinding for opening/closing nvim-tree
+vim.api.nvim_set_keymap('n', '<C-n>', ':NvimTreeToggle<CR>', { noremap = true, silent = true })
+
+
+-- Set GitSigns highlights
+vim.api.nvim_set_hl(0, 'GitSignsAdd', { link = 'GitSignsAdd' })
+vim.api.nvim_set_hl(0, 'GitSignsChange', { link = 'GitSignsChange' })
+vim.api.nvim_set_hl(0, 'GitSignsDelete', { link = 'GitSignsDelete' })
+vim.api.nvim_set_hl(0, 'GitSignsTopdelete', { link = 'GitSignsDelete' })
+vim.api.nvim_set_hl(0, 'GitSignsChangedelete', { link = 'GitSignsChangeDelete' })
+
+-- Set up GitSigns keymaps
+vim.keymap.set('n', '<leader>gs', '<cmd>Gitsigns stage_hunk<cr>', { noremap = true })
+vim.keymap.set('n', '<leader>gr', '<cmd>Gitsigns reset_hunk<cr>', { noremap = true })
+vim.keymap.set('n', '<leader>gp', '<cmd>Gitsigns preview_hunk<cr>', { noremap = true })
+vim.keymap.set('n', '<leader>gn', '<cmd>Gitsigns next_hunk<cr>', { noremap = true })
+vim.keymap.set('n', '<leader>gp', '<cmd>Gitsigns prev_hunk<cr>', { noremap = true })
+
+
+
+-- Optional: Set up custom highlights for blame information (if desired)
+vim.api.nvim_set_hl(0, 'GitSignsBlame', { fg = '#D4D4D4' })  -- Example highlight color
+
+-- Keymap to show blame for the current line
+vim.keymap.set('n', '<leader>gb', function()
+  require('gitsigns').blame_line({full=true})
+end)
+
+
+-- Enable blame information (use gitsigns API)
+-- Automatically show blame inline with the commit hash and other details on cursor hold
+-- vim.cmd [[
+--   autocmd CursorHold * lua require'gitsigns'.blame_line({full=true})
+-- ]]

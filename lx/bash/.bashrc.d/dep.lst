@@ -22,7 +22,10 @@ gcc
 make
 python3
 pip3
+# PHP
 php
+composer
+phpactor
 
 # Optional tools (uncomment as needed)
 # docker
