@@ -24,7 +24,7 @@ local plugins = {
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
 			lspconfig.phpactor.setup({
-        capabilitis = capabilities,
+        capabilities = capabilities,
 				root_dir = lspconfig.util.root_pattern("composer.json", ".git", "index.php"),
 				cmd = { "phpactor", "language-server" },
 				on_attach = function(client, bufnr)
@@ -36,7 +36,42 @@ local plugins = {
 					vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
 				end,
 			})
-		end,
+      --end,
+    -- ts_ls (for TypeScript, Node.js, React)
+    lspconfig.ts_ls.setup({
+      capabilities = capabilities,
+      root_dir = lspconfig.util.root_pattern("tsconfig.json", "package.json", ".git"),
+      on_attach = function(client, bufnr)
+        -- Disable formatting for ts_ls as we will use eslint for formatting
+        client.server_capabilities.document_formatting = false
+
+        local bufopts = { noremap = true, silent = true, buffer = bufnr }
+        vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+        vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
+        vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+        vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
+        vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
+      end,
+    })
+
+    -- eslint (for linting and fixing issues in JavaScript/TypeScript/React)
+    lspconfig.eslint.setup({
+      capabilities = capabilities,
+      root_dir = lspconfig.util.root_pattern(".eslintrc.js", ".eslintrc.json", "package.json", ".git"),
+      cmd = { "eslint-lsp", "--stdio" },
+        on_attach = function(client, bufnr)
+        -- Enable eslint formatting
+        client.server_capabilities.document_formatting = true
+
+        local bufopts = { noremap = true, silent = true, buffer = bufnr }
+        vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+        vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
+        vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+        vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
+        vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
+      end,
+    })
+  end,
 	},
 
 	-- Install vim-zettel for Zettelkasten-style note-taking
@@ -119,6 +154,7 @@ local plugins = {
 	{
 		"nvim-telescope/telescope.nvim",
 		dependencies = { "nvim-lua/plenary.nvim" },
+    event = "VimEnter", -- This makes sure it's loaded when Neovim starts
 		config = function()
 			vim.keymap.set("n", "<leader>ff", ":Telescope find_files<CR>", { noremap = true, silent = true })
 			vim.keymap.set("n", "<leader>fg", ":Telescope live_grep<CR>", { noremap = true, silent = true })

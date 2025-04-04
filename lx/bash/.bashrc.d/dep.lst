@@ -9,6 +9,8 @@ fzf
 
 # Editor
 nvim
+ripgrep
+fd
 
 # Images
 feh
