@@ -16,3 +16,7 @@ local terminal_winid = nil
 
 vim.g.mapleader = " " -- Set space as leader
 vim.o.background = "dark"
+
+-- PHP code fixer
+vim.api.nvim_set_keymap('n', '<leader>fix', ':!phpcbf %<CR>', { noremap = true, silent = true })
+

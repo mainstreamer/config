@@ -22,12 +22,15 @@ gcc
 make
 python3
 pip3
+
 # PHP
 php
 composer
 phpactor
+phpcs
 
 # Optional tools (uncomment as needed)
 # docker
 # asusctl
 # rustc
+# ripgrep

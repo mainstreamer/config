@@ -21,7 +21,10 @@ local plugins = {
 		'neovim/nvim-lspconfig',  -- LSP Config plugin
 		config = function()
 			local lspconfig = require("lspconfig")
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+
 			lspconfig.phpactor.setup({
+        capabilitis = capabilities,
 				root_dir = lspconfig.util.root_pattern("composer.json", ".git", "index.php"),
 				cmd = { "phpactor", "language-server" },
 				on_attach = function(client, bufnr)
@@ -252,17 +255,10 @@ local plugins = {
 	}
 }
 
-
 require("lazy").setup(plugins, {})
 
-
-local capabilities = require('cmp_nvim_lsp').default_capabilities()
 -- Autocompletion setup
 local cmp = require("cmp")
-
-require("lspconfig").phpactor.setup {
-	capabilitis = capabilities
-}
 
 cmp.setup({
 	snippet = {
