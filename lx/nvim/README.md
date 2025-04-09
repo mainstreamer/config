@@ -2,7 +2,6 @@
 
 #### Required packages:
  
-- ripgrep
 - https://www.nerdfonts.com/ (any)
 
 #### Key bindings

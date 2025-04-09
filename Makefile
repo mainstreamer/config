@@ -3,7 +3,7 @@
 #        make install linux|mac
 
 # Define platform-specific commands
-BUILD_CMD_linux = \
+PACK_CMD_linux = \
 	echo "Building linux bash config..." && \
 	sed -i.bak '/^\#Built/s/.*/\#Built $(shell date)/' lx/bash/.bashrc && \
 	cd lx/bash && \
@@ -17,7 +17,7 @@ INSTALL_CMD_linux = \
 	source ~/.bashrc
 
 # NEEDS TO BE REWISED - NOT YET TESTED ON MAC
-BUILD_CMD_mac = \
+PACK_CMD_mac = \
 	echo "Building mac zsh confg..." && \
 	sed -i.bak '/^\#Built/s/.*/\#Built $(shell date)/' lx/bash/.bashrc && \
 	cd ./mc/zsh && tar -cvzf ../../cfgmc.tar.gz .zshrc .zshrc.d/ && \
@@ -30,18 +30,28 @@ INSTALL_CMD_mac = \
 	tar -xvzf `pwd`/cfgmc.tar.gz -C ~/ && \
 	echo "done"
 
+FILENAME = $(shell date +%Y-%m-%d_%H-%M-%S)
 # Default target shows help
 .PHONY: help
 help:
 	@echo "Usage:"
-	@echo "  make build linux    - Build for Linux"
-	@echo "  make build mac      - Build for Mac"
+	@echo "  make pack linux    - Build for Linux"
+	@echo "  make pack mac      - Build for Mac"
 	@echo "  make install linux  - Install on Linux"
 	@echo "  make install mac    - Install on Mac"
 
+.PHONE: nvim
+nvim:
+	@mkdir -p ${HOME}/.config/nvim.bkp 
+	@tar -cjvf ${HOME}/.config/nvim.bkp/arc_${FILENAME}.tar.bz2 -C ${HOME}/.config nvim
+	@echo "backup saved ${HOME}/.config/nvim.bkp/arc_${FILENAME}.tar.bz2" 
+	@rm -rf ${HOME}/.config/nvim
+	@cp -r ./lx/nvim ${HOME}/.config
+	@echo "nvim config updated"
+	
 # Handle "make build linux" or "make build mac"
-.PHONY: build
-build:
+.PHONY: pack
+pack:
 	@if [ "$(filter linux mac,$(word 2,$(MAKECMDGOALS)))" = "" ]; then \
 		echo "Error: Platform not specified. Use 'make build linux' or 'make build mac'"; \
 		exit 1; \
@@ -58,15 +68,15 @@ install:
 # Empty targets for linux and mac to make the syntax work
 .PHONY: linux mac
 linux:
-	@if [ "$(word 1,$(MAKECMDGOALS))" = "build" ]; then \
-		$(BUILD_CMD_linux); \
+	@if [ "$(word 1,$(MAKECMDGOALS))" = "pack" ]; then \
+		$(PACK_CMD_linux); \
 	elif [ "$(word 1,$(MAKECMDGOALS))" = "install" ]; then \
 		$(INSTALL_CMD_linux); \
 	fi
 
 mac:
-	@if [ "$(word 1,$(MAKECMDGOALS))" = "build" ]; then \
-		$(BUILD_CMD_mac); \
+	@if [ "$(word 1,$(MAKECMDGOALS))" = "pack" ]; then \
+		$(PACK_CMD_mac); \
 	elif [ "$(word 1,$(MAKECMDGOALS))" = "install" ]; then \
 		$(INSTALL_CMD_mac); \
 	fi
