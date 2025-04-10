@@ -8,7 +8,9 @@ fi
 # User specific environment
 if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]; then
     PATH="$HOME/.local/bin:$HOME/bin:$PATH"
-    PATH="$PATH:$HOME/.config/composer/vendor/bin" # add global composer packages folder
+    PATH="$PATH:$HOME/.config/composer/vendor/bin" 
+    PATH="$PATH:$HOME/go/bin"
+    # add global composer packages folder
 fi
 export PATH
 
@@ -34,4 +36,4 @@ if [ -d ~/.bashrc.d ]; then
     done
 fi
 unset rc
-#Built Wed  9 Apr 21:45:05 BST 2025
+#Built Thu 10 Apr 00:03:15 BST 2025

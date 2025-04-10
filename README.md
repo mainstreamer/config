@@ -28,4 +28,4 @@ tar -xvzf cfglx.tar.gz
 ```
 
 
-source .zshrc
+ource .zshrc

@@ -26,6 +26,13 @@ make
 python3
 pip3
 
+# Js stuff
+npm
+# -- typescript
+tsc
+typescript-language-server
+eslint
+eslint-lsp
 # PHP
 php
 composer

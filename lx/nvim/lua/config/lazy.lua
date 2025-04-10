@@ -71,6 +71,21 @@ local plugins = {
         vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
       end,
     })
+
+      -- Golang (gopls)
+      lspconfig.gopls.setup({
+        capabilities = capabilities,
+        root_dir = lspconfig.util.root_pattern("go.mod", ".git"),
+        cmd = { "gopls" },
+        on_attach = function(client, bufnr)
+          local bufopts = { noremap = true, silent = true, buffer = bufnr }
+          vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+          vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
+          vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
+          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
+        end,
+      })
   end,
 	},
 
@@ -86,6 +101,9 @@ local plugins = {
 		end,
 	},
 
+
+  "williamboman/mason.nvim", -- golang lsp ???
+  "williamboman/mason-lspconfig.nvim", -- Mason-lspconfig - golang autocompletin and checks
 	-- Autocompletion and snippets
 	"hrsh7th/nvim-cmp",
 	"hrsh7th/cmp-nvim-lsp",
@@ -303,6 +321,12 @@ cmp.setup({
 		end,
 	},
 	mapping = {
+    ['<C-p>'] = cmp.mapping.select_prev_item(),
+    ['<C-n>'] = cmp.mapping.select_next_item(),
+    ['<C-d>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+    ['<C-Space>'] = cmp.mapping.complete(),
+    ['<C-e>'] = cmp.mapping.abort(),
 		["<Tab>"] = cmp.mapping.select_next_item(),
 		["<S-Tab>"] = cmp.mapping.select_prev_item(),
 		["<CR>"] = cmp.mapping.confirm({ select = true }),
