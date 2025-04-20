@@ -86,6 +86,20 @@ local plugins = {
           vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
         end,
       })
+
+      -- Python (pyright)
+      lspconfig.pyright.setup({
+        capabilities = capabilities,
+        root_dir = lspconfig.util.root_pattern("pyproject.toml", "setup.py", "requirements.txt", ".git"),
+        on_attach = function(client, bufnr)
+          local bufopts = { noremap = true, silent = true, buffer = bufnr }
+          vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+          vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
+          vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
+          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
+        end,
+      })
   end,
 	},
 
@@ -102,8 +116,22 @@ local plugins = {
 	},
 
 
-  "williamboman/mason.nvim", -- golang lsp ???
-  "williamboman/mason-lspconfig.nvim", -- Mason-lspconfig - golang autocompletin and checks
+  {
+    -- LSP tool to add deps?? used for GO and Python
+    "williamboman/mason.nvim",
+    build = ":MasonUpdate",
+    config = true,
+  },
+    -- Mason-lspconfig - golang autocompletin and checks
+  {
+    "williamboman/mason-lspconfig.nvim",
+    opts = {
+      ensure_installed = {
+        "pyright", -- add more LSPs here if needed
+      },
+    },
+  },
+
 	-- Autocompletion and snippets
 	"hrsh7th/nvim-cmp",
 	"hrsh7th/cmp-nvim-lsp",
@@ -306,8 +334,19 @@ local plugins = {
 		config = function()
 			-- Optional: Custom configuration for vim-surround
 		end,
-	}
+	},
+
+  { import = "plugins" }
 }
+
+-- Autoformat Rust files
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = "*.rs",
+  callback = function()
+    vim.lsp.buf.format({ async = false })
+  end,
+})
+
 
 require("lazy").setup(plugins, {})
 

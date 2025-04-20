@@ -39,6 +39,13 @@ composer
 phpactor
 phpcs
 
+# Rust
+rustc
+rust-analyzer
+## IDK HOW TO CHECK RUST DEPS ??
+## cargo rustfmt --version
+## cargo clippy --version
+
 # Optional tools (uncomment as needed)
 # docker
 # asusctl

@@ -5,6 +5,8 @@ if [ -f /etc/bashrc ]; then
     . /etc/bashrc
 fi
 
+export NODE_PATH=$(npm root -g)
+
 # User specific environment
 if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]; then
     PATH="$HOME/.local/bin:$HOME/bin:$PATH"
@@ -13,6 +15,9 @@ if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]; then
     # add global composer packages folder
 fi
 export PATH
+
+. "$HOME/.cargo/env"
+
 
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
@@ -36,4 +41,4 @@ if [ -d ~/.bashrc.d ]; then
     done
 fi
 unset rc
-#Built Thu 10 Apr 00:03:15 BST 2025
+#Built Sun 20 Apr 02:00:07 BST 2025

@@ -37,10 +37,12 @@ help:
 	@echo "Usage:"
 	@echo "  make pack linux    - Build for Linux"
 	@echo "  make pack mac      - Build for Mac"
-	@echo "  make install linux  - Install on Linux"
-	@echo "  make install mac    - Install on Mac"
+	@echo "  make install linux - Install on Linux"
+	@echo "  make install mac   - Install on Mac"
+	@echo "  make nvim          - Install nvim config (linux only tested)"
 
 .PHONE: nvim
+# nvim - install nvim config
 nvim:
 	@mkdir -p ${HOME}/.config/nvim.bkp 
 	@tar -cjvf ${HOME}/.config/nvim.bkp/arc_${FILENAME}.tar.bz2 -C ${HOME}/.config nvim
