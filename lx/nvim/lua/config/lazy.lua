@@ -320,11 +320,21 @@ local plugins = {
 					virt_text_pos = 'eol',     -- Position it at the end of the line
 					delay = 100,               -- Optional: delay in milliseconds before showing blame
 				},
-				keymaps = {
-					noremap = true,
-					buffer = true,
-					-- ['n <leader>gh'] = { expr = true, "&diff ? 'diffget //2' : 'GitGutter'"},
-				},
+        on_attach = function(bufnr)
+        local gs = require('gitsigns')
+
+        -- Keymap helper function
+        local function map(mode, lhs, rhs, opts)
+          opts = opts or { buffer = bufnr }
+          vim.keymap.set(mode, lhs, rhs, opts)
+        end
+          -- Set keymaps
+          map('n', '<leader>gs', gs.stage_hunk)
+          map('n', '<leader>gr', gs.reset_hunk)
+          map('n', '<leader>gp', gs.preview_hunk)
+          map('n', '<leader>gb', gs.blame_line)
+          map('n', '<leader>gd', gs.diffthis)
+       end,
 			}
 		end,
 	},
