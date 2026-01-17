@@ -1,0 +1,35 @@
+# Dependency checker - run with: depcheck
+# Checks tools listed in ~/.shellrc.d/dep.lst
+
+depcheck() {
+    local GREEN='\033[0;32m'
+    local RED='\033[0;31m'
+    local YELLOW='\033[0;33m'
+    local NC='\033[0m'
+    local DEP_FILE="$HOME/.shellrc.d/dep.lst"
+
+    if [ ! -f "$DEP_FILE" ]; then
+        echo -e "${RED}Error: Dependency file '$DEP_FILE' not found.${NC}"
+        return 1
+    fi
+
+    echo -e "${YELLOW}Checking dependencies...${NC}\n"
+
+    local INSTALLED=0 MISSING=0 TOTAL=0
+
+    while IFS= read -r dep || [ -n "$dep" ]; do
+        [[ -z "$dep" || "$dep" == \#* ]] && continue
+        TOTAL=$((TOTAL + 1))
+        if command -v "$dep" &>/dev/null; then
+            echo -e "${GREEN}✓${NC} $dep"
+            INSTALLED=$((INSTALLED + 1))
+        else
+            echo -e "${RED}✗${NC} $dep"
+            MISSING=$((MISSING + 1))
+        fi
+    done < "$DEP_FILE"
+
+    echo -e "\n${YELLOW}Summary:${NC} $INSTALLED/$TOTAL installed"
+    [ $MISSING -gt 0 ] && echo -e "${RED}Missing: $MISSING${NC}" && return 1
+    echo -e "${GREEN}All good!${NC}"
+}

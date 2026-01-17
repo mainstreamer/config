@@ -1,85 +1,266 @@
-## Simple Makefile for Linux and Mac builds
-# Usage: make build linux|mac
-#        make install linux|mac
+# Makefile for dotfiles management
+# ================================
+#
+# Production (fresh system):  curl install from GitHub
+# Development (local):        make install, make test
+# Rollback:                   make rollback
 
-# Define platform-specific commands
-PACK_CMD_linux = \
-	echo "Building linux bash config..." && \
-	sed -i.bak '/^\#Built/s/.*/\#Built $(shell date)/' lx/bash/.bashrc && \
-	cd lx/bash && \
-	tar -cvzf ../../cfglx.tar.gz .bashrc .bashrc.d/ && \
-	echo "Done! To install type: make install linux"
+SHELL := /bin/bash
+DOTFILES_DIR := $(shell pwd)
+BACKUP_DIR := $(HOME)/.dotfiles-backups
+TIMESTAMP := $(shell date +%Y%m%d-%H%M%S)
+REPO_URL := https://raw.githubusercontent.com/mainstreamer/config/master/install.sh
 
-INSTALL_CMD_linux = \
-	echo "Installing linux bash profile..." && \
-	tar -xvzf `pwd`/cfglx.tar.gz -C ~/ && \
-	echo "Loading new profile..." && \
-	source ~/.bashrc
+# Detect platform
+UNAME := $(shell uname -s)
+ifeq ($(UNAME),Darwin)
+    PLATFORM := macos
+else
+    PLATFORM := linux
+endif
 
-# NEEDS TO BE REWISED - NOT YET TESTED ON MAC
-PACK_CMD_mac = \
-	echo "Building mac zsh confg..." && \
-	sed -i.bak '/^\#Built/s/.*/\#Built $(shell date)/' lx/bash/.bashrc && \
-	cd ./mc/zsh && tar -cvzf ../../cfgmc.tar.gz .zshrc .zshrc.d/ && \
-	cd ./../../ && \
-	echo "Done! To install 'make i-mc' or type:" && \
-	echo "tar -xvzf `pwd`/cfgmc.tar.gz"
+.PHONY: help install install-remote install-deps install-links install-apps \
+        backup rollback list-backups test uninstall clean nvim \
+        pack-linux pack-mac starship-preset
 
-INSTALL_CMD_mac = \
-	echo "Installing mac bash profile..." && \
-	tar -xvzf `pwd`/cfgmc.tar.gz -C ~/ && \
-	echo "done"
+# Colors
+CYAN := \033[1;36m
+GREEN := \033[1;32m
+YELLOW := \033[1;33m
+MAGENTA := \033[1;35m
+WHITE := \033[1;37m
+DIM := \033[2m
+RESET := \033[0m
 
-FILENAME = $(shell date +%Y-%m-%d_%H-%M-%S)
-# Default target shows help
-.PHONY: help
+# =============================================================================
+# HELP
+# =============================================================================
 help:
-	@echo "Usage:"
-	@echo "  make pack linux    - Build for Linux"
-	@echo "  make pack mac      - Build for Mac"
-	@echo "  make install linux - Install on Linux"
-	@echo "  make install mac   - Install on Mac"
-	@echo "  make nvim          - Install nvim config (linux only tested)"
+	@printf "\n"
+	@printf "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)\n"
+	@printf "$(WHITE)  Dotfiles Management$(RESET)  $(DIM)platform: $(PLATFORM)$(RESET)\n"
+	@printf "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)\n"
+	@printf "\n"
+	@printf "$(YELLOW)INSTALL:$(RESET) $(GREEN)curl -fsSL $(REPO_URL) | bash$(RESET)\n"
+	@printf "$(YELLOW)PRODUCTION$(RESET) $(DIM)(fresh system)$(RESET)\n"
+	@printf "  $(GREEN)make install-remote$(RESET)          Curl and run install.sh from GitHub\n"
+	@printf "  $(GREEN)make install-remote-minimal$(RESET)  Minimal mode (no dev tools)\n"
+	@printf "  $(GREEN)make install-remote-no-sudo$(RESET)  User-space only, no root\n"
+	@printf "\n"
+	@printf "$(YELLOW)DEVELOPMENT$(RESET) $(DIM)(local testing)$(RESET)\n"
+	@printf "  $(GREEN)make install$(RESET)                 Full local install (deps + links)\n"
+	@printf "  $(GREEN)make install-deps$(RESET)            Install packages only\n"
+	@printf "  $(GREEN)make install-links$(RESET)           Create symlinks only\n"
+	@printf "  $(GREEN)make install-apps$(RESET)            Install apps from apps.conf\n"
+	@printf "  $(GREEN)make test$(RESET)                    Dry-run, show what would happen\n"
+	@printf "\n"
+	@printf "$(YELLOW)BACKUP & ROLLBACK$(RESET)\n"
+	@printf "  $(GREEN)make backup$(RESET)                  Create backup of current config\n"
+	@printf "  $(GREEN)make rollback$(RESET)                Restore most recent backup\n"
+	@printf "  $(GREEN)make rollback DATE=xxx$(RESET)       Restore specific backup\n"
+	@printf "  $(GREEN)make list-backups$(RESET)            List available backups\n"
+	@printf "\n"
+	@printf "$(YELLOW)CUSTOMIZATION$(RESET)\n"
+	@printf "  $(GREEN)make starship-preset$(RESET)         Install starship theme\n"
+	@printf "  $(DIM)  PRESET=gruvbox-rainbow      (default)$(RESET)\n"
+	@printf "  $(DIM)  PRESET=tokyo-night          Popular presets: pastel-powerline,$(RESET)\n"
+	@printf "  $(DIM)                              nerd-font-symbols, pure-preset$(RESET)\n"
+	@printf "\n"
+	@printf "$(YELLOW)UTILITIES$(RESET)\n"
+	@printf "  $(GREEN)make nvim$(RESET)                    Install nvim config only\n"
+	@printf "  $(GREEN)make uninstall$(RESET)               Remove all symlinks\n"
+	@printf "  $(GREEN)make clean$(RESET)                   Remove build artifacts\n"
+	@printf "\n"
+	@printf "$(YELLOW)LEGACY$(RESET)\n"
+	@printf "  $(GREEN)make pack-linux$(RESET)              Archive Linux config\n"
+	@printf "  $(GREEN)make pack-mac$(RESET)                Archive macOS config\n"
+	@printf "\n"
 
-.PHONE: nvim
-# nvim - install nvim config
+# =============================================================================
+# PRODUCTION - Remote install from GitHub
+# =============================================================================
+install-remote:
+	@echo "Installing from GitHub..."
+	curl -fsSL $(REPO_URL) | bash
+install-remote-minimal:
+	@echo "Installing from GitHub (minimal mode)..."
+	curl -fsSL $(REPO_URL) | bash -s -- --minimal
+
+install-remote-no-sudo:
+	@echo "Installing from GitHub (no-sudo mode)..."
+	curl -fsSL $(REPO_URL) | bash -s -- --no-sudo
+
+# =============================================================================
+# DEVELOPMENT - Local install
+# =============================================================================
+install: backup
+	@echo "Running local install..."
+	@$(DOTFILES_DIR)/install.sh
+
+install-deps:
+	@echo "Installing dependencies only..."
+	@$(DOTFILES_DIR)/install.sh --deps-only
+
+install-links: backup
+	@echo "Creating symlinks only..."
+	@$(DOTFILES_DIR)/install.sh --stow-only
+
+install-apps:
+	@echo "Installing apps from apps.conf..."
+	@$(MAKE) _install-apps-$(PLATFORM)
+
+_install-apps-linux:
+	@echo "Installing Linux apps..."
+	@sed -n '/^\[linux\]/,/^\[/p' apps.conf | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | while read app; do \
+		if command -v $$app &>/dev/null; then \
+			echo "  $$app: already installed"; \
+		else \
+			echo "  Installing $$app..."; \
+			if command -v dnf &>/dev/null; then \
+				sudo dnf install -y $$app 2>/dev/null || true; \
+			elif command -v apt &>/dev/null; then \
+				sudo apt install -y $$app 2>/dev/null || true; \
+			elif command -v pacman &>/dev/null; then \
+				sudo pacman -S --noconfirm $$app 2>/dev/null || true; \
+			fi; \
+		fi; \
+	done
+
+_install-apps-macos:
+	@echo "Installing macOS apps..."
+	@sed -n '/^\[macos\]/,/^\[/p' apps.conf | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | while read app; do \
+		if brew list $$app &>/dev/null || brew list --cask $$app &>/dev/null; then \
+			echo "  $$app: already installed"; \
+		else \
+			echo "  Installing $$app..."; \
+			brew install --cask $$app 2>/dev/null || brew install $$app 2>/dev/null || true; \
+		fi; \
+	done
+
+# =============================================================================
+# TESTING
+# =============================================================================
+test:
+	@echo ""
+	@echo "=== DRY RUN - What would happen ==="
+	@echo ""
+	@echo "Platform: $(PLATFORM)"
+	@echo "Dotfiles dir: $(DOTFILES_DIR)"
+	@echo ""
+	@echo "Symlinks to create:"
+	@echo "  ~/.bashrc -> $(DOTFILES_DIR)/shell/.bashrc"
+	@echo "  ~/.zshrc -> $(DOTFILES_DIR)/shell/.zshrc"
+	@echo "  ~/.shellrc.d -> $(DOTFILES_DIR)/shell/.shellrc.d"
+	@echo "  ~/.config/nvim -> $(DOTFILES_DIR)/nvim"
+	@echo "  ~/.config/starship.toml -> $(DOTFILES_DIR)/starship/starship.toml"
+	@echo ""
+	@echo "Current state:"
+	@[ -L ~/.bashrc ] && echo "  ~/.bashrc is a symlink -> $$(readlink ~/.bashrc)" || echo "  ~/.bashrc is a regular file (will be backed up)"
+	@[ -L ~/.config/nvim ] && echo "  ~/.config/nvim is a symlink -> $$(readlink ~/.config/nvim)" || echo "  ~/.config/nvim is a regular dir (will be backed up)"
+	@echo ""
+	@echo "Apps from apps.conf [$(PLATFORM)]:"
+	@sed -n '/^\[$(PLATFORM)\]/,/^\[/p' apps.conf 2>/dev/null | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | head -10 | while read app; do \
+		if command -v $$app &>/dev/null; then \
+			echo "  $$app (installed)"; \
+		else \
+			echo "  $$app (will install)"; \
+		fi; \
+	done || echo "  (none configured)"
+	@echo ""
+
+# =============================================================================
+# BACKUP & ROLLBACK
+# =============================================================================
+backup:
+	@mkdir -p $(BACKUP_DIR)
+	@echo "Creating backup at $(BACKUP_DIR)/$(TIMESTAMP)..."
+	@mkdir -p $(BACKUP_DIR)/$(TIMESTAMP)
+	@[ -f ~/.bashrc ] && [ ! -L ~/.bashrc ] && cp ~/.bashrc $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@[ -f ~/.zshrc ] && [ ! -L ~/.zshrc ] && cp ~/.zshrc $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@[ -d ~/.bashrc.d ] && [ ! -L ~/.bashrc.d ] && cp -r ~/.bashrc.d $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@[ -d ~/.zshrc.d ] && [ ! -L ~/.zshrc.d ] && cp -r ~/.zshrc.d $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@[ -d ~/.shellrc.d ] && [ ! -L ~/.shellrc.d ] && cp -r ~/.shellrc.d $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@[ -d ~/.config/nvim ] && [ ! -L ~/.config/nvim ] && cp -r ~/.config/nvim $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@[ -f ~/.config/starship.toml ] && [ ! -L ~/.config/starship.toml ] && cp ~/.config/starship.toml $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@echo "Backup complete: $(BACKUP_DIR)/$(TIMESTAMP)"
+	@# Save timestamp for easy rollback
+	@echo "$(TIMESTAMP)" > $(BACKUP_DIR)/.latest
+
+rollback:
+	@if [ -n "$(DATE)" ]; then \
+		RESTORE_DIR="$(BACKUP_DIR)/$(DATE)"; \
+	elif [ -f $(BACKUP_DIR)/.latest ]; then \
+		RESTORE_DIR="$(BACKUP_DIR)/$$(cat $(BACKUP_DIR)/.latest)"; \
+	else \
+		echo "No backup found. Use 'make list-backups' to see available backups."; \
+		exit 1; \
+	fi; \
+	echo "Restoring from $$RESTORE_DIR..."; \
+	[ -f "$$RESTORE_DIR/.bashrc" ] && rm -f ~/.bashrc && cp "$$RESTORE_DIR/.bashrc" ~/ && echo "  Restored .bashrc"; \
+	[ -f "$$RESTORE_DIR/.zshrc" ] && rm -f ~/.zshrc && cp "$$RESTORE_DIR/.zshrc" ~/ && echo "  Restored .zshrc"; \
+	[ -d "$$RESTORE_DIR/.bashrc.d" ] && rm -rf ~/.bashrc.d && cp -r "$$RESTORE_DIR/.bashrc.d" ~/ && echo "  Restored .bashrc.d"; \
+	[ -d "$$RESTORE_DIR/.shellrc.d" ] && rm -rf ~/.shellrc.d && cp -r "$$RESTORE_DIR/.shellrc.d" ~/ && echo "  Restored .shellrc.d"; \
+	[ -d "$$RESTORE_DIR/nvim" ] && rm -rf ~/.config/nvim && cp -r "$$RESTORE_DIR/nvim" ~/.config/ && echo "  Restored nvim"; \
+	[ -f "$$RESTORE_DIR/starship.toml" ] && rm -f ~/.config/starship.toml && cp "$$RESTORE_DIR/starship.toml" ~/.config/ && echo "  Restored starship.toml"; \
+	echo "Rollback complete."
+
+list-backups:
+	@echo "Available backups in $(BACKUP_DIR):"
+	@ls -1 $(BACKUP_DIR) 2>/dev/null | grep -v '.latest' | sort -r || echo "  (none)"
+	@echo ""
+	@[ -f $(BACKUP_DIR)/.latest ] && echo "Latest: $$(cat $(BACKUP_DIR)/.latest)" || true
+
+# =============================================================================
+# NVIM ONLY
+# =============================================================================
 nvim:
-	@mkdir -p ${HOME}/.config/nvim.bkp 
-	@tar -cjvf ${HOME}/.config/nvim.bkp/arc_${FILENAME}.tar.bz2 -C ${HOME}/.config nvim
-	@echo "backup saved ${HOME}/.config/nvim.bkp/arc_${FILENAME}.tar.bz2" 
-	@rm -rf ${HOME}/.config/nvim
-	@cp -r ./lx/nvim ${HOME}/.config
-	@echo "nvim config updated"
-	
-# Handle "make build linux" or "make build mac"
-.PHONY: pack
-pack:
-	@if [ "$(filter linux mac,$(word 2,$(MAKECMDGOALS)))" = "" ]; then \
-		echo "Error: Platform not specified. Use 'make build linux' or 'make build mac'"; \
-		exit 1; \
-	fi
+	@echo "Installing nvim config..."
+	@mkdir -p $(HOME)/.config/nvim.bkp
+	@[ -d $(HOME)/.config/nvim ] && tar -cjf $(HOME)/.config/nvim.bkp/nvim_$(TIMESTAMP).tar.bz2 -C $(HOME)/.config nvim && echo "Backup saved: nvim.bkp/nvim_$(TIMESTAMP).tar.bz2" || true
+	@rm -rf $(HOME)/.config/nvim
+	@ln -sf $(DOTFILES_DIR)/nvim $(HOME)/.config/nvim
+	@echo "nvim config installed (symlinked)"
 
-# Handle "make install linux" or "make install mac"
-.PHONY: install
-install:
-	@if [ "$(filter linux mac,$(word 2,$(MAKECMDGOALS)))" = "" ]; then \
-		echo "Error: Platform not specified. Use 'make install linux' or 'make install mac'"; \
-		exit 1; \
-	fi
+# =============================================================================
+# UNINSTALL
+# =============================================================================
+uninstall:
+	@echo "Removing symlinks..."
+	@[ -L ~/.bashrc ] && rm ~/.bashrc && echo "  Removed ~/.bashrc" || true
+	@[ -L ~/.zshrc ] && rm ~/.zshrc && echo "  Removed ~/.zshrc" || true
+	@[ -L ~/.shellrc.d ] && rm ~/.shellrc.d && echo "  Removed ~/.shellrc.d" || true
+	@[ -L ~/.bashrc.d ] && rm ~/.bashrc.d && echo "  Removed ~/.bashrc.d" || true
+	@[ -L ~/.config/nvim ] && rm ~/.config/nvim && echo "  Removed ~/.config/nvim" || true
+	@[ -L ~/.config/starship.toml ] && rm ~/.config/starship.toml && echo "  Removed ~/.config/starship.toml" || true
+	@echo "Done. Run 'make rollback' to restore previous config."
 
-# Empty targets for linux and mac to make the syntax work
-.PHONY: linux mac
-linux:
-	@if [ "$(word 1,$(MAKECMDGOALS))" = "pack" ]; then \
-		$(PACK_CMD_linux); \
-	elif [ "$(word 1,$(MAKECMDGOALS))" = "install" ]; then \
-		$(INSTALL_CMD_linux); \
-	fi
+# =============================================================================
+# LEGACY - Pack archives (for manual deployment)
+# =============================================================================
+pack-linux:
+	@echo "Building Linux config archive..."
+	@cd shell && tar -cvzf ../cfglx.tar.gz .bashrc .shellrc.d/
+	@echo "Created cfglx.tar.gz"
 
-mac:
-	@if [ "$(word 1,$(MAKECMDGOALS))" = "pack" ]; then \
-		$(PACK_CMD_mac); \
-	elif [ "$(word 1,$(MAKECMDGOALS))" = "install" ]; then \
-		$(INSTALL_CMD_mac); \
-	fi
+pack-mac:
+	@echo "Building macOS config archive..."
+	@cd shell && tar -cvzf ../cfgmc.tar.gz .zshrc .shellrc.d/
+	@echo "Created cfgmc.tar.gz"
 
+# =============================================================================
+# STARSHIP PRESET
+# =============================================================================
+PRESET ?= gruvbox-rainbow
+
+starship-preset:
+	@printf "$(CYAN)Installing starship preset: $(YELLOW)$(PRESET)$(RESET)\n"
+	@starship preset $(PRESET) -o $(DOTFILES_DIR)/starship/starship.toml
+	@printf "$(GREEN)Done!$(RESET) Theme applied to starship/starship.toml\n"
+	@printf "$(DIM)Browse presets: https://starship.rs/presets/$(RESET)\n"
+
+# =============================================================================
+# CLEAN
+# =============================================================================
+clean:
+	@rm -f cfglx.tar.gz cfgmc.tar.gz
+	@echo "Cleaned build artifacts"

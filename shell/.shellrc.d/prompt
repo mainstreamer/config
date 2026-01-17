@@ -1,0 +1,7 @@
+#!/bin/sh
+# Starship prompt initialization (cross-platform)
+# Config: ~/.config/starship.toml
+
+if command -v starship &>/dev/null; then
+    eval "$(starship init ${SHELL_TYPE:-bash})"
+fi

@@ -1,0 +1,107 @@
+#!/bin/bash
+
+enc() {
+
+KEY_FILE="pkey"    
+## TODO NEEDS SOME POLISHING v0.1
+  # Check if key inserted
+  if [ ! -f "/mnt/kstor/$KEY_FILE" ]; then
+      echo "Key required"
+      clean_and_exit
+      return 1
+  fi
+
+  # Variables for flags
+  DECRYPT=false
+  DEFAULT_OUT_PATH="."  # Default output path: current folder
+# Display help menu if no arguments are provided
+  if [[ "$#" -eq 0 ]]; then
+    echo "Usage: enc [-d] [-o output_path] filepath"
+    echo
+    echo "Options:"
+    echo "  -d              Decrypt the file"
+    echo "  -o output_path  Specify the output file path"
+    echo
+    echo "Examples:"
+    echo "  enc file.txt             # Encrypt file.txt to file.txt.enc"
+    echo "  enc -d file.txt.enc      # Decrypt file.txt.enc to file.txt"
+    echo "  enc -o output.txt file.txt  # Encrypt file.txt to output.txt"
+    echo "  enc -d -o output.txt file.txt.enc  # Decrypt file.txt.enc to output.txt"
+    return 0
+  fi
+# Parse flags and handle shifting
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -d)
+        DECRYPT=true
+        shift
+        ;;
+      -o)
+        if [[ -n "$2" ]]; then
+          OUT_PATH="$2"
+          shift 2  # Shift both -o and its argument
+        else
+          echo "Error: -o requires an output path."
+        clean_and_exit
+        return 1
+        fi
+        ;;
+      -*)
+        echo "Error: Invalid option '$1'."
+        echo "Usage: $0 [-d] [-o output_path] filepath"
+        clean_and_exit 
+        return 1
+        ;;
+      *)
+        # Assume the first non-flag argument is the input file
+        if [[ -z "$FILEPATH" ]]; then
+          FILEPATH="$1"
+          shift
+        else
+          echo "Error: Multiple input files provided. $FILEPATH"
+          echo "Usage: $0 [-d] [-o output_path] filepath"
+        clean_and_exit
+        return 1
+        fi
+        ;;
+    esac
+  done
+
+    # Check if input file exists
+  if [ ! -f "$FILEPATH" ]; then
+    echo "Error: Input file '$FILEPATH' does not exist."
+    return 1
+  fi
+
+  # Determine output filename
+  BASENAME=$(basename "$FILEPATH")  # Get the base filename (no directories)
+  if $DECRYPT; then
+      if [ -n "$OUT_PATH" ]; then
+          OUTPUT_FILE="$OUT_PATH"
+      else
+          OUTPUT_FILE="${DEFAULT_OUT_PATH}/${BASENAME%.enc}"  # Remove .enc extension
+      fi
+      echo "Decrypting: $FILEPATH -> $OUTPUT_FILE"
+      openssl enc -d -aes-256-ecb -in "$FILEPATH" -out "$OUTPUT_FILE" -K "$(cat /mnt/kstor/$KEY_FILE)" # todo: Reduce coupling with key path
+  else
+      if [ -n "$OUT_PATH" ]; then
+          OUTPUT_FILE="$OUT_PATH"
+      else
+          OUTPUT_FILE="${DEFAULT_OUT_PATH}/${BASENAME}.enc"  # Add .enc extension
+      fi
+      echo "Encrypting: $FILEPATH -> $OUTPUT_FILE"
+      openssl enc -e -aes-256-ecb -in "$FILEPATH" -out "$OUTPUT_FILE" -K "$(cat /mnt/kstor/$KEY_FILE)" # todo: Reduce coupling with key path
+  fi
+    clean_and_exit
+}
+
+
+# Function to clean up variables
+clean_and_exit() {
+  unset DECRYPT
+  unset DEFAULT_OUT_PATH
+  unset OUT_PATH
+  unset FILEPATH
+  unset OUTPUT_FILE
+  unset BASENAME
+}

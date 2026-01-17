@@ -1,0 +1,11 @@
+#!/bin/sh
+# Atuin - shell history sync (cross-platform)
+# DISABLED BY DEFAULT - to enable:
+#   touch ~/.config/atuin/.enabled
+#   Then: atuin register / atuin login
+
+if command -v atuin &>/dev/null; then
+    if [ "$ATUIN_ENABLED" = "1" ] || [ -f "$HOME/.config/atuin/.enabled" ]; then
+        eval "$(atuin init ${SHELL_TYPE:-bash})"
+    fi
+fi
