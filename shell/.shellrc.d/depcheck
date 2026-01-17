@@ -1,59 +1,35 @@
-#!/bin/bash
+# Dependency checker - run with: depcheck
+# Checks tools listed in ~/.shellrc.d/dep.lst
 
-# Define colors for output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+depcheck() {
+    local GREEN='\033[0;32m'
+    local RED='\033[0;31m'
+    local YELLOW='\033[0;33m'
+    local NC='\033[0m'
+    local DEP_FILE="$HOME/.shellrc.d/dep.lst"
 
-# Path to dependency file
-DEP_FILE="/home/stx/.bashrc.d/dep.lst"
-
-# Check if dependency file exists
-if [ ! -f "$DEP_FILE" ]; then
-    echo -e "${RED}Error: Dependency file '$DEP_FILE' not found.${NC}"
-    echo "Please create a file named 'dep.lst' with one dependency per line."
-    return 1
-fi
-
-echo -e "${YELLOW}Checking for required dependencies...${NC}"
-echo
-
-# Initialize counters
-INSTALLED=0
-MISSING=0
-TOTAL=0
-
-# Read dependencies from file
-while IFS= read -r dependency || [ -n "$dependency" ]; do
-    # Skip empty lines and comments
-    if [[ -z "$dependency" || "$dependency" == \#* ]]; then
-        continue
+    if [ ! -f "$DEP_FILE" ]; then
+        echo -e "${RED}Error: Dependency file '$DEP_FILE' not found.${NC}"
+        return 1
     fi
-    
-    TOTAL=$((TOTAL + 1))
-    
-    # Check if the command exists
-    if command -v "$dependency" &>/dev/null; then
-        echo -e "${GREEN}✓ Found:${NC} $dependency"
-        INSTALLED=$((INSTALLED + 1))
-    else
-        echo -e "${RED}✗ Missing:${NC} $dependency"
-        MISSING=$((MISSING + 1))
-    fi
-done < "$DEP_FILE"
 
-echo
-echo -e "${YELLOW}Dependency check summary:${NC}"
-echo -e "Total dependencies: $TOTAL"
-echo -e "${GREEN}Installed: $INSTALLED${NC}"
-echo -e "${RED}Missing: $MISSING${NC}"
+    echo -e "${YELLOW}Checking dependencies...${NC}\n"
 
-# Exit with error code if any dependencies are missing
-if [ $MISSING -gt 0 ]; then
-    echo -e "\n${RED}Please install missing dependencies before proceeding.${NC}"
-    return 1
-else
-    echo -e "\n${GREEN}All dependencies are installed!${NC}"
-    return 0
-fi
+    local INSTALLED=0 MISSING=0 TOTAL=0
+
+    while IFS= read -r dep || [ -n "$dep" ]; do
+        [[ -z "$dep" || "$dep" == \#* ]] && continue
+        TOTAL=$((TOTAL + 1))
+        if command -v "$dep" &>/dev/null; then
+            echo -e "${GREEN}✓${NC} $dep"
+            INSTALLED=$((INSTALLED + 1))
+        else
+            echo -e "${RED}✗${NC} $dep"
+            MISSING=$((MISSING + 1))
+        fi
+    done < "$DEP_FILE"
+
+    echo -e "\n${YELLOW}Summary:${NC} $INSTALLED/$TOTAL installed"
+    [ $MISSING -gt 0 ] && echo -e "${RED}Missing: $MISSING${NC}" && return 1
+    echo -e "${GREEN}All good!${NC}"
+}
