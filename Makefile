@@ -21,44 +21,60 @@ endif
 
 .PHONY: help install install-remote install-deps install-links install-apps \
         backup rollback list-backups test uninstall clean nvim \
-        pack-linux pack-mac
+        pack-linux pack-mac starship-preset
+
+# Colors
+CYAN := \033[1;36m
+GREEN := \033[1;32m
+YELLOW := \033[1;33m
+MAGENTA := \033[1;35m
+WHITE := \033[1;37m
+DIM := \033[2m
+RESET := \033[0m
 
 # =============================================================================
 # HELP
 # =============================================================================
 help:
-	@echo ""
-	@echo "Dotfiles Management"
-	@echo "==================="
-	@echo ""
-	@echo "PRODUCTION (fresh system):"
-	@echo "  make install-remote       Curl and run install.sh from GitHub"
-	@echo "  make install-remote-minimal  Same but with --minimal flag"
-	@echo ""
-	@echo "DEVELOPMENT (local testing):"
-	@echo "  make install              Full local install (deps + links)"
-	@echo "  make install-deps         Install packages only"
-	@echo "  make install-links        Create symlinks only"
-	@echo "  make install-apps         Install apps from apps.conf"
-	@echo "  make test                 Dry-run, show what would happen"
-	@echo ""
-	@echo "BACKUP & ROLLBACK:"
-	@echo "  make backup               Create backup of current config"
-	@echo "  make rollback             Restore most recent backup"
-	@echo "  make rollback DATE=xxx    Restore specific backup (xxx=YYYYMMDD-HHMMSS)"
-	@echo "  make list-backups         List available backups"
-	@echo ""
-	@echo "UTILITIES:"
-	@echo "  make nvim                 Install nvim config only (with backup)"
-	@echo "  make uninstall            Remove all symlinks (keeps backups)"
-	@echo "  make clean                Remove build artifacts"
-	@echo ""
-	@echo "LEGACY:"
-	@echo "  make pack-linux           Archive Linux config to cfglx.tar.gz"
-	@echo "  make pack-mac             Archive macOS config to cfgmc.tar.gz"
-	@echo ""
-	@echo "Detected platform: $(PLATFORM)"
-	@echo ""
+	@printf "\n"
+	@printf "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)\n"
+	@printf "$(WHITE)  Dotfiles Management$(RESET)  $(DIM)platform: $(PLATFORM)$(RESET)\n"
+	@printf "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)\n"
+	@printf "\n"
+	@printf "$(YELLOW)INSTALL:$(RESET) $(GREEN)curl -fsSL $(REPO_URL) | bash$(RESET)\n"
+	@printf "$(YELLOW)PRODUCTION$(RESET) $(DIM)(fresh system)$(RESET)\n"
+	@printf "  $(GREEN)make install-remote$(RESET)          Curl and run install.sh from GitHub\n"
+	@printf "  $(GREEN)make install-remote-minimal$(RESET)  Minimal mode (no dev tools)\n"
+	@printf "  $(GREEN)make install-remote-no-sudo$(RESET)  User-space only, no root\n"
+	@printf "\n"
+	@printf "$(YELLOW)DEVELOPMENT$(RESET) $(DIM)(local testing)$(RESET)\n"
+	@printf "  $(GREEN)make install$(RESET)                 Full local install (deps + links)\n"
+	@printf "  $(GREEN)make install-deps$(RESET)            Install packages only\n"
+	@printf "  $(GREEN)make install-links$(RESET)           Create symlinks only\n"
+	@printf "  $(GREEN)make install-apps$(RESET)            Install apps from apps.conf\n"
+	@printf "  $(GREEN)make test$(RESET)                    Dry-run, show what would happen\n"
+	@printf "\n"
+	@printf "$(YELLOW)BACKUP & ROLLBACK$(RESET)\n"
+	@printf "  $(GREEN)make backup$(RESET)                  Create backup of current config\n"
+	@printf "  $(GREEN)make rollback$(RESET)                Restore most recent backup\n"
+	@printf "  $(GREEN)make rollback DATE=xxx$(RESET)       Restore specific backup\n"
+	@printf "  $(GREEN)make list-backups$(RESET)            List available backups\n"
+	@printf "\n"
+	@printf "$(YELLOW)CUSTOMIZATION$(RESET)\n"
+	@printf "  $(GREEN)make starship-preset$(RESET)         Install starship theme\n"
+	@printf "  $(DIM)  PRESET=gruvbox-rainbow      (default)$(RESET)\n"
+	@printf "  $(DIM)  PRESET=tokyo-night          Popular presets: pastel-powerline,$(RESET)\n"
+	@printf "  $(DIM)                              nerd-font-symbols, pure-preset$(RESET)\n"
+	@printf "\n"
+	@printf "$(YELLOW)UTILITIES$(RESET)\n"
+	@printf "  $(GREEN)make nvim$(RESET)                    Install nvim config only\n"
+	@printf "  $(GREEN)make uninstall$(RESET)               Remove all symlinks\n"
+	@printf "  $(GREEN)make clean$(RESET)                   Remove build artifacts\n"
+	@printf "\n"
+	@printf "$(YELLOW)LEGACY$(RESET)\n"
+	@printf "  $(GREEN)make pack-linux$(RESET)              Archive Linux config\n"
+	@printf "  $(GREEN)make pack-mac$(RESET)                Archive macOS config\n"
+	@printf "\n"
 
 # =============================================================================
 # PRODUCTION - Remote install from GitHub
@@ -66,7 +82,6 @@ help:
 install-remote:
 	@echo "Installing from GitHub..."
 	curl -fsSL $(REPO_URL) | bash
-
 install-remote-minimal:
 	@echo "Installing from GitHub (minimal mode)..."
 	curl -fsSL $(REPO_URL) | bash -s -- --minimal
@@ -231,6 +246,17 @@ pack-mac:
 	@echo "Building macOS config archive..."
 	@cd shell && tar -cvzf ../cfgmc.tar.gz .zshrc .shellrc.d/
 	@echo "Created cfgmc.tar.gz"
+
+# =============================================================================
+# STARSHIP PRESET
+# =============================================================================
+PRESET ?= gruvbox-rainbow
+
+starship-preset:
+	@printf "$(CYAN)Installing starship preset: $(YELLOW)$(PRESET)$(RESET)\n"
+	@starship preset $(PRESET) -o $(DOTFILES_DIR)/starship/starship.toml
+	@printf "$(GREEN)Done!$(RESET) Theme applied to starship/starship.toml\n"
+	@printf "$(DIM)Browse presets: https://starship.rs/presets/$(RESET)\n"
 
 # =============================================================================
 # CLEAN
