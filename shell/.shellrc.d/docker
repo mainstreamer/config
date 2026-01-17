@@ -1,0 +1,29 @@
+#!/bin/sh
+# Docker helpers (cross-platform)
+
+# Docker compose shortcuts
+alias dc='docker compose'
+alias d='docker'
+alias dce='docker compose exec -it'
+alias ds='docker stop $(docker ps -q)'
+
+# Change docker context (macOS Docker Desktop)
+change_docker_context() {
+    if [ -z "$1" ]; then
+        docker context use desktop-linux 2>/dev/null || docker context use default
+    else
+        docker context use "$1"
+    fi
+}
+alias cdc='change_docker_context'
+
+# Quick container shell
+dsh() {
+    docker exec -it "$1" /bin/sh -c "command -v bash && exec bash || exec sh"
+}
+
+# Remove all stopped containers
+dclean() {
+    docker container prune -f
+    docker image prune -f
+}

@@ -1,0 +1,35 @@
+#!/bin/sh
+# Cross-platform aliases (works in bash and zsh)
+
+# Modern CLI replacements
+command -v eza &>/dev/null && alias ls='eza'
+command -v bat &>/dev/null && alias cat='bat --paging=never'
+command -v zoxide &>/dev/null && eval "$(zoxide init ${SHELL_TYPE:-bash})"
+
+# Common aliases
+alias ll='ls -la'
+alias la='ls -a'
+alias l='ls -l'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias grep='grep --color=auto'
+alias mkdir='mkdir -pv'
+alias df='df -h'
+alias du='du -h'
+
+# Git shortcuts
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+alias glog='git log --oneline --graph --decorate'
+
+# Safety nets
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'

@@ -4,167 +4,191 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Personal developer environment configuration for Linux and macOS. Manages shell profiles, Neovim IDE, CLI tools, and utility scripts. Deployable via single curl command.
+Personal developer environment configuration for Linux and macOS. Unified cross-platform configs with smart platform detection. Deployable via single curl command or Makefile.
 
 **Repository**: https://github.com/mainstreamer/config
 
 ## Quick Install
 
 ```bash
-# One-liner (clones repo, installs everything)
+# Production: One-liner from GitHub
 curl -fsSL https://raw.githubusercontent.com/mainstreamer/config/master/install.sh | bash
 
 # With options
-curl -fsSL https://raw.githubusercontent.com/mainstreamer/config/master/install.sh | bash -s -- --minimal
-curl -fsSL https://raw.githubusercontent.com/mainstreamer/config/master/install.sh | bash -s -- --no-sudo
+curl -fsSL ... | bash -s -- --minimal    # Lightweight, no dev tools
+curl -fsSL ... | bash -s -- --no-sudo    # User-space only, no root
 ```
+
+## Makefile Commands
+
+```bash
+# Production (fresh system)
+make install-remote              # Curl and run from GitHub
+make install-remote-minimal      # Minimal mode
+make install-remote-no-sudo      # No root required
+
+# Development (local testing)
+make install                     # Full local install (auto-backup first)
+make install-deps                # Packages only, no symlinks
+make install-links               # Symlinks only
+make install-apps                # Install apps from apps.conf
+make test                        # Dry-run, show what would happen
+
+# Backup & Rollback
+make backup                      # Create backup
+make rollback                    # Restore most recent backup
+make rollback DATE=20260117-143052  # Restore specific backup
+make list-backups                # List available backups
+
+# Utilities
+make nvim                        # Install nvim only (with backup)
+make uninstall                   # Remove symlinks
+make clean                       # Remove build artifacts
+```
+
+## Repository Structure (Unified)
+
+```
+config/
+├── install.sh              # Main installer (curl-able)
+├── Makefile                # All operations
+├── Brewfile                # Homebrew packages
+├── apps.conf               # Custom apps to install (editable)
+├── CLAUDE.md               # This file
+│
+├── shell/                  # Cross-platform shell configs
+│   ├── .bashrc             # Linux entry point
+│   ├── .zshrc              # macOS entry point
+│   └── .shellrc.d/         # Shared scripts (work in bash & zsh)
+│       ├── aliases         # Common aliases
+│       ├── prompt          # Starship init
+│       ├── docker          # Docker helpers
+│       ├── atuin           # History sync (disabled by default)
+│       ├── depcheck        # Dependency checker
+│       └── ...
+│
+├── nvim/                   # Neovim (unified, cross-platform)
+│   ├── init.lua
+│   └── lua/config/
+│       ├── lazy.lua        # Full config
+│       └── lazy-minimal.lua # Minimal config
+│
+├── starship/               # Starship prompt (cross-platform)
+│   └── starship.toml
+│
+├── composer/               # PHP tools
+│   └── composer.json
+│
+├── apps/                   # Platform-specific app configs
+│   ├── linux/              # guake, etc.
+│   └── macos/              # iterm2, etc.
+│
+└── lx/, mc/                # Legacy structure (still supported)
+```
+
+## Where Configs Are Installed
+
+```
+~/.bashrc           → repo/shell/.bashrc       (Linux)
+~/.zshrc            → repo/shell/.zshrc        (macOS)
+~/.shellrc.d/       → repo/shell/.shellrc.d/   (both)
+~/.config/nvim/     → repo/nvim/
+~/.config/starship.toml → repo/starship/starship.toml
+```
+
+**Repo location**: `~/.dotfiles` (curl install) or wherever you clone it
+
+**Backups**: `~/.dotfiles-backups/YYYYMMDD-HHMMSS/`
+
+## Custom Apps (apps.conf)
+
+Edit `apps.conf` to customize which apps are installed:
+
+```ini
+[linux]
+guake
+feh
+# vlc
+# slack
+
+[macos]
+iterm2
+# rectangle
+# slack
+
+[cli]
+# Additional CLI tools
+```
+
+Run `make install-apps` to install apps from this file.
 
 ## Installation Options
 
 | Flag | Description |
 |------|-------------|
-| `--minimal` | Skip LSP, compilers, dev tools. Good for servers. |
-| `--no-sudo` | User-space only (~/.local/bin). No root required. |
-| `--deps-only` | Install packages only, skip symlinks. |
-| `--stow-only` | Create symlinks only, skip packages. |
-| `-h, --help` | Show full help with examples. |
+| `--minimal` | Skip LSP, compilers. Nvim loads minimal config. |
+| `--no-sudo` | User-space only (~/.local/bin). No root. |
+| `--deps-only` | Packages only, no symlinks. |
+| `--stow-only` | Symlinks only, no packages. |
+| `-h, --help` | Show full help. |
 
-## Where Configs Go
+## Supported Platforms
 
-When installed via curl, the repo is cloned to `~/.dotfiles` (configurable via `DOTFILES_TARGET` env var).
-
-**Symlinks created:**
-```
-~/.bashrc           → ~/.dotfiles/lx/bash/.bashrc
-~/.bashrc.d/        → ~/.dotfiles/lx/bash/.bashrc.d/
-~/.config/nvim/     → ~/.dotfiles/lx/nvim/
-~/.config/starship.toml → ~/.dotfiles/lx/starship/starship.toml
-```
-
-**Backup:** Existing non-symlink configs are moved to `~/.dotfiles-backup-YYYYMMDD-HHMMSS/`
-
-## Repository Structure
-
-```
-install.sh              # Main installer (curl-able, multi-distro)
-Brewfile                # Homebrew dependencies (Fedora/Debian/macOS)
-CLAUDE.md               # This file
-
-lx/                     # Linux configurations
-├── bash/
-│   ├── .bashrc         # Main profile (sources .bashrc.d/*)
-│   └── .bashrc.d/      # Modular scripts
-│       ├── prompt      # Starship initialization
-│       ├── shell       # Aliases and shell config
-│       ├── docker      # Docker helpers
-│       ├── atuin       # Shell history sync (disabled by default)
-│       ├── dep.lst     # Dependency list (not sourced)
-│       └── *.archived  # Deprecated scripts (not sourced)
-├── nvim/
-│   ├── init.lua        # Entry point (supports minimal mode)
-│   └── lua/
-│       ├── config/lazy.lua         # Full plugin config
-│       └── config/lazy-minimal.lua # Minimal plugin config
-├── starship/
-│   └── starship.toml   # Cross-platform prompt config
-└── composer/
-    └── composer.json   # PHP global packages
-
-mc/                     # macOS configurations
-├── zsh/                # Zsh shell config
-├── nvim/               # macOS nvim (if different)
-└── iterm2/             # iTerm2 settings
-```
-
-## Supported Distros
-
-| Distro | Package Manager | Notes |
-|--------|-----------------|-------|
-| Fedora | Homebrew | Primary dev platform |
+| OS | Package Manager | Notes |
+|----|-----------------|-------|
+| Fedora | Homebrew | |
 | Debian | Homebrew | |
-| Ubuntu | apt + GitHub releases | fd-find/batcat naming quirks handled |
-| Pop!_OS | apt + GitHub releases | Same as Ubuntu |
-| Arch | pacman + AUR | yay/paru detected automatically |
-| Alpine | apk + cargo | Auto-enables --minimal |
+| Ubuntu/Pop!_OS | apt + GitHub releases | |
+| Arch | pacman + AUR | |
+| Alpine | apk + cargo | Auto-minimal |
 | macOS | Homebrew | |
 
-## Shell Configuration
+## Shell Scripts
 
-### Modular .bashrc.d Pattern
-`.bashrc` sources all files from `~/.bashrc.d/` except:
-- Files in `EXCLUDE_FILES` array
-- Files ending in `.archived`
+Scripts in `.shellrc.d/` are sourced by both `.bashrc` and `.zshrc`. Write POSIX-compatible shell or use `$SHELL_TYPE` variable:
 
-### Prompt (Starship)
-Cross-platform prompt configured in `lx/starship/starship.toml`. Shows:
-- Directory, git branch/status
-- Language versions (PHP, Python, Rust, Go, Node) only in relevant projects
-- Command duration (if > 2s)
-- Time on right side
-
-### Atuin (Disabled by Default)
-Shell history sync. To enable:
 ```bash
+# SHELL_TYPE is set to "bash" or "zsh"
+if [ "$SHELL_TYPE" = "zsh" ]; then
+    # zsh-specific code
+fi
+```
+
+To disable a script: rename to `*.archived`
+
+## Neovim Modes
+
+- **Full**: LSP, autocompletion, all plugins
+- **Minimal**: Basic editing. Triggered by:
+  - `NVIM_MINIMAL=1 nvim`
+  - File: `~/.config/nvim/.minimal`
+
+## Key Bindings (Neovim)
+
+- `<Space>` - Leader
+- `<leader>ff` - Find files
+- `<leader>fg` - Live grep
+- `<C-n>` - File tree
+- `ttt` - Terminal
+- `gd` - Go to definition
+- `<leader>tg` - Lazygit
+
+## Atuin (Disabled by Default)
+
+```bash
+# Enable
 touch ~/.config/atuin/.enabled
 source ~/.bashrc
+
+# Setup
 atuin register  # or: atuin login
+atuin import auto
 ```
 
-## Neovim Configuration
+## Development Workflow
 
-### Modes
-- **Full mode**: LSP, autocompletion, language servers, all plugins
-- **Minimal mode**: Basic editing, no LSP. Triggered by:
-  - `NVIM_MINIMAL=1 nvim`
-  - File exists: `~/.config/nvim/.minimal`
-
-### Key Bindings
-- `<Space>` - Leader key
-- `<leader>ff` - Find files (Telescope)
-- `<leader>fg` - Live grep
-- `<C-n>` - Toggle file tree
-- `ttt` - Toggle terminal
-- `Tab/S-Tab` - Cycle buffers
-- `gd` - Go to definition
-- `gr` - Find references
-- `<leader>gs/gr/gp` - Git stage/reset/preview hunk
-- `<leader>tg` - Lazygit in floating terminal
-
-### LSP Servers (Full Mode)
-- PHP: phpactor
-- TypeScript/JS: ts_ls + eslint
-- Go: gopls
-- Python: pyright
-- Rust: rust-analyzer
-
-## What Gets Installed
-
-### Core CLI Tools (Always)
-git, curl, wget, jq, fzf, ripgrep, fd, bat, eza, zoxide, tree, neovim, stow, starship, lazygit, delta, gh, htop, btop, atuin
-
-### Development Tools (Full Mode)
-- Node.js, npm, TypeScript, typescript-language-server
-- PHP, Composer, phpactor, phpcs, php-cs-fixer
-- Python 3, pip, pyright
-- Rust (rustc, cargo, rust-analyzer, rustfmt, clippy)
-- Go, gopls
-
-## Legacy Build System
-
-The Makefile still works for manual packaging:
-```bash
-make pack linux    # Archive to cfglx.tar.gz
-make pack mac      # Archive to cfgmc.tar.gz
-make nvim          # Install nvim config with backup
-```
-
-## Adding New bashrc.d Scripts
-
-1. Create file in `lx/bash/.bashrc.d/` (no extension needed)
-2. Add shebang: `#!/usr/bin/bash`
-3. Script is auto-sourced on shell startup
-4. To disable: rename to `*.archived` or add to `EXCLUDE_FILES`
-
-## Dependencies
-
-Listed in `lx/bash/.bashrc.d/dep.lst`, checked by `depcheck` on shell startup.
+1. Make changes locally
+2. `make test` - see what would happen
+3. `make install` - apply changes (auto-backup)
+4. If broken: `make rollback`
+5. When ready: push to GitHub

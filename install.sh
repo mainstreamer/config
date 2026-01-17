@@ -58,17 +58,33 @@ setup_dotfiles_dir() {
         script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || true
     fi
 
-    # Check if script_dir has our expected files
-    if [ -n "$script_dir" ] && [ -d "$script_dir/lx/bash" ] && [ -d "$script_dir/lx/nvim" ]; then
+    # Check for new unified structure (shell/ and nvim/ at root)
+    if [ -n "$script_dir" ] && [ -d "$script_dir/shell" ] && [ -d "$script_dir/nvim" ]; then
         DOTFILES_DIR="$script_dir"
         info "Running from repo: $DOTFILES_DIR"
         return
     fi
 
-    # Check if already cloned to target
-    if [ -d "$DOTFILES_TARGET/lx/bash" ] && [ -d "$DOTFILES_TARGET/lx/nvim" ]; then
+    # Check for legacy structure (lx/bash, lx/nvim)
+    if [ -n "$script_dir" ] && [ -d "$script_dir/lx/bash" ] && [ -d "$script_dir/lx/nvim" ]; then
+        DOTFILES_DIR="$script_dir"
+        USE_LEGACY_STRUCTURE=true
+        info "Running from repo (legacy structure): $DOTFILES_DIR"
+        return
+    fi
+
+    # Check if already cloned to target (new structure)
+    if [ -d "$DOTFILES_TARGET/shell" ] && [ -d "$DOTFILES_TARGET/nvim" ]; then
         DOTFILES_DIR="$DOTFILES_TARGET"
         info "Using existing dotfiles: $DOTFILES_DIR"
+        return
+    fi
+
+    # Check if already cloned to target (legacy structure)
+    if [ -d "$DOTFILES_TARGET/lx/bash" ] && [ -d "$DOTFILES_TARGET/lx/nvim" ]; then
+        DOTFILES_DIR="$DOTFILES_TARGET"
+        USE_LEGACY_STRUCTURE=true
+        info "Using existing dotfiles (legacy): $DOTFILES_DIR"
         return
     fi
 
@@ -307,7 +323,7 @@ install_brew_deps() {
         brew install git curl wget jq fzf ripgrep fd bat eza zoxide tree \
             neovim stow starship lazygit delta gh htop btop atuin 2>/dev/null || true
     else
-        brew bundle --no-lock
+        brew bundle
     fi
 }
 
@@ -672,17 +688,16 @@ stow_packages() {
     mkdir -p "$HOME/.config"
 
     # Stow shell config based on platform
-    if [ "$PLATFORM" = "linux" ]; then
-        stow_linux_bash
-    else
-        stow_macos_zsh
-    fi
+    stow_shell
 
     # Stow nvim config
     stow_nvim
 
     # Stow starship config
     stow_starship
+
+    # Install custom apps
+    install_custom_apps
 
     # Set minimal mode marker if needed
     if [ "$MINIMAL_MODE" = true ]; then
@@ -693,42 +708,49 @@ stow_packages() {
     ok "Symlinks created"
 }
 
-stow_linux_bash() {
-    info "Stowing Linux bash config..."
+stow_shell() {
+    info "Stowing shell config..."
 
-    # Remove existing symlinks/files to allow fresh stow
+    # Clean up old symlinks
     rm -f "$HOME/.bashrc" 2>/dev/null || true
-    rm -rf "$HOME/.bashrc.d" 2>/dev/null || true
-
-    # Stow from lx/bash directory
-    cd "$DOTFILES_DIR/lx/bash"
-    stow -v -t "$HOME" -R . 2>&1 | grep -v "^LINK:" || true
-    cd "$DOTFILES_DIR"
-}
-
-stow_macos_zsh() {
-    info "Stowing macOS zsh config..."
-
     rm -f "$HOME/.zshrc" 2>/dev/null || true
+    rm -rf "$HOME/.bashrc.d" 2>/dev/null || true
     rm -rf "$HOME/.zshrc.d" 2>/dev/null || true
+    rm -rf "$HOME/.shellrc.d" 2>/dev/null || true
 
-    if [ -d "$DOTFILES_DIR/mc/zsh" ]; then
+    # New unified structure: shell/
+    if [ -d "$DOTFILES_DIR/shell" ]; then
+        ln -sf "$DOTFILES_DIR/shell/.shellrc.d" "$HOME/.shellrc.d"
+
+        if [ "$PLATFORM" = "linux" ]; then
+            ln -sf "$DOTFILES_DIR/shell/.bashrc" "$HOME/.bashrc"
+        else
+            ln -sf "$DOTFILES_DIR/shell/.zshrc" "$HOME/.zshrc"
+        fi
+    # Legacy structure: lx/bash, mc/zsh
+    elif [ "$PLATFORM" = "linux" ] && [ -d "$DOTFILES_DIR/lx/bash" ]; then
+        cd "$DOTFILES_DIR/lx/bash"
+        stow -v -t "$HOME" -R . 2>&1 | grep -v "^LINK:" || true
+        cd "$DOTFILES_DIR"
+    elif [ -d "$DOTFILES_DIR/mc/zsh" ]; then
         cd "$DOTFILES_DIR/mc/zsh"
         stow -v -t "$HOME" -R . 2>&1 | grep -v "^LINK:" || true
         cd "$DOTFILES_DIR"
     else
-        warn "macOS zsh config not found, skipping"
+        warn "Shell config not found, skipping"
     fi
 }
 
 stow_nvim() {
     info "Stowing Neovim config..."
 
-    # Remove existing nvim config
     rm -rf "$HOME/.config/nvim" 2>/dev/null || true
 
-    # Symlink nvim directory to ~/.config/nvim
-    if [ "$PLATFORM" = "linux" ] && [ -d "$DOTFILES_DIR/lx/nvim" ]; then
+    # New unified structure: nvim/ at root
+    if [ -d "$DOTFILES_DIR/nvim" ]; then
+        ln -sf "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
+    # Legacy structure: lx/nvim or mc/nvim
+    elif [ -d "$DOTFILES_DIR/lx/nvim" ]; then
         ln -sf "$DOTFILES_DIR/lx/nvim" "$HOME/.config/nvim"
     elif [ -d "$DOTFILES_DIR/mc/nvim" ]; then
         ln -sf "$DOTFILES_DIR/mc/nvim" "$HOME/.config/nvim"
@@ -740,12 +762,14 @@ stow_nvim() {
 stow_starship() {
     info "Stowing Starship config..."
 
-    # Starship config is cross-platform, use same file for all
     local starship_config=""
-    if [ -f "$DOTFILES_DIR/lx/starship/starship.toml" ]; then
+
+    # New unified structure: starship/ at root
+    if [ -f "$DOTFILES_DIR/starship/starship.toml" ]; then
+        starship_config="$DOTFILES_DIR/starship/starship.toml"
+    # Legacy structure
+    elif [ -f "$DOTFILES_DIR/lx/starship/starship.toml" ]; then
         starship_config="$DOTFILES_DIR/lx/starship/starship.toml"
-    elif [ -f "$DOTFILES_DIR/mc/starship/starship.toml" ]; then
-        starship_config="$DOTFILES_DIR/mc/starship/starship.toml"
     fi
 
     if [ -n "$starship_config" ]; then
@@ -755,6 +779,64 @@ stow_starship() {
     else
         warn "Starship config not found, skipping"
     fi
+}
+
+# ------------------------------------------------------------------------------
+# Install custom apps from apps.conf
+# ------------------------------------------------------------------------------
+install_custom_apps() {
+    local apps_conf="$DOTFILES_DIR/apps.conf"
+
+    if [ ! -f "$apps_conf" ]; then
+        return
+    fi
+
+    info "Installing custom apps from apps.conf..."
+
+    local section=""
+    if [ "$PLATFORM" = "linux" ]; then
+        section="linux"
+    else
+        section="macos"
+    fi
+
+    # Parse apps.conf and install apps for current platform
+    local in_section=false
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comments and empty lines
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line// }" ]] && continue
+
+        # Check for section headers
+        if [[ "$line" =~ ^\[([a-z]+)\] ]]; then
+            if [[ "${BASH_REMATCH[1]}" == "$section" ]]; then
+                in_section=true
+            else
+                in_section=false
+            fi
+            continue
+        fi
+
+        # Install apps in our section
+        if [ "$in_section" = true ]; then
+            local app="${line// /}"  # trim whitespace
+            [ -z "$app" ] && continue
+
+            info "Installing $app..."
+            if [ "$PLATFORM" = "linux" ]; then
+                if command -v dnf &>/dev/null; then
+                    maybe_sudo dnf install -y "$app" 2>/dev/null || true
+                elif command -v apt &>/dev/null; then
+                    maybe_sudo apt install -y "$app" 2>/dev/null || true
+                elif command -v pacman &>/dev/null; then
+                    maybe_sudo pacman -S --noconfirm "$app" 2>/dev/null || true
+                fi
+            else
+                # macOS - try cask first, then regular formula
+                brew install --cask "$app" 2>/dev/null || brew install "$app" 2>/dev/null || true
+            fi
+        fi
+    done < "$apps_conf"
 }
 
 backup_existing() {
