@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+# Starship prompt initialization
+# Cross-platform prompt that works with bash, zsh, fish, PowerShell
+# Config: ~/.config/starship.toml
+# Docs: https://starship.rs
+
+if command -v starship &>/dev/null; then
+    eval "$(starship init bash)"
+fi

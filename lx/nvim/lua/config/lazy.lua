@@ -17,120 +17,17 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 local plugins = {
-	{
-		'neovim/nvim-lspconfig',  -- LSP Config plugin
-		config = function()
-			local lspconfig = require("lspconfig")
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
-			lspconfig.phpactor.setup({
-        capabilities = capabilities,
-				root_dir = lspconfig.util.root_pattern("composer.json", ".git", "index.php"),
-				cmd = { "phpactor", "language-server" },
-				on_attach = function(client, bufnr)
-					local bufopts = { noremap = true, silent = true, buffer = bufnr }
-					vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-					vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
-					vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-					vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
-					vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
-				end,
-			})
-      --end,
-    -- ts_ls (for TypeScript, Node.js, React)
-    lspconfig.ts_ls.setup({
-      capabilities = capabilities,
-      root_dir = lspconfig.util.root_pattern("tsconfig.json", "package.json", ".git"),
-      on_attach = function(client, bufnr)
-        -- Disable formatting for ts_ls as we will use eslint for formatting
-        client.server_capabilities.document_formatting = false
-
-        local bufopts = { noremap = true, silent = true, buffer = bufnr }
-        vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-        vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
-        vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-        vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
-        vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
-      end,
-    })
-
-    -- eslint (for linting and fixing issues in JavaScript/TypeScript/React)
-    lspconfig.eslint.setup({
-      capabilities = capabilities,
-      root_dir = lspconfig.util.root_pattern(".eslintrc.js", ".eslintrc.json", "package.json", ".git"),
-      cmd = { "eslint-lsp", "--stdio" },
-        on_attach = function(client, bufnr)
-        -- Enable eslint formatting
-        client.server_capabilities.document_formatting = true
-
-        local bufopts = { noremap = true, silent = true, buffer = bufnr }
-        vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-        vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
-        vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-        vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
-        vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
-      end,
-    })
-
-      -- Golang (gopls)
-      lspconfig.gopls.setup({
-        capabilities = capabilities,
-        root_dir = lspconfig.util.root_pattern("go.mod", ".git"),
-        cmd = { "gopls" },
-        on_attach = function(client, bufnr)
-          local bufopts = { noremap = true, silent = true, buffer = bufnr }
-          vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-          vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
-          vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
-          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
-        end,
-      })
-
-      -- Python (pyright)
-      lspconfig.pyright.setup({
-        capabilities = capabilities,
-        root_dir = lspconfig.util.root_pattern("pyproject.toml", "setup.py", "requirements.txt", ".git"),
-        on_attach = function(client, bufnr)
-          local bufopts = { noremap = true, silent = true, buffer = bufnr }
-          vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-          vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
-          vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
-          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
-        end,
-      })
-  end,
-	},
-
-	-- Install vim-zettel for Zettelkasten-style note-taking
-	--  TODO figure out how to use it - TOO COMPLEX NEEDS LEARNING MAYBE DELETE IT?
-	{
-		'michal-h21/vim-zettel',
-		config = function()
-			-- Any additional configuration for vim-zettel goes here
-			-- For example, setting up the directory where notes are stored
-			vim.g.zettel_directory = '~/Projects/notes'  -- Set the directory for your notes
-			vim.g.zettel_extension = '.md'  -- You can change the file extension, e.g., `.txt` or `.org`
-		end,
-	},
 
 
   {
-    -- LSP tool to add deps?? used for GO and Python
+    -- Mason: LSP server installer (use :MasonInstall to install servers)
     "williamboman/mason.nvim",
     build = ":MasonUpdate",
     config = true,
   },
-    -- Mason-lspconfig - golang autocompletin and checks
-  {
-    "williamboman/mason-lspconfig.nvim",
-    opts = {
-      ensure_installed = {
-        "pyright", -- add more LSPs here if needed
-      },
-    },
-  },
+  -- NOTE: mason-lspconfig removed - not needed with Neovim 0.11+ vim.lsp.config API
+  -- Use :MasonInstall pyright (etc.) to install servers manually
 
 	-- Autocompletion and snippets
 	"hrsh7th/nvim-cmp",
@@ -181,9 +78,9 @@ local plugins = {
 		end,
 	},
 
-	-- null-ls setup for formatters and linters
+	-- null-ls setup for formatters and linters (using none-ls, the maintained fork)
 	{
-		"jose-elias-alvarez/null-ls.nvim",
+		"nvimtools/none-ls.nvim",
 		config = function()
 			local null_ls = require("null-ls")
 			null_ls.setup({
@@ -199,9 +96,26 @@ local plugins = {
 	-- Telescope for fuzzy finding
 	{
 		"nvim-telescope/telescope.nvim",
-		dependencies = { "nvim-lua/plenary.nvim" },
-    event = "VimEnter", -- This makes sure it's loaded when Neovim starts
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			{ "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
+		},
+		event = "VimEnter",
 		config = function()
+			local telescope = require("telescope")
+			telescope.setup({
+				extensions = {
+					fzf = {
+						fuzzy = true,
+						override_generic_sorter = true,
+						override_file_sorter = true,
+						case_mode = "smart_case",
+					},
+				},
+			})
+			-- Load fzf extension for faster sorting
+			telescope.load_extension("fzf")
+
 			vim.keymap.set("n", "<leader>ff", ":Telescope find_files<CR>", { noremap = true, silent = true })
 			vim.keymap.set("n", "<leader>fg", ":Telescope live_grep<CR>", { noremap = true, silent = true })
 			vim.keymap.set("n", "<leader>fb", ":Telescope buffers<CR>", { noremap = true, silent = true })
@@ -252,9 +166,6 @@ local plugins = {
 		end,
 	},
 
-	-- Python-specific indenting
-	"Vimjas/vim-python-pep8-indent",
-
 	-- Status line
 	{
 		"nvim-lualine/lualine.nvim",
@@ -300,9 +211,6 @@ local plugins = {
 		end
 	},
 
-	-- TODO - how to use it?
-	{ 'tpope/vim-commentary' },
-
 	-- GIT BLAME!
 	{ 'lewis6991/gitsigns.nvim',
 		config = function()
@@ -338,11 +246,128 @@ local plugins = {
 			}
 		end,
 	},
-	-- TODO how to use it?
+	-- Surround: cs'" to change 'x' to "x", ysiw) to surround word with ()
+	{ 'tpope/vim-surround' },
+
+	-- Which-key: shows keybinding hints
 	{
-		'tpope/vim-surround',  -- Add this line
+		"folke/which-key.nvim",
+		event = "VeryLazy",
 		config = function()
-			-- Optional: Custom configuration for vim-surround
+			require("which-key").setup({})
+		end,
+	},
+
+	-- Trouble: better diagnostics list
+	{
+		"folke/trouble.nvim",
+		dependencies = { "nvim-tree/nvim-web-devicons" },
+		cmd = "Trouble",
+		keys = {
+			{ "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", desc = "Diagnostics (Trouble)" },
+			{ "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", desc = "Buffer Diagnostics (Trouble)" },
+			{ "<leader>xl", "<cmd>Trouble loclist toggle<cr>", desc = "Location List (Trouble)" },
+			{ "<leader>xq", "<cmd>Trouble qflist toggle<cr>", desc = "Quickfix List (Trouble)" },
+		},
+		config = function()
+			require("trouble").setup({})
+		end,
+	},
+
+	-- Auto-pairs: auto-close brackets and quotes
+	{
+		"windwp/nvim-autopairs",
+		event = "InsertEnter",
+		config = function()
+			require("nvim-autopairs").setup({})
+			-- Integrate with nvim-cmp
+			local cmp_autopairs = require("nvim-autopairs.completion.cmp")
+			local cmp = require("cmp")
+			cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
+		end,
+	},
+
+	-- Indent guides
+	{
+		"lukas-reineke/indent-blankline.nvim",
+		main = "ibl",
+		event = { "BufReadPost", "BufNewFile" },
+		config = function()
+			require("ibl").setup({
+				indent = { char = "│" },
+				scope = { enabled = true },
+			})
+		end,
+	},
+
+	-- TODO comments highlighting
+	{
+		"folke/todo-comments.nvim",
+		dependencies = { "nvim-lua/plenary.nvim" },
+		event = { "BufReadPost", "BufNewFile" },
+		config = function()
+			require("todo-comments").setup({})
+		end,
+		keys = {
+			{ "<leader>ft", "<cmd>TodoTelescope<cr>", desc = "Find TODOs" },
+		},
+	},
+
+	-- Diffview: better git diff/merge UI
+	{
+		"sindrets/diffview.nvim",
+		cmd = { "DiffviewOpen", "DiffviewFileHistory" },
+		keys = {
+			{ "<leader>gv", "<cmd>DiffviewOpen<cr>", desc = "Git Diffview" },
+			{ "<leader>gh", "<cmd>DiffviewFileHistory %<cr>", desc = "File Git History" },
+		},
+		config = function()
+			require("diffview").setup({})
+		end,
+	},
+
+	-- Toggleterm: better terminal management
+	{
+		"akinsho/toggleterm.nvim",
+		version = "*",
+		keys = {
+			{ "ttt", "<cmd>ToggleTerm direction=horizontal<cr>", desc = "Toggle Terminal" },
+			{ "<leader>tf", "<cmd>ToggleTerm direction=float<cr>", desc = "Floating Terminal" },
+			{ "<leader>tv", "<cmd>ToggleTerm direction=vertical size=80<cr>", desc = "Vertical Terminal" },
+			{ "<leader>tg", function()
+				local Terminal = require("toggleterm.terminal").Terminal
+				local lazygit = Terminal:new({ cmd = "lazygit", hidden = true, direction = "float" })
+				lazygit:toggle()
+			end, desc = "Lazygit" },
+		},
+		config = function()
+			require("toggleterm").setup({
+				size = function(term)
+					if term.direction == "horizontal" then
+						return 15
+					elseif term.direction == "vertical" then
+						return vim.o.columns * 0.4
+					end
+				end,
+				open_mapping = nil, -- We use custom keymaps
+				shade_terminals = true,
+				shading_factor = 2,
+				start_in_insert = true,
+				persist_size = true,
+				persist_mode = true,
+				close_on_exit = true,
+			})
+
+			-- Terminal mode mappings (escape to normal mode)
+			function _G.set_terminal_keymaps()
+				local opts = { buffer = 0 }
+				vim.keymap.set("t", "<esc>", [[<C-\><C-n>]], opts)
+				vim.keymap.set("t", "<C-h>", [[<Cmd>wincmd h<CR>]], opts)
+				vim.keymap.set("t", "<C-j>", [[<Cmd>wincmd j<CR>]], opts)
+				vim.keymap.set("t", "<C-k>", [[<Cmd>wincmd k<CR>]], opts)
+				vim.keymap.set("t", "<C-l>", [[<Cmd>wincmd l<CR>]], opts)
+			end
+			vim.cmd("autocmd! TermOpen term://* lua set_terminal_keymaps()")
 		end,
 	},
 
@@ -359,6 +384,78 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 
 
 require("lazy").setup(plugins, {})
+
+-- ============================================================================
+-- LSP Configuration (Neovim 0.11+ built-in API, no nvim-lspconfig needed)
+-- ============================================================================
+
+-- Set default capabilities for all LSP servers (from cmp_nvim_lsp)
+vim.lsp.config('*', {
+	capabilities = require('cmp_nvim_lsp').default_capabilities(),
+})
+
+-- PHP (phpactor)
+vim.lsp.config.phpactor = {
+	cmd = { "phpactor", "language-server" },
+	filetypes = { "php" },
+	root_markers = { "composer.json", ".git", "index.php" },
+}
+
+-- TypeScript/JavaScript (ts_ls)
+vim.lsp.config.ts_ls = {
+	filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
+	root_markers = { "tsconfig.json", "package.json", ".git" },
+}
+
+-- ESLint
+vim.lsp.config.eslint = {
+	cmd = { "eslint-lsp", "--stdio" },
+	filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
+	root_markers = { ".eslintrc.js", ".eslintrc.json", "eslint.config.js", "package.json", ".git" },
+}
+
+-- Golang (gopls)
+vim.lsp.config.gopls = {
+	cmd = { "gopls" },
+	filetypes = { "go", "gomod", "gowork", "gotmpl" },
+	root_markers = { "go.mod", ".git" },
+	settings = {
+		gopls = {
+			gofumpt = true,
+			staticcheck = true,
+		},
+	},
+}
+
+-- Python (pyright)
+vim.lsp.config.pyright = {
+	filetypes = { "python" },
+	root_markers = { "pyproject.toml", "setup.py", "requirements.txt", ".git" },
+}
+
+-- Enable all configured LSP servers
+vim.lsp.enable({ 'phpactor', 'ts_ls', 'eslint', 'gopls', 'pyright' })
+
+-- Global LSP keymaps via LspAttach autocmd
+vim.api.nvim_create_autocmd('LspAttach', {
+	callback = function(args)
+		local bufnr = args.buf
+		local client = vim.lsp.get_client_by_id(args.data.client_id)
+		local bufopts = { noremap = true, silent = true, buffer = bufnr }
+
+		-- Disable formatting for ts_ls (use eslint instead)
+		if client and client.name == 'ts_ls' then
+			client.server_capabilities.documentFormattingProvider = false
+		end
+
+		-- LSP keymaps
+		vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+		vim.keymap.set("n", "gr", vim.lsp.buf.references, bufopts)
+		vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+		vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
+		vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, bufopts)
+	end,
+})
 
 -- Autocompletion setup
 local cmp = require("cmp")
@@ -442,11 +539,6 @@ vim.api.nvim_set_keymap('n', '<A-7>', ':BufferLineGoToBuffer 7<CR>', { noremap =
 vim.api.nvim_set_keymap('n', '<A-8>', ':BufferLineGoToBuffer 8<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<A-9>', ':BufferLineGoToBuffer 9<CR>', { noremap = true, silent = true })
 
--- TODO WTF? ZETTLE NOTES Create a new note
-vim.keymap.set('n', '<leader>zn', ':ZettelCreate<CR>', { noremap = true, silent = true })
--- Open note from ID or title
-vim.keymap.set('n', '<leader>zo', ':ZettelOpen<CR>', { noremap = true, silent = true })
-
 -- Disable netrw (optional, recommended for preventing conflicts)
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
@@ -477,33 +569,6 @@ vim.keymap.set('n', '<leader>gb', function()
 	require('gitsigns').blame_line({full=true})
 end)
 
--- Keybinding to toggle terminal
-vim.api.nvim_set_keymap("n", "ttt", ":lua ToggleTerminal()<CR>", { noremap = true, silent = true })
-
--- Toggle Terminal Function
-function ToggleTerminal()
-    if terminal_winid and vim.api.nvim_win_is_valid(terminal_winid) then
-        -- If terminal is open, close it
-        -- vim.api.nvim_win_hide(terminal_winid)
-         vim.api.nvim_win_close(terminal_winid, true) -- Close the terminal window
-        terminal_winid = nil
-    else
-        -- Create the terminal buffer if it doesn't exist
-        if not terminal_bufnr or not vim.api.nvim_buf_is_valid(terminal_bufnr) then
-            terminal_bufnr = vim.api.nvim_create_buf(false, true) -- Create an unlisted buffer
-            vim.api.nvim_buf_set_option(terminal_bufnr, "bufhidden", "wipe") -- Automatically clean buffer
-        end
-
-        -- Open a horizontal split at the bottom
-        vim.cmd("botright split")
-        vim.cmd("resize 10") -- Set the height of the terminal to 10 lines
-        terminal_winid = vim.api.nvim_get_current_win() -- Get the current window ID
-
-        -- Set the terminal buffer in the new window and start a terminal
-        vim.api.nvim_win_set_buf(terminal_winid, terminal_bufnr)
-        vim.fn.termopen(vim.o.shell) -- Open a shell in the terminal
-        vim.cmd("startinsert") -- Enter terminal insert mode
-    end
-end
+-- Terminal keymaps handled by toggleterm plugin
 
 

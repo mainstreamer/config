@@ -1,3 +1,11 @@
+-- Minimal mode detection
+-- Set NVIM_MINIMAL=1 or create ~/.config/nvim/.minimal to enable
+local minimal = os.getenv("NVIM_MINIMAL") == "1" or
+    vim.fn.filereadable(vim.fn.expand("~/.config/nvim/.minimal")) == 1
+if minimal then
+    require('config.lazy-minimal')
+    return
+end
 
 -- yank to system clipboard by default
 vim.opt.clipboard = "unnamedplus"

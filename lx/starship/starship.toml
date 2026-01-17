@@ -1,0 +1,114 @@
+# Starship prompt configuration
+# Cross-platform: works with bash, zsh, fish, PowerShell
+# Docs: https://starship.rs/config/
+
+# Prompt format - similar to original devprompt
+format = """
+$username\
+$hostname\
+$directory\
+$php\
+$python\
+$rust\
+$golang\
+$nodejs\
+$git_branch\
+$git_status\
+$cmd_duration\
+$line_break\
+$character"""
+
+# Right-side prompt (time)
+right_format = """$time"""
+
+# Don't add blank line between prompts
+add_newline = false
+
+# Username - show always on remote, hide locally unless root
+[username]
+style_user = "white bold"
+style_root = "red bold"
+format = "[$user]($style)"
+show_always = false
+
+# Hostname - show on SSH sessions
+[hostname]
+ssh_only = true
+format = "@[$hostname](bold cyan):"
+disabled = false
+
+# Directory
+[directory]
+style = "bold white"
+format = "[$path]($style) "
+truncation_length = 4
+truncate_to_repo = true
+
+# Git branch - styled like original ~>(branch)
+[git_branch]
+style = "bold cyan"
+format = "[~>($branch)]($style) "
+
+# Git status - shows dirty/staged/etc
+[git_status]
+style = "bold yellow"
+format = "[$all_status$ahead_behind]($style)"
+conflicted = "="
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?"
+stashed = "\\$"
+modified = "!"
+staged = "+"
+renamed = "»"
+deleted = "✘"
+
+# PHP version (only in PHP projects)
+[php]
+style = "bold green"
+format = "[\\[$version\\]]($style) "
+detect_files = ["composer.json", ".php-version", "*.php"]
+detect_folders = ["vendor"]
+
+# Python version (only in Python projects)
+[python]
+style = "bold yellow"
+format = "[\\[py $version\\]]($style) "
+detect_files = ["requirements.txt", "pyproject.toml", "setup.py", "Pipfile", "*.py"]
+detect_folders = ["venv", ".venv"]
+
+# Rust version (only in Rust projects)
+[rust]
+style = "bold red"
+format = "[\\[rs $version\\]]($style) "
+
+# Go version (only in Go projects)
+[golang]
+style = "bold blue"
+format = "[\\[go $version\\]]($style) "
+
+# Node.js version (only in Node projects)
+[nodejs]
+style = "bold green"
+format = "[\\[node $version\\]]($style) "
+detect_files = ["package.json", ".nvmrc"]
+detect_folders = ["node_modules"]
+
+# Command duration (show if > 2 seconds)
+[cmd_duration]
+min_time = 2_000
+style = "bold yellow"
+format = "took [$duration]($style) "
+
+# Time on right side
+[time]
+disabled = false
+style = "bold cyan"
+format = "[$time]($style)"
+time_format = "%H:%M:%S"
+
+# Prompt character
+[character]
+success_symbol = "[\\$](bold green)"
+error_symbol = "[\\$](bold red)"

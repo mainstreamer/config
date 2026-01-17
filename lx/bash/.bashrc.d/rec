@@ -1,7 +1,75 @@
 #!/usr/bin/bash
 
-rec() {
+recd() {
     timestamp=$(date +%Y%m%d%H%M%S)
-    ffmpeg -f v4l2 -i /dev/video1 -i $1 -filter_complex "[0:v]scale=1280:720[webcam];[1:v]scale=1280:720[stream];[stream][webcam]vstack=inputs=2" -c:v libx264 -f mp4 "$timestamp".mp4
+    ffmpeg -f v4l2 -i /dev/video0 -i $1 -filter_complex "[0:v]scale=1280:720[webcam];[1:v]scale=1280:720[stream];[stream][webcam]vstack=inputs=2" -c:v libx264 -f mp4 "$timestamp"
 }
 
+
+rec_fast() {
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    
+    ffmpeg -f v4l2 -video_size 1280x720 -framerate 10 -i /dev/video0 \
+           -i "$1" \
+           -filter_complex \
+           "[0:v]fps=30,scale=1280:720[web]; \
+            [1:v]fps=30,scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[stream]; \
+            [stream][web]vstack=inputs=2" \
+           -c:v h264_nvenc \
+           -preset p1 \
+           -tune ll \
+           -rc constqp -qp 23 \
+           -pix_fmt yuv420p \
+           -c:a aac -b:a 128k \
+           -f mp4 "${timestamp}.mp4"
+}
+
+rec() {
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    
+    # 1. -input_format mjpeg: Forces 30fps at 720p
+    # 2. -vcodec mjpeg: High-speed decoding of the camera stream
+    # 3. -map 1:a: Explicitly takes audio from the stream (input $1)
+    
+    ffmpeg -f v4l2 -input_format mjpeg -video_size 1280x720 -framerate 30 -i /dev/video0 \
+           -i "$1" \
+           -filter_complex \
+           "[0:v]scale=1280:720:flags=lanczos[web]; \
+            [1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[stream]; \
+            [stream][web]vstack=inputs=2[v_out]" \
+           -map "[v_out]" -map 1:a? \
+           -c:v h264_nvenc \
+           -preset p7 \
+           -tune hq \
+           -rc vbr \
+           -cq 17 \
+           -b:v 10M \
+           -maxrate:v 14M \
+           -bufsize:v 20M \
+           -pix_fmt yuv420p \
+           -c:a aac -b:a 192k \
+           -f mp4 "${timestamp}_ULTRA.mp4"
+}
+
+rec_sbs() {
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    
+    ffmpeg -f v4l2 -input_format mjpeg -video_size 1280x720 -framerate 30 -i /dev/video0 \
+           -i "$1" \
+           -filter_complex \
+           "[0:v]scale=1280:720:flags=lanczos[web]; \
+            [1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black[stream]; \
+            [web][stream]hstack=inputs=2[v_out]" \
+           -map "[v_out]" -map 1:a? \
+           -c:v h264_nvenc \
+           -preset p7 \
+           -tune hq \
+           -rc vbr \
+           -cq 18 \
+           -b:v 12M \
+           -maxrate:v 16M \
+           -bufsize:v 24M \
+           -pix_fmt yuv420p \
+           -c:a aac -b:a 192k \
+           -f mp4 "${timestamp}_SIDE.mp4"
+}

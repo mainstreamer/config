@@ -6,6 +6,7 @@ jq
 awk
 sed
 fzf
+atuin
 
 # Editor
 nvim
@@ -38,6 +39,7 @@ php
 composer
 phpactor
 phpcs
+php-cs-fixer
 
 # Rust
 rustc

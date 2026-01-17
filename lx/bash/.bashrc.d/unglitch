@@ -1,0 +1,7 @@
+function fix_screen {
+    
+    sudo systemctl restart gdm
+
+}
+
+alias 'fix01'='fix_screen'
