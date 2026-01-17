@@ -552,15 +552,21 @@ install_linux_extras() {
     if [ "$NO_SUDO" = false ]; then
         case "$DISTRO" in
             fedora)
-                maybe_sudo dnf install -y guake feh 2>/dev/null || warn "Some dnf packages failed"
+                maybe_sudo dnf install -y guake feh dconf 2>/dev/null || warn "Some dnf packages failed"
                 ;;
             debian|ubuntu|popos)
-                maybe_sudo apt install -y guake feh 2>/dev/null || warn "Some apt packages failed"
+                maybe_sudo apt install -y guake feh dconf-cli 2>/dev/null || warn "Some apt packages failed"
                 ;;
             arch)
-                maybe_sudo pacman -S --noconfirm guake feh 2>/dev/null || warn "Some pacman packages failed"
+                maybe_sudo pacman -S --noconfirm guake feh dconf 2>/dev/null || warn "Some pacman packages failed"
                 ;;
         esac
+
+        # Install Nerd Fonts (required for terminal icons)
+        install_nerd_fonts
+
+        # Apply guake configuration
+        configure_guake
     fi
 }
 
@@ -570,6 +576,78 @@ install_macos_extras() {
     # Install casks
     brew install --cask iterm2 2>/dev/null || true
     brew install --cask font-jetbrains-mono-nerd-font 2>/dev/null || true
+}
+
+# ------------------------------------------------------------------------------
+# Install Nerd Fonts (Linux)
+# ------------------------------------------------------------------------------
+install_nerd_fonts() {
+    local fonts_dir="$HOME/.local/share/fonts"
+    local nerd_font="Hack"  # Used by guake config
+
+    # Check if font already installed
+    if fc-list 2>/dev/null | grep -qi "Hack.*Nerd"; then
+        ok "Nerd Fonts already installed"
+        return
+    fi
+
+    info "Installing $nerd_font Nerd Font..."
+
+    mkdir -p "$fonts_dir"
+
+    # Download from nerdfonts releases
+    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${nerd_font}.zip"
+    local tmp_zip="/tmp/${nerd_font}-nerd-font.zip"
+
+    if curl -fsSL "$font_url" -o "$tmp_zip" 2>/dev/null; then
+        # Extract to fonts directory
+        unzip -o "$tmp_zip" -d "$fonts_dir/${nerd_font}NerdFont" 2>/dev/null || {
+            # Try without subdirectory
+            unzip -o "$tmp_zip" -d "$fonts_dir" 2>/dev/null
+        }
+        rm -f "$tmp_zip"
+
+        # Update font cache
+        if command -v fc-cache &>/dev/null; then
+            fc-cache -fv "$fonts_dir" 2>/dev/null || true
+        fi
+
+        ok "$nerd_font Nerd Font installed to $fonts_dir"
+    else
+        warn "Failed to download Nerd Font - install manually from https://www.nerdfonts.com/"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Apply guake configuration
+# ------------------------------------------------------------------------------
+configure_guake() {
+    # Only apply if guake is installed
+    if ! command -v guake &>/dev/null; then
+        return
+    fi
+
+    # Check for dconf command
+    if ! command -v dconf &>/dev/null; then
+        warn "dconf not found - cannot apply guake config"
+        return
+    fi
+
+    local guake_conf=""
+
+    # Find guake config (new structure first, then legacy)
+    if [ -f "$DOTFILES_DIR/apps/linux/guake.dconf" ]; then
+        guake_conf="$DOTFILES_DIR/apps/linux/guake.dconf"
+    elif [ -f "$DOTFILES_DIR/lx/apps/guake.dconf" ]; then
+        guake_conf="$DOTFILES_DIR/lx/apps/guake.dconf"
+    fi
+
+    if [ -n "$guake_conf" ]; then
+        info "Applying guake configuration..."
+        dconf load /apps/guake/ < "$guake_conf" 2>/dev/null && \
+            ok "Guake config applied" || \
+            warn "Failed to apply guake config"
+    fi
 }
 
 # ------------------------------------------------------------------------------

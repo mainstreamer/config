@@ -21,7 +21,7 @@ endif
 
 .PHONY: help install install-remote install-deps install-links install-apps \
         backup rollback list-backups test uninstall clean nvim \
-        pack-linux pack-mac starship-preset
+        pack-linux pack-mac starship-preset fonts guake-config
 
 # Colors
 CYAN := \033[1;36m
@@ -68,6 +68,8 @@ help:
 	@printf "\n"
 	@printf "$(YELLOW)UTILITIES$(RESET)\n"
 	@printf "  $(GREEN)make nvim$(RESET)                    Install nvim config only\n"
+	@printf "  $(GREEN)make fonts$(RESET)                   Install Nerd Fonts (Linux)\n"
+	@printf "  $(GREEN)make guake-config$(RESET)            Apply guake config (Linux)\n"
 	@printf "  $(GREEN)make uninstall$(RESET)               Remove all symlinks\n"
 	@printf "  $(GREEN)make clean$(RESET)                   Remove build artifacts\n"
 	@printf "\n"
@@ -220,6 +222,46 @@ nvim:
 	@rm -rf $(HOME)/.config/nvim
 	@ln -sf $(DOTFILES_DIR)/nvim $(HOME)/.config/nvim
 	@echo "nvim config installed (symlinked)"
+
+# =============================================================================
+# FONTS (Linux)
+# =============================================================================
+fonts:
+ifeq ($(PLATFORM),linux)
+	@echo "Installing Hack Nerd Font..."
+	@mkdir -p $(HOME)/.local/share/fonts
+	@if fc-list 2>/dev/null | grep -qi "Hack.*Nerd"; then \
+		echo "Hack Nerd Font already installed"; \
+	else \
+		curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hack.zip" -o /tmp/Hack-nerd-font.zip && \
+		unzip -o /tmp/Hack-nerd-font.zip -d $(HOME)/.local/share/fonts/HackNerdFont 2>/dev/null && \
+		rm -f /tmp/Hack-nerd-font.zip && \
+		fc-cache -fv $(HOME)/.local/share/fonts 2>/dev/null && \
+		echo "Hack Nerd Font installed"; \
+	fi
+else
+	@echo "Nerd Fonts on macOS: brew install --cask font-hack-nerd-font"
+endif
+
+# =============================================================================
+# GUAKE CONFIG (Linux)
+# =============================================================================
+guake-config:
+ifeq ($(PLATFORM),linux)
+	@if command -v guake &>/dev/null; then \
+		if command -v dconf &>/dev/null; then \
+			echo "Applying guake configuration..."; \
+			dconf load /apps/guake/ < $(DOTFILES_DIR)/apps/linux/guake.dconf && \
+			echo "Guake config applied"; \
+		else \
+			echo "dconf not found - install with: sudo apt install dconf-cli"; \
+		fi; \
+	else \
+		echo "guake not installed"; \
+	fi
+else
+	@echo "guake-config is Linux only"
+endif
 
 # =============================================================================
 # UNINSTALL

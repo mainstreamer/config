@@ -42,6 +42,8 @@ make list-backups                # List available backups
 
 # Utilities
 make nvim                        # Install nvim only (with backup)
+make fonts                       # Install Nerd Fonts (Linux)
+make guake-config                # Apply guake config (Linux)
 make uninstall                   # Remove symlinks
 make clean                       # Remove build artifacts
 ```
