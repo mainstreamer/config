@@ -7,15 +7,19 @@
 #   curl -fsSL https://raw.githubusercontent.com/YOUR_USER/dotfiles/master/install.sh | bash -s -- --minimal
 #
 # Or clone and run:
-#   git clone https://github.com/YOUR_USER/dotfiles.git && cd dotfiles && ./install.sh
+#   curl -fsSL tldr.icu/i | bash
 #
 # Supported distros: Fedora, Debian, Ubuntu, Pop!_OS, Arch, Alpine, macOS
 #
 set -e
 
 # Config
-REPO_URL="${DOTFILES_REPO:-https://github.com/mainstreamer/config.git}"
+VERSION="1.0.1"
+BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
+ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
+ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
 DOTFILES_TARGET="${DOTFILES_TARGET:-$HOME/.dotfiles}"
+VERSION_FILE="$HOME/.dotfiles-version"
 
 OS="$(uname -s)"
 MINIMAL_MODE=false
@@ -32,6 +36,27 @@ info()  { echo -e "${BLUE}[INFO]${NC} $1"; }
 ok()    { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+
+# Prevent apt from hanging on prompts
+export DEBIAN_FRONTEND=noninteractive
+
+# Version helpers
+get_local_version() {
+    [ -f "$VERSION_FILE" ] && head -1 "$VERSION_FILE" || echo "none"
+}
+
+get_remote_version() {
+    curl -fsSL "$BASE_URL/latest" 2>/dev/null || echo "unknown"
+}
+
+get_install_date() {
+    [ -f "$VERSION_FILE" ] && sed -n '2p' "$VERSION_FILE" || echo "never"
+}
+
+save_version() {
+    echo "$VERSION" > "$VERSION_FILE"
+    date +%Y-%m-%d >> "$VERSION_FILE"
+}
 
 # Run command with sudo if available and allowed
 maybe_sudo() {
@@ -88,29 +113,33 @@ setup_dotfiles_dir() {
         return
     fi
 
-    # Need to clone the repo
-    info "Cloning dotfiles repository..."
+    # Need to download the repo
+    info "Downloading dotfiles..."
 
-    if ! command -v git &>/dev/null; then
-        # Try to install git first
+    # Ensure curl is available (almost always is)
+    if ! command -v curl &>/dev/null; then
         if command -v apt &>/dev/null; then
-            maybe_sudo apt update && maybe_sudo apt install -y git
+            maybe_sudo apt update && maybe_sudo apt install -y curl
         elif command -v dnf &>/dev/null; then
-            maybe_sudo dnf install -y git
+            maybe_sudo dnf install -y curl
         elif command -v pacman &>/dev/null; then
-            maybe_sudo pacman -Sy --noconfirm git
+            maybe_sudo pacman -Sy --noconfirm curl
         elif command -v apk &>/dev/null; then
-            maybe_sudo apk add git
-        elif command -v brew &>/dev/null; then
-            brew install git
+            maybe_sudo apk add curl
         else
-            error "git not found and cannot install it. Please install git first."
+            error "curl not found and cannot install it. Please install curl first."
         fi
     fi
 
-    git clone "$REPO_URL" "$DOTFILES_TARGET"
+    # Download and extract archive (no git required)
+    mkdir -p "$DOTFILES_TARGET"
+    info "Trying $BASE_URL..."
+    if ! curl -fsSL "$ARCHIVE_URL_SELF" 2>/dev/null | tar -xz -C "$DOTFILES_TARGET" --strip-components=1 2>/dev/null; then
+        info "Falling back to GitHub..."
+        curl -fsSL "$ARCHIVE_URL_GITHUB" | tar -xz -C "$DOTFILES_TARGET" --strip-components=1
+    fi
     DOTFILES_DIR="$DOTFILES_TARGET"
-    ok "Cloned to $DOTFILES_DIR"
+    ok "Downloaded to $DOTFILES_DIR"
 }
 
 # ------------------------------------------------------------------------------
@@ -159,6 +188,14 @@ install_homebrew() {
     if command -v brew &>/dev/null; then
         ok "Homebrew already installed"
         return
+    fi
+
+    # Homebrew requires git + gcc - install system versions first
+    info "Installing Homebrew prerequisites..."
+    if command -v apt &>/dev/null; then
+        maybe_sudo apt update && maybe_sudo apt install -y git build-essential curl
+    elif command -v dnf &>/dev/null; then
+        maybe_sudo dnf install -y git gcc gcc-c++ make curl
     fi
 
     info "Installing Homebrew..."
@@ -257,9 +294,11 @@ install_userspace_packages() {
     # Install fzf
     if ! command -v fzf &>/dev/null; then
         info "Installing fzf..."
-        git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf" 2>/dev/null && \
-            "$HOME/.fzf/install" --bin --no-update-rc --no-completion 2>/dev/null && \
-            ln -sf "$HOME/.fzf/bin/fzf" "$tools_dir/fzf" || warn "fzf install failed"
+        FZF_VERSION=$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/' || echo "0.46.1")
+        curl -fsSLo /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz" 2>/dev/null && {
+            tar -xzf /tmp/fzf.tar.gz -C "$tools_dir"
+            rm /tmp/fzf.tar.gz
+        } || warn "fzf install failed"
     fi
 
     # Install lazygit
@@ -319,8 +358,8 @@ install_brew_deps() {
     cd "$DOTFILES_DIR"
 
     if [ "$MINIMAL_MODE" = true ]; then
-        # Install only core packages for minimal mode
-        brew install git curl wget jq fzf ripgrep fd bat eza zoxide tree \
+        # Install only core packages for minimal mode (git already installed for homebrew)
+        brew install curl wget jq fzf ripgrep fd bat eza zoxide tree \
             neovim stow starship lazygit delta gh htop btop atuin 2>/dev/null || true
     else
         brew bundle
@@ -971,12 +1010,16 @@ post_install() {
 print_summary() {
     echo ""
     echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}  Installation complete!${NC}"
+    echo -e "${GREEN}  Installation complete! (v${VERSION})${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
     echo "Next steps:"
     echo "  1. Restart your terminal (or run: source ~/.bashrc)"
-    echo "  2. Install a Nerd Font if you haven't: https://www.nerdfonts.com/"
+    echo ""
+    echo "Manage dotfiles:"
+    echo "  - dotfiles status   : show installed version"
+    echo "  - dotfiles check    : check for updates"
+    echo "  - dotfiles update   : update to latest"
     echo ""
     echo "New tools to try:"
     echo "  - z <dir>      : smart cd (zoxide)"
@@ -998,7 +1041,13 @@ print_summary() {
         echo "Run without --minimal for full development environment."
         echo ""
     fi
-}
+  echo "# 1. Add the activation command to your .bashrc"
+  echo "# echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc"
+
+  echo "# 2. Add it to .profile as well (for login shell compatibility)"
+  echo "# echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.profile"
+
+  }
 
 # ------------------------------------------------------------------------------
 # Parse arguments
@@ -1042,25 +1091,34 @@ show_help() {
 Dotfiles Bootstrap Script
 ==========================
 
-QUICK INSTALL (curl):
-    curl -fsSL https://raw.githubusercontent.com/mainstreamer/config/master/install.sh | bash
-    curl -fsSL https://raw.githubusercontent.com/mainstreamer/config/master/install.sh | bash -s -- --minimal
+QUICK INSTALL:
+    curl -fsSL tldr.icu/i | bash
+    curl -fsSL tldr.icu/i | bash -s -- --minimal
 
-Or clone first:
-    git clone https://github.com/mainstreamer/config.git ~/.dotfiles
-    cd ~/.dotfiles && ./install.sh
+COMMANDS:
+    ./install.sh              Install (default)
+    ./install.sh version      Show installed version
+    ./install.sh check        Check for updates
+    ./install.sh update       Update to latest version
+    ./install.sh uninstall    Remove everything
+
+    # After install, use the 'dotfiles' CLI:
+    dotfiles status           Show installed version
+    dotfiles check            Check for updates
+    dotfiles update           Update to latest
+    dotfiles reinstall        Full reinstall
 
 OPTIONS:
   --minimal     Lightweight install for servers/containers
-                - Installs: git, nvim, fzf, rg, fd, bat, eza, zoxide, starship,
-                            lazygit, delta, stow, htop, btop, atuin
+                - Installs: nvim, fzf, rg, fd, bat, eza, zoxide, starship,
+                            lazygit, delta, stow, htop, btop, atuin, git (system)
                 - Skips: Language servers, compilers, LSP plugins
                 - Nvim loads minimal config (no autocompletion, no LSP)
 
   --no-sudo     User-space only install (no root required)
                 - Installs tools to ~/.local/bin via cargo/scripts
                 - Skips system packages (apt/dnf/pacman)
-                - Requires: curl, git, tar (usually pre-installed)
+                - Requires: curl, tar (usually pre-installed)
                 - Good for: shared servers, restricted environments
 
   --deps-only   Install packages only, skip symlink creation
@@ -1084,7 +1142,7 @@ SUPPORTED DISTROS:
 WHAT GETS INSTALLED:
 
   Core CLI tools (always):
-    git, curl, wget, jq, fzf, ripgrep (rg), fd, bat, eza, zoxide,
+    git (system), curl, wget, jq, fzf, ripgrep (rg), fd, bat, eza, zoxide,
     tree, neovim, stow, starship, lazygit, delta, gh, htop, btop, atuin
 
   Development tools (full mode only):
@@ -1138,9 +1196,156 @@ EOF
 }
 
 # ------------------------------------------------------------------------------
+# Commands: version, check, update, uninstall
+# ------------------------------------------------------------------------------
+cmd_uninstall() {
+    echo -e "${RED}================================${NC}"
+    echo -e "${RED}  Dotfiles Uninstall${NC}"
+    echo -e "${RED}================================${NC}"
+    echo ""
+    echo "This will remove:"
+    echo "  - ~/.dotfiles"
+    echo "  - ~/.dotfiles-version"
+    echo "  - ~/.local/bin/dotfiles"
+    echo "  - Symlinks (~/.bashrc, ~/.config/nvim, etc.)"
+    echo "  - Homebrew (/home/linuxbrew/.linuxbrew)"
+    echo ""
+    read -p "Are you sure? [y/N] " confirm
+    [[ "$confirm" != [yY] ]] && echo "Aborted." && exit 0
+
+    info "Removing symlinks..."
+    rm -f "$HOME/.bashrc" 2>/dev/null
+    rm -f "$HOME/.zshrc" 2>/dev/null
+    rm -rf "$HOME/.shellrc.d" 2>/dev/null
+    rm -rf "$HOME/.bashrc.d" 2>/dev/null
+    rm -rf "$HOME/.config/nvim" 2>/dev/null
+    rm -f "$HOME/.config/starship.toml" 2>/dev/null
+
+    info "Removing dotfiles..."
+    rm -rf "$DOTFILES_TARGET"
+    rm -f "$VERSION_FILE"
+    rm -f "$HOME/.local/bin/dotfiles"
+
+    info "Removing Homebrew..."
+    if [ -d "/home/linuxbrew/.linuxbrew" ]; then
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)" -- --force
+    fi
+    if [ -d "$HOME/.linuxbrew" ]; then
+        rm -rf "$HOME/.linuxbrew"
+    fi
+
+    echo ""
+    ok "Uninstall complete."
+    echo ""
+    echo "You may want to restore your original .bashrc:"
+    echo "  cp /etc/skel/.bashrc ~/"
+    echo ""
+    echo "Then restart your shell or: exec bash"
+}
+
+cmd_version() {
+    echo -e "${BLUE}Dotfiles${NC}"
+    echo "  Installed: $(get_local_version)"
+    echo "  Date:      $(get_install_date)"
+    echo "  Location:  $DOTFILES_TARGET"
+}
+
+cmd_check() {
+    local local_ver=$(get_local_version)
+    local remote_ver=$(get_remote_version)
+
+    echo "Installed: $local_ver"
+    echo "Available: $remote_ver"
+
+    if [ "$local_ver" = "none" ]; then
+        echo -e "\n${YELLOW}Not installed.${NC} Run: curl -fsSL $BASE_URL/i | bash"
+        return 1
+    elif [ "$local_ver" = "$remote_ver" ]; then
+        echo -e "\n${GREEN}Up to date.${NC}"
+        return 0
+    else
+        echo -e "\n${YELLOW}Update available.${NC} Run: curl -fsSL $BASE_URL/i | bash"
+        return 2
+    fi
+}
+
+cmd_update() {
+    local local_ver=$(get_local_version)
+    local remote_ver=$(get_remote_version)
+
+    if [ "$local_ver" = "$remote_ver" ]; then
+        ok "Already at $local_ver"
+        return 0
+    fi
+
+    info "Updating $local_ver -> $remote_ver"
+    exec curl -fsSL "$BASE_URL/i" | bash
+}
+
+# ------------------------------------------------------------------------------
+# Install dotfiles CLI helper
+# ------------------------------------------------------------------------------
+install_dotfiles_cli() {
+    local cli_path="$HOME/.local/bin/dotfiles"
+    mkdir -p "$HOME/.local/bin"
+
+    cat > "$cli_path" << 'EOF'
+#!/usr/bin/env bash
+URL="https://tldr.icu"
+VER_FILE="$HOME/.dotfiles-version"
+DOTFILES="${DOTFILES_TARGET:-$HOME/.dotfiles}"
+
+case "${1:-status}" in
+    status|version)
+        [ -f "$VER_FILE" ] && cat "$VER_FILE" || echo "not installed"
+        ;;
+    check)
+        local_ver=$(head -1 "$VER_FILE" 2>/dev/null || echo "none")
+        remote_ver=$(curl -fsSL "$URL/latest" 2>/dev/null || echo "?")
+        echo "Installed: $local_ver"
+        echo "Available: $remote_ver"
+        [ "$local_ver" = "$remote_ver" ] && echo "Up to date." || echo "Run: dotfiles update"
+        ;;
+    update)
+        curl -fsSL "$URL/i" | bash
+        ;;
+    uninstall)
+        [ -f "$DOTFILES/install.sh" ] && bash "$DOTFILES/install.sh" uninstall || curl -fsSL "$URL/i" | bash -s -- uninstall
+        ;;
+    *)
+        echo "Usage: dotfiles [status|check|update|uninstall]"
+        ;;
+esac
+EOF
+
+    chmod +x "$cli_path"
+    ok "Installed 'dotfiles' CLI"
+}
+
+# ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
 main() {
+    # Handle commands first (before parse_args eats them)
+    case "${1:-}" in
+        version|--version|-v)
+            cmd_version
+            exit 0
+            ;;
+        check)
+            cmd_check
+            exit $?
+            ;;
+        update)
+            cmd_update
+            exit $?
+            ;;
+        uninstall)
+            cmd_uninstall
+            exit $?
+            ;;
+    esac
+
     echo ""
     echo -e "${BLUE}================================${NC}"
     echo -e "${BLUE}  Dotfiles Bootstrap${NC}"
@@ -1163,6 +1368,11 @@ main() {
         install_php_tools
         stow_packages
         post_install
+
+        # Save version and install CLI helper
+        save_version
+        install_dotfiles_cli
+
         print_summary
     fi
 }

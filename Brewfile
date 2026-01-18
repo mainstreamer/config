@@ -3,9 +3,8 @@
 # Update:  brew bundle --force cleanup
 
 # ------------------------------------------------------------------------------
-# Core CLI tools
+# Core CLI tools (git installed via system package manager)
 # ------------------------------------------------------------------------------
-brew "git"
 brew "curl"
 brew "wget"
 brew "jq"
@@ -18,12 +17,10 @@ brew "zoxide"       # smarter cd
 brew "tree"
 
 # ------------------------------------------------------------------------------
-# Development essentials
+# Development essentials (git, gcc, make installed via system package manager)
 # ------------------------------------------------------------------------------
 brew "neovim"
 brew "tmux"
-brew "make"
-brew "gcc"
 brew "stow"         # symlink manager for dotfiles
 
 # ------------------------------------------------------------------------------

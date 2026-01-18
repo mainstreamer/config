@@ -21,7 +21,8 @@ endif
 
 .PHONY: help install install-remote install-deps install-links install-apps \
         backup rollback list-backups test uninstall clean nvim \
-        pack-linux pack-mac starship-preset fonts guake-config
+        pack-linux pack-mac starship-preset fonts guake-config \
+        bump-patch bump-minor bump-major deploy archive
 
 # Colors
 CYAN := \033[1;36m
@@ -72,6 +73,15 @@ help:
 	@printf "  $(GREEN)make guake-config$(RESET)            Apply guake config (Linux)\n"
 	@printf "  $(GREEN)make uninstall$(RESET)               Remove all symlinks\n"
 	@printf "  $(GREEN)make clean$(RESET)                   Remove build artifacts\n"
+	@printf "\n"
+	@printf "$(YELLOW)VERSIONING$(RESET)\n"
+	@printf "  $(GREEN)make version$(RESET)                 Show current version\n"
+	@printf "  $(GREEN)make bump-patch$(RESET)              Bump patch (1.0.0 -> 1.0.1)\n"
+	@printf "  $(GREEN)make bump-minor$(RESET)              Bump minor (1.0.0 -> 1.1.0)\n"
+	@printf "  $(GREEN)make bump-major$(RESET)              Bump major (1.0.0 -> 2.0.0)\n"
+	@printf "  $(GREEN)make archive$(RESET)                 Create master.tar.gz\n"
+	@printf "  $(GREEN)make deploy$(RESET)                  Deploy to server (script + archive)\n"
+	@printf "  $(DIM)  SERVER=tldr.icu DEPLOY_PATH=/srv/dotfiles$(RESET)\n"
 	@printf "\n"
 	@printf "$(YELLOW)LEGACY$(RESET)\n"
 	@printf "  $(GREEN)make pack-linux$(RESET)              Archive Linux config\n"
@@ -306,3 +316,39 @@ starship-preset:
 clean:
 	@rm -f cfglx.tar.gz cfgmc.tar.gz
 	@echo "Cleaned build artifacts"
+
+# =============================================================================
+# VERSION MANAGEMENT
+# =============================================================================
+VERSION := $(shell grep '^VERSION=' install.sh | cut -d'"' -f2)
+
+version:
+	@echo "Current version: $(VERSION)"
+
+bump-patch:
+	@./scripts/bump-version.sh patch
+
+bump-minor:
+	@./scripts/bump-version.sh minor
+
+bump-major:
+	@./scripts/bump-version.sh major
+
+# Deploy to server (customize SERVER variable)
+SERVER ?= tldr.icu
+DEPLOY_PATH ?= /srv/dotfiles
+ARCHIVE_NAME ?= master.tar.gz
+
+deploy: archive
+	@echo "Deploying v$(VERSION) to $(SERVER):$(DEPLOY_PATH)..."
+	@scp install.sh latest $(ARCHIVE_NAME) root@do:$(DEPLOY_PATH)/
+	@rm -f $(ARCHIVE_NAME)
+	@echo "Done. Live at: https://$(SERVER)/i"
+
+archive:
+	@echo "Creating $(ARCHIVE_NAME)..."
+	@mkdir -p /tmp/config-master
+	@rsync -a --exclude='.git' --exclude='*.tar.gz' --exclude='.DS_Store' . /tmp/config-master/
+	@tar -czf $(ARCHIVE_NAME) -C /tmp config-master
+	@rm -rf /tmp/config-master
+	@echo "Created $(ARCHIVE_NAME) ($(shell du -h $(ARCHIVE_NAME) | cut -f1))"
