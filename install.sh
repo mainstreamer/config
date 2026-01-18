@@ -14,7 +14,7 @@
 set -e
 
 # Config
-VERSION="1.0.1"
+VERSION="1.0.2"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -192,11 +192,14 @@ install_homebrew() {
 
     # Homebrew requires git + gcc - install system versions first
     info "Installing Homebrew prerequisites..."
-    if command -v apt &>/dev/null; then
-        maybe_sudo apt update && maybe_sudo apt install -y git build-essential curl
-    elif command -v dnf &>/dev/null; then
-        maybe_sudo dnf install -y git gcc gcc-c++ make curl
-    fi
+    case "$DISTRO" in
+        fedora)
+            maybe_sudo dnf install -y git gcc gcc-c++ make curl
+            ;;
+        debian|ubuntu|popos)
+            maybe_sudo apt update && maybe_sudo apt install -y git build-essential curl
+            ;;
+    esac
 
     info "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"

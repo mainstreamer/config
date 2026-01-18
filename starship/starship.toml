@@ -77,8 +77,9 @@ format = '[ $user ]($style)'
 [directory]
 style = "fg:color_fg0 bg:color_yellow"
 format = "[ $path ]($style)"
-truncation_length = 3
+truncation_length = 10
 truncation_symbol = "…/"
+truncate_to_repo = false
 
 [directory.substitutions]
 "Documents" = "󰈙 "
