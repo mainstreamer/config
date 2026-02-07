@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.2"
+VERSION="2.2.4"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -136,6 +136,9 @@ setup_config_dir() {
     mv "$TEMP_EXTRACT" "$DOTFILES_TARGET"
     DOTFILES_DIR="$DOTFILES_TARGET"
     ok "Configuration activated"
+    
+    # Run platform configuration after extraction
+    run_platform_config
 }
 
 # ------------------------------------------------------------------------------
@@ -272,9 +275,6 @@ run_platform_config() {
 install_deps() {
     mkdir -p "$HOME/.local/bin"
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-
-    # Run platform-specific configuration first
-    run_platform_config
 
     case "$DISTRO" in
         fedora|debian|macos)
