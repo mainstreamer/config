@@ -29,6 +29,16 @@ alias gco='git checkout'
 alias gb='git branch'
 alias glog='git log --oneline --graph --decorate'
 
+# Config version
+version() {
+    local ver_file="$HOME/.epicli-conf-version"
+    if [ -f "$ver_file" ]; then
+        printf "epicli-conf v%s (%s)\n" "$(head -1 "$ver_file")" "$(sed -n '2p' "$ver_file")"
+    else
+        echo "epicli-conf: not installed"
+    fi
+}
+
 # Safety nets
 alias rm='rm -i'
 alias cp='cp -i'

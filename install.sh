@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Dotfiles bootstrap script
+# epicli-conf bootstrap script
 #
 # Usage:
 #   curl -fsSL https://tldr.icu/i | bash
@@ -14,13 +14,16 @@
 #
 set -e
 
+# Project identity (change this to rename the project)
+PROJECT_NAME="epicli-conf"
+
 # Config
-VERSION="2.0.0"
+VERSION="2.1.0"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
-DOTFILES_TARGET="${DOTFILES_TARGET:-$HOME/.dotfiles}"
-VERSION_FILE="$HOME/.dotfiles-version"
+DOTFILES_TARGET="${DOTFILES_TARGET:-$HOME/.$PROJECT_NAME}"
+VERSION_FILE="$HOME/.${PROJECT_NAME}-version"
 
 OS="$(uname -s)"
 DEV_MODE=false
@@ -71,7 +74,7 @@ maybe_sudo() {
 # ------------------------------------------------------------------------------
 # Detect if running from repo or standalone (curl | bash)
 # ------------------------------------------------------------------------------
-setup_dotfiles_dir() {
+setup_config_dir() {
     local script_dir=""
 
     # Try to get script directory (won't work if piped)
@@ -89,12 +92,12 @@ setup_dotfiles_dir() {
     # Check if already cloned to target
     if [ -d "$DOTFILES_TARGET/shared" ] && [ -d "$DOTFILES_TARGET/nvim" ]; then
         DOTFILES_DIR="$DOTFILES_TARGET"
-        info "Using existing dotfiles: $DOTFILES_DIR"
+        info "Using existing config: $DOTFILES_DIR"
         return
     fi
 
     # Need to download the repo
-    info "Downloading dotfiles..."
+    info "Downloading $PROJECT_NAME..."
 
     # Ensure curl is available
     if ! command -v curl &>/dev/null; then
@@ -752,7 +755,7 @@ install_custom_apps() {
 }
 
 backup_existing() {
-    local backup_dir="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+    local backup_dir="$HOME/.${PROJECT_NAME}-backup-$(date +%Y%m%d-%H%M%S)"
     local needs_backup=false
 
     [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ] && needs_backup=true
@@ -807,10 +810,11 @@ print_summary() {
     echo "Next steps:"
     echo "  1. Restart your terminal (or run: source ~/.bashrc)"
     echo ""
-    echo "Manage dotfiles:"
-    echo "  dotfiles status   : show installed version"
-    echo "  dotfiles check    : check for updates"
-    echo "  dotfiles update   : update to latest"
+    echo "Manage config:"
+    echo "  $PROJECT_NAME status   : show installed version"
+    echo "  $PROJECT_NAME check    : check for updates"
+    echo "  $PROJECT_NAME update   : update to latest"
+    echo "  version                : show version (shell alias)"
     echo ""
     echo "New tools to try:"
     echo "  z <dir>      : smart cd (zoxide)"
@@ -869,8 +873,8 @@ parse_args() {
 }
 
 show_help() {
-    cat <<'EOF'
-Dotfiles Bootstrap Script
+    cat <<EOF
+$PROJECT_NAME Bootstrap Script
 ==========================
 
 QUICK INSTALL:
@@ -885,11 +889,10 @@ COMMANDS:
     ./install.sh update       Update to latest version
     ./install.sh uninstall    Remove everything
 
-    # After install, use the 'dotfiles' CLI:
-    dotfiles status           Show installed version
-    dotfiles check            Check for updates
-    dotfiles update           Update to latest
-    dotfiles reinstall        Full reinstall
+    # After install, use the '$PROJECT_NAME' CLI:
+    $PROJECT_NAME status      Show installed version
+    $PROJECT_NAME check       Check for updates
+    $PROJECT_NAME update      Update to latest
 
 OPTIONS:
   --dev         Full developer environment (requires sudo)
@@ -935,13 +938,13 @@ EOF
 # ------------------------------------------------------------------------------
 cmd_uninstall() {
     echo -e "${RED}================================${NC}"
-    echo -e "${RED}  Dotfiles Uninstall${NC}"
+    echo -e "${RED}  $PROJECT_NAME Uninstall${NC}"
     echo -e "${RED}================================${NC}"
     echo ""
     echo "This will remove:"
-    echo "  - ~/.dotfiles"
-    echo "  - ~/.dotfiles-version"
-    echo "  - ~/.local/bin/dotfiles"
+    echo "  - $DOTFILES_TARGET"
+    echo "  - $VERSION_FILE"
+    echo "  - ~/.local/bin/$PROJECT_NAME"
     echo "  - Symlinks (~/.bashrc, ~/.config/nvim, etc.)"
     echo "  - Homebrew (/home/linuxbrew/.linuxbrew)"
     echo ""
@@ -957,10 +960,10 @@ cmd_uninstall() {
     rm -rf "$HOME/.config/nvim" 2>/dev/null
     rm -f "$HOME/.config/starship.toml" 2>/dev/null
 
-    info "Removing dotfiles..."
+    info "Removing $PROJECT_NAME..."
     rm -rf "$DOTFILES_TARGET"
     rm -f "$VERSION_FILE"
-    rm -f "$HOME/.local/bin/dotfiles"
+    rm -f "$HOME/.local/bin/$PROJECT_NAME"
 
     info "Removing Homebrew..."
     if [ -d "/home/linuxbrew/.linuxbrew" ]; then
@@ -980,7 +983,7 @@ cmd_uninstall() {
 }
 
 cmd_version() {
-    echo -e "${BLUE}Dotfiles${NC}"
+    echo -e "${BLUE}$PROJECT_NAME${NC}"
     echo "  Installed: $(get_local_version)"
     echo "  Date:      $(get_install_date)"
     echo "  Location:  $DOTFILES_TARGET"
@@ -1019,43 +1022,43 @@ cmd_update() {
 }
 
 # ------------------------------------------------------------------------------
-# Install dotfiles CLI helper
+# Install CLI helper
 # ------------------------------------------------------------------------------
-install_dotfiles_cli() {
-    local cli_path="$HOME/.local/bin/dotfiles"
+install_cli() {
+    local cli_path="$HOME/.local/bin/$PROJECT_NAME"
     mkdir -p "$HOME/.local/bin"
 
-    cat > "$cli_path" << 'EOF'
+    cat > "$cli_path" << EOF
 #!/usr/bin/env bash
 URL="https://tldr.icu"
-VER_FILE="$HOME/.dotfiles-version"
-DOTFILES="${DOTFILES_TARGET:-$HOME/.dotfiles}"
+VER_FILE="\$HOME/.${PROJECT_NAME}-version"
+DOTFILES="\${DOTFILES_TARGET:-\$HOME/.$PROJECT_NAME}"
 
-case "${1:-status}" in
+case "\${1:-status}" in
     status|version)
-        [ -f "$VER_FILE" ] && cat "$VER_FILE" || echo "not installed"
+        [ -f "\$VER_FILE" ] && cat "\$VER_FILE" || echo "not installed"
         ;;
     check)
-        local_ver=$(head -1 "$VER_FILE" 2>/dev/null || echo "none")
-        remote_ver=$(curl -fsSL "$URL/latest" 2>/dev/null || echo "?")
-        echo "Installed: $local_ver"
-        echo "Available: $remote_ver"
-        [ "$local_ver" = "$remote_ver" ] && echo "Up to date." || echo "Run: dotfiles update"
+        local_ver=\$(head -1 "\$VER_FILE" 2>/dev/null || echo "none")
+        remote_ver=\$(curl -fsSL "\$URL/latest" 2>/dev/null || echo "?")
+        echo "Installed: \$local_ver"
+        echo "Available: \$remote_ver"
+        [ "\$local_ver" = "\$remote_ver" ] && echo "Up to date." || echo "Run: $PROJECT_NAME update"
         ;;
     update)
-        curl -fsSL "$URL/i" | bash
+        curl -fsSL "\$URL/i" | bash
         ;;
     uninstall)
-        [ -f "$DOTFILES/install.sh" ] && bash "$DOTFILES/install.sh" uninstall || curl -fsSL "$URL/i" | bash -s -- uninstall
+        [ -f "\$DOTFILES/install.sh" ] && bash "\$DOTFILES/install.sh" uninstall || curl -fsSL "\$URL/i" | bash -s -- uninstall
         ;;
     *)
-        echo "Usage: dotfiles [status|check|update|uninstall]"
+        echo "Usage: $PROJECT_NAME [status|check|update|uninstall]"
         ;;
 esac
 EOF
 
     chmod +x "$cli_path"
-    ok "Installed 'dotfiles' CLI"
+    ok "Installed '$PROJECT_NAME' CLI"
 }
 
 # ------------------------------------------------------------------------------
@@ -1084,12 +1087,12 @@ main() {
 
     echo ""
     echo -e "${BLUE}================================${NC}"
-    echo -e "${BLUE}  Dotfiles Bootstrap${NC}"
+    echo -e "${BLUE}  $PROJECT_NAME Bootstrap${NC}"
     echo -e "${BLUE}================================${NC}"
     echo ""
 
     parse_args "$@"
-    setup_dotfiles_dir
+    setup_config_dir
     detect_os
 
     if [ "$STOW_ONLY" = true ]; then
@@ -1106,7 +1109,7 @@ main() {
         post_install
 
         save_version
-        install_dotfiles_cli
+        install_cli
 
         print_summary
     fi

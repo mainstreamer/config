@@ -1,4 +1,4 @@
-# Makefile for dotfiles management
+# Makefile for epicli-conf management
 # ================================
 #
 # Standard (default):  curl -fsSL https://tldr.icu/i | bash
@@ -7,7 +7,7 @@
 
 SHELL := /bin/bash
 DOTFILES_DIR := $(shell pwd)
-BACKUP_DIR := $(HOME)/.dotfiles-backups
+BACKUP_DIR := $(HOME)/.epicli-conf-backups
 TIMESTAMP := $(shell date +%Y%m%d-%H%M%S)
 
 # Detect platform
@@ -38,7 +38,7 @@ RESET := \033[0m
 help:
 	@printf "\n"
 	@printf "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)\n"
-	@printf "$(WHITE)  Dotfiles Management$(RESET)  $(DIM)platform: $(PLATFORM)$(RESET)\n"
+	@printf "$(WHITE)  epicli-conf$(RESET)  $(DIM)platform: $(PLATFORM)$(RESET)\n"
 	@printf "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)\n"
 	@printf "\n"
 	@printf "$(YELLOW)INSTALL:$(RESET) $(GREEN)curl -fsSL https://tldr.icu/i | bash$(RESET)\n"
@@ -148,7 +148,7 @@ test:
 	@echo "=== DRY RUN - What would happen ==="
 	@echo ""
 	@echo "Platform: $(PLATFORM)"
-	@echo "Dotfiles dir: $(DOTFILES_DIR)"
+	@echo "Config dir: $(DOTFILES_DIR)"
 	@echo ""
 	@echo "Symlinks to create:"
 	@echo "  ~/.bashrc -> $(DOTFILES_DIR)/shared/.bashrc"
