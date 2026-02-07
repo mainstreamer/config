@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.0"
+VERSION="2.2.2"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -115,14 +115,27 @@ setup_config_dir() {
     fi
 
     # Download and extract archive
-    mkdir -p "$DOTFILES_TARGET"
     info "Trying $BASE_URL..."
-    if ! curl -fsSL "$ARCHIVE_URL_SELF" 2>/dev/null | tar -xz -C "$DOTFILES_TARGET" --strip-components=1 2>/dev/null; then
+    
+    # Always extract to temporary directory first
+    TEMP_EXTRACT=$(mktemp -d)
+    if ! curl -fsSL "$ARCHIVE_URL_SELF" 2>/dev/null | tar -xz -C "$TEMP_EXTRACT" --strip-components=1 2>/dev/null; then
         info "Falling back to GitHub..."
-        curl -fsSL "$ARCHIVE_URL_GITHUB" | tar -xz -C "$DOTFILES_TARGET" --strip-components=1
+        curl -fsSL "$ARCHIVE_URL_GITHUB" | tar -xz -C "$TEMP_EXTRACT" --strip-components=1
     fi
+    
+    # Backup existing configuration if present
+    if [ -d "$DOTFILES_TARGET" ]; then
+        info "Backing up existing configuration..."
+        backup_existing
+    fi
+    
+    # Move new configuration into place (atomic operation)
+    info "Activating new configuration..."
+    rm -rf "$DOTFILES_TARGET"
+    mv "$TEMP_EXTRACT" "$DOTFILES_TARGET"
     DOTFILES_DIR="$DOTFILES_TARGET"
-    ok "Downloaded to $DOTFILES_DIR"
+    ok "Configuration activated"
 }
 
 # ------------------------------------------------------------------------------
