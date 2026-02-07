@@ -192,7 +192,43 @@ install_homebrew() {
         eval "$(/opt/homebrew/bin/brew shellenv)"
     fi
 
-    ok "Homebrew installed"
+    # Apply Linuxbrew performance optimizations
+    info "Configuring Homebrew for optimal performance..."
+    
+    # Set parallel compilation jobs
+    echo 'export HOMEBREW_MAKE_JOBS=$(nproc)' >> "$HOME/.bashrc"
+    echo 'export HOMEBREW_MAKE_JOBS=$(sysctl -n hw.ncpu)' >> "$HOME/.zshrc"
+    export HOMEBREW_MAKE_JOBS=$(nproc)
+    
+    # Prefer bottles (pre-compiled binaries) when available
+    echo 'export HOMEBREW_INSTALL_FROM_API=1' >> "$HOME/.bashrc"
+    echo 'export HOMEBREW_INSTALL_FROM_API=1' >> "$HOME/.zshrc"
+    export HOMEBREW_INSTALL_FROM_API=1
+    
+    # Disable auto-update to control when updates happen
+    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> "$HOME/.bashrc"
+    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> "$HOME/.zshrc"
+    export HOMEBREW_NO_AUTO_UPDATE=1
+    
+    # Keep builds for potential reuse (reduces recompilation)
+    echo 'export HOMEBREW_NO_INSTALL_CLEANUP=1' >> "$HOME/.bashrc"
+    echo 'export HOMEBREW_NO_INSTALL_CLEANUP=1' >> "$HOME/.zshrc"
+    export HOMEBREW_NO_INSTALL_CLEANUP=1
+    
+    # Use tmpfs for build directory if sufficient RAM available (Linux only)
+    if [ "$PLATFORM" = "linux" ] && [ -d /dev/shm ] && [ $(free -m | awk '/Mem:/ {print $2}') -gt 4000 ]; then
+        echo '# Use tmpfs for Homebrew builds (faster I/O)' >> "$HOME/.bashrc"
+        echo 'if [ -d /dev/shm ]; then' >> "$HOME/.bashrc"
+        echo '    export HOMEBREW_TEMP=$(mktemp -d /dev/shm/homebrew-XXXXXX)' >> "$HOME/.bashrc"
+        echo 'fi' >> "$HOME/.bashrc"
+        
+        echo '# Use tmpfs for Homebrew builds (faster I/O)' >> "$HOME/.zshrc"
+        echo 'if [ -d /dev/shm ]; then' >> "$HOME/.zshrc"
+        echo '    export HOMEBREW_TEMP=$(mktemp -d /dev/shm/homebrew-XXXXXX)' >> "$HOME/.zshrc"
+        echo 'fi' >> "$HOME/.zshrc"
+    fi
+
+    ok "Homebrew installed and optimized"
 }
 
 # ------------------------------------------------------------------------------
