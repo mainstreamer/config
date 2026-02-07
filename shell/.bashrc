@@ -22,3 +22,6 @@ if [ -d ~/.shellrc.d ]; then
     done
     unset rc
 fi
+
+# opencode
+export PATH=/home/stx/.opencode/bin:$PATH
