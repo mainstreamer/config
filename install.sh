@@ -231,12 +231,37 @@ install_homebrew() {
     ok "Homebrew installed and optimized"
 }
 
+# Platform-specific configuration
+# ------------------------------------------------------------------------------
+run_platform_config() {
+    local platform_installer="$DOTFILES_DIR/deps/platform/installer.sh"
+    
+    if [ ! -f "$platform_installer" ]; then
+        warn "Platform installer script not found: $platform_installer"
+        return 1
+    fi
+    
+    info "Running platform configuration for $DISTRO..."
+    
+    # Run the platform installation driver
+    if source "$platform_installer" "$DISTRO"; then
+        ok "Platform configuration completed for $DISTRO"
+        return 0
+    else
+        warn "Failed to complete platform configuration for $DISTRO"
+        return 1
+    fi
+}
+
 # ------------------------------------------------------------------------------
 # Install dependencies based on distro
 # ------------------------------------------------------------------------------
 install_deps() {
     mkdir -p "$HOME/.local/bin"
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+
+    # Run platform-specific configuration first
+    run_platform_config
 
     case "$DISTRO" in
         fedora|debian|macos)
@@ -287,6 +312,34 @@ install_brew_packages() {
     if [ "$DEV_MODE" = true ] && [ -f "$DOTFILES_DIR/deps/Brewfile.dev" ]; then
         info "Installing dev packages from Brewfile.dev..."
         brew bundle --file=deps/Brewfile.dev 2>/dev/null || true
+    fi
+
+    # Ensure proper permissions for shared scripts
+    info "Setting proper permissions for shared scripts..."
+    find "$DOTFILES_DIR/shared/shared.d" -type f -exec chmod +x {} \; 2>/dev/null || true
+    chmod +x "$DOTFILES_DIR/shared/.bashrc" 2>/dev/null || true
+    chmod +x "$DOTFILES_DIR/shared/.zshrc" 2>/dev/null || true
+
+    # Verify critical tools are installed
+    info "Verifying critical tools..."
+    if ! command -v starship &>/dev/null; then
+        warn "starship not found, installing..."
+        brew install starship 2>/dev/null || echo "Failed to install starship"
+    fi
+
+    if ! command -v eza &>/dev/null; then
+        warn "eza not found, installing..."
+        brew install eza 2>/dev/null || echo "Failed to install eza"
+    fi
+
+    if ! command -v bat &>/dev/null; then
+        warn "bat not found, installing..."
+        brew install bat 2>/dev/null || echo "Failed to install bat"
+    fi
+
+    if ! command -v zoxide &>/dev/null; then
+        warn "zoxide not found, installing..."
+        brew install zoxide 2>/dev/null || echo "Failed to install zoxide"
     fi
 }
 
@@ -872,6 +925,31 @@ print_summary() {
         echo "Standard mode installed. For full dev environment:"
         echo "  curl -fsSL https://tldr.icu/i | bash -s -- --dev"
         echo ""
+    fi
+
+    # Try to activate configuration in current session
+    if [ -f "$HOME/.bashrc" ]; then
+        echo "Attempting to activate configuration..."
+        
+        # Special handling for Debian systems
+        if [ "$DISTRO" = "debian" ] && [ "$(readlink /bin/sh)" = "dash" ]; then
+            echo -e "${YELLOW}⚠ Debian dash detected - configuration may not fully activate${NC}"
+            echo "  Please run: sudo dpkg-reconfigure dash and select 'No'"
+            echo "  Then restart your terminal or run: exec bash -l"
+        fi
+        
+        if source "$HOME/.bashrc" 2>/dev/null; then
+            echo -e "${GREEN}✓ Configuration activated for this session${NC}"
+            
+            # Verify critical components
+            echo "Verifying installation:"
+            command -v starship &>/dev/null && echo "  ✓ starship prompt" || echo "  ✗ starship missing"
+            command -v eza &>/dev/null && echo "  ✓ eza (modern ls)" || echo "  ✗ eza missing"
+            type ll 2>/dev/null | grep -q "alias" && echo "  ✓ aliases loaded" || echo "  ✗ aliases not loaded"
+            
+        else
+            echo -e "${YELLOW}⚠ Configuration not activated. Please run: source ~/.bashrc${NC}"
+        fi
     fi
 }
 

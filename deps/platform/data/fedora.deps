@@ -1,0 +1,16 @@
+# Fedora-specific dependencies
+# Format: one package per line, # for comments
+
+# Build tools
+@development-tools
+
+# Development tools
+git
+curl
+wget
+cmake
+pkgconf-pkg-config
+
+# Libraries
+openssl-devel
+zlib-devel

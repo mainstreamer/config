@@ -1,0 +1,16 @@
+# Debian-specific dependencies
+# Format: one package per line, # for comments
+
+# Build tools
+build-essential
+
+# Development tools
+git
+curl
+wget
+cmake
+pkg-config
+
+# Libraries
+libssl-dev
+zlib1g-dev

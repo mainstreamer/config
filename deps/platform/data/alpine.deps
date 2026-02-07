@@ -1,0 +1,19 @@
+# Alpine Linux-specific dependencies
+# Format: one package per line, # for comments
+
+# Build tools
+build-base
+
+# Development tools
+git
+curl
+wget
+cmake
+pkgconf
+
+# Libraries
+openssl-dev
+zlib-dev
+
+# Shell
+bash

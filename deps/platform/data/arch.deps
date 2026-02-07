@@ -1,0 +1,16 @@
+# Arch Linux-specific dependencies
+# Format: one package per line, # for comments
+
+# Build tools
+base-devel
+
+# Development tools
+git
+curl
+wget
+cmake
+pkgconf
+
+# Libraries
+openssl
+zlib
