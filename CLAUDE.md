@@ -4,30 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Personal developer environment configuration for Linux and macOS. Unified cross-platform configs with smart platform detection. Deployable via single curl command or Makefile.
+Personal developer environment configuration for Linux and macOS. Unified cross-platform configs with smart platform detection. Two modes: **standard** (default, no sudo) and **dev** (full toolchain, requires sudo).
 
 **Repository**: https://github.com/mainstreamer/config
 
 ## Quick Install
 
 ```bash
-# Production: One-liner from GitHub
-curl -fsSL https://raw.githubusercontent.com/mainstreamer/config/master/install.sh | bash
+# Standard mode (default, no sudo required)
+curl -fsSL https://tldr.icu/i | bash
 
-# With options
-curl -fsSL ... | bash -s -- --minimal    # Lightweight, no dev tools
-curl -fsSL ... | bash -s -- --no-sudo    # User-space only, no root
+# Developer mode (requires sudo)
+curl -fsSL https://tldr.icu/i | bash -s -- --dev
 ```
+
+## Modes
+
+| | **Standard** (default) | **Dev** (`--dev`) |
+|---|---|---|
+| Sudo | Not required | Required |
+| CLI tools | eza, bat, zoxide, fzf, fd, rg, delta, starship, lazygit, gh, atuin | Same |
+| Shell | Aliases, prompt, docker helpers, cleanup, enc/key tools | Same |
+| Nvim | Treesitter, telescope, file tree, git signs, basic editing | + LSP, autocomplete, formatters, harpoon, trouble, diffview |
+| Languages | None | Go, Rust, PHP, Node, Python (runtimes + LSP servers) |
 
 ## Makefile Commands
 
 ```bash
-# Production (fresh system)
-make install-remote              # Curl and run from GitHub
-make install-remote-minimal      # Minimal mode
-make install-remote-no-sudo      # No root required
+# Remote install (fresh system)
+make install-remote              # Standard mode
+make install-remote-dev          # Dev mode
 
-# Development (local testing)
+# Local development
 make install                     # Full local install (auto-backup first)
 make install-deps                # Packages only, no symlinks
 make install-links               # Symlinks only
@@ -46,111 +54,81 @@ make fonts                       # Install Nerd Fonts (Linux)
 make guake-config                # Apply guake config (Linux)
 make uninstall                   # Remove symlinks
 make clean                       # Remove build artifacts
+
+# Versioning
+make version                     # Show current version
+make bump-patch                  # 2.0.0 -> 2.0.1
+make bump-minor                  # 2.0.0 -> 2.1.0
+make bump-major                  # 2.0.0 -> 3.0.0
+make deploy                      # Deploy to tldr.icu server
 ```
 
-## Repository Structure (Unified)
+## Repository Structure
 
 ```
 config/
-├── install.sh              # Main installer (curl-able)
+├── install.sh              # Main installer (curl-able via tldr.icu/i)
 ├── Makefile                # All operations
-├── Brewfile                # Homebrew packages
-├── apps.conf               # Custom apps to install (editable)
-├── CLAUDE.md               # This file
+├── latest                  # Version file for update checking
 │
-├── shell/                  # Cross-platform shell configs
+├── shared/                 # Cross-platform shell environment
 │   ├── .bashrc             # Linux entry point
 │   ├── .zshrc              # macOS entry point
-│   └── .shellrc.d/         # Shared scripts (work in bash & zsh)
-│       ├── aliases         # Common aliases
+│   ├── starship.toml       # Prompt config (symlinked to ~/.config/)
+│   └── shared.d/           # Shared scripts (work in bash & zsh)
+│       ├── aliases         # Common aliases (eza, bat, zoxide, git)
 │       ├── prompt          # Starship init
 │       ├── docker          # Docker helpers
+│       ├── cleanup         # Media file organizer
+│       ├── where           # IP geolocation
+│       ├── enc             # File encryption (AES-256)
+│       ├── key             # USB key management
+│       ├── hidevpn         # VPN via encrypted configs
+│       ├── rec             # ffmpeg recording helpers
 │       ├── atuin           # History sync (disabled by default)
 │       ├── depcheck        # Dependency checker
-│       └── ...
+│       ├── dep.lst         # Expected tools list
+│       └── unglitch        # GDM restart alias
 │
-├── nvim/                   # Neovim (unified, cross-platform)
-│   ├── init.lua
+├── nvim/                   # Neovim config (symlinked to ~/.config/nvim)
+│   ├── init.lua            # Entry with standard/dev mode detection
 │   └── lua/config/
-│       ├── lazy.lua        # Full config
-│       └── lazy-minimal.lua # Minimal config
+│       ├── lazy.lua            # Dev config (LSP, autocomplete, all plugins)
+│       └── lazy-standard.lua   # Standard config (basic editing)
 │
-├── starship/               # Starship prompt (cross-platform)
-│   └── starship.toml
+├── deps/                   # Dependency lists (what to install)
+│   ├── Brewfile            # Standard Homebrew packages
+│   ├── Brewfile.dev        # Dev-only Homebrew packages
+│   ├── apps.conf           # Custom apps (editable)
+│   └── composer.json       # PHP tools (dev)
 │
-├── composer/               # PHP tools
-│   └── composer.json
+├── settings/               # Platform-specific app settings
+│   ├── linux/guake.dconf
+│   └── macos/              # iterm2 profile + keybindings
 │
-├── apps/                   # Platform-specific app configs
-│   ├── linux/              # guake, etc.
-│   └── macos/              # iterm2, etc.
-│
-└── lx/, mc/                # Legacy structure (still supported)
+└── scripts/
+    └── bump-version.sh     # Version bumper
 ```
 
 ## Where Configs Are Installed
 
 ```
-~/.bashrc           → repo/shell/.bashrc       (Linux)
-~/.zshrc            → repo/shell/.zshrc        (macOS)
-~/.shellrc.d/       → repo/shell/.shellrc.d/   (both)
-~/.config/nvim/     → repo/nvim/
-~/.config/starship.toml → repo/starship/starship.toml
+~/.bashrc               → repo/shared/.bashrc          (Linux)
+~/.zshrc                → repo/shared/.zshrc           (macOS)
+~/.shared.d/            → repo/shared/shared.d/        (both)
+~/.config/nvim/         → repo/nvim/
+~/.config/starship.toml → repo/shared/starship.toml
 ```
 
 **Repo location**: `~/.dotfiles` (curl install) or wherever you clone it
 
 **Backups**: `~/.dotfiles-backups/YYYYMMDD-HHMMSS/`
 
-## Custom Apps (apps.conf)
-
-Edit `apps.conf` to customize which apps are installed:
-
-```ini
-[linux]
-guake
-feh
-# vlc
-# slack
-
-[macos]
-iterm2
-# rectangle
-# slack
-
-[cli]
-# Additional CLI tools
-```
-
-Run `make install-apps` to install apps from this file.
-
-## Installation Options
-
-| Flag | Description |
-|------|-------------|
-| `--minimal` | Skip LSP, compilers. Nvim loads minimal config. |
-| `--no-sudo` | User-space only (~/.local/bin). No root. |
-| `--deps-only` | Packages only, no symlinks. |
-| `--stow-only` | Symlinks only, no packages. |
-| `-h, --help` | Show full help. |
-
-## Supported Platforms
-
-| OS | Package Manager | Notes |
-|----|-----------------|-------|
-| Fedora | Homebrew | |
-| Debian | Homebrew | |
-| Ubuntu/Pop!_OS | apt + GitHub releases | |
-| Arch | pacman + AUR | |
-| Alpine | apk + cargo | Auto-minimal |
-| macOS | Homebrew | |
-
 ## Shell Scripts
 
-Scripts in `.shellrc.d/` are sourced by both `.bashrc` and `.zshrc`. Write POSIX-compatible shell or use `$SHELL_TYPE` variable:
+Scripts in `shared.d/` are sourced by both `.bashrc` and `.zshrc`. Write POSIX-compatible shell or use `$SHELL_TYPE` variable:
 
 ```bash
-# SHELL_TYPE is set to "bash" or "zsh"
 if [ "$SHELL_TYPE" = "zsh" ]; then
     # zsh-specific code
 fi
@@ -158,12 +136,21 @@ fi
 
 To disable a script: rename to `*.archived`
 
+### Cleanup Function
+
+```bash
+cleanup        # Organize media files from last 1 day
+cleanup 7      # From last 7 days
+```
+
+Finds video/image files >512KB, moves to `~/Documents/Cleanup/YYYY-MM-DD/` folders by creation date.
+
 ## Neovim Modes
 
-- **Full**: LSP, autocompletion, all plugins
-- **Minimal**: Basic editing. Triggered by:
-  - `NVIM_MINIMAL=1 nvim`
-  - File: `~/.config/nvim/.minimal`
+- **Dev**: LSP, autocompletion, all plugins (default when `--dev` installed)
+- **Standard**: Basic editing, no LSP. Active when:
+  - `NVIM_STANDARD=1 nvim`
+  - File: `~/.config/nvim/.standard` (created by standard install)
 
 ## Key Bindings (Neovim)
 
@@ -175,17 +162,33 @@ To disable a script: rename to `*.archived`
 - `gd` - Go to definition
 - `<leader>tg` - Lazygit
 
+## Version Management
+
+```bash
+dotfiles status    # Show installed version
+dotfiles check     # Compare with remote (tldr.icu/latest)
+dotfiles update    # Update to latest
+```
+
 ## Atuin (Disabled by Default)
 
 ```bash
-# Enable
 touch ~/.config/atuin/.enabled
 source ~/.bashrc
-
-# Setup
 atuin register  # or: atuin login
 atuin import auto
 ```
+
+## Supported Platforms
+
+| OS | Package Manager | Notes |
+|----|-----------------|-------|
+| Fedora | Homebrew | |
+| Debian | Homebrew | |
+| Ubuntu/Pop!_OS | apt + GitHub releases | |
+| Arch | pacman + AUR | |
+| Alpine | apk + cargo | |
+| macOS | Homebrew | |
 
 ## Development Workflow
 
@@ -193,4 +196,4 @@ atuin import auto
 2. `make test` - see what would happen
 3. `make install` - apply changes (auto-backup)
 4. If broken: `make rollback`
-5. When ready: push to GitHub
+5. `make bump-patch` then `make deploy` to publish

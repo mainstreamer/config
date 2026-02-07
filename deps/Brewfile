@@ -1,0 +1,45 @@
+# Brewfile - Standard packages (works on macOS and Linux)
+# Install: brew bundle
+# Update:  brew bundle --force cleanup
+# Dev packages: see Brewfile.dev
+
+# ------------------------------------------------------------------------------
+# Core CLI tools
+# ------------------------------------------------------------------------------
+brew "curl"
+brew "wget"
+brew "jq"
+brew "fzf"
+brew "ripgrep"      # rg - fast grep
+brew "fd"           # fast find
+brew "bat"          # cat with syntax highlighting
+brew "eza"          # modern ls (successor to exa)
+brew "zoxide"       # smarter cd
+brew "tree"
+
+# ------------------------------------------------------------------------------
+# Editors & tools
+# ------------------------------------------------------------------------------
+brew "neovim"
+brew "tmux"
+
+# ------------------------------------------------------------------------------
+# Shell & prompt
+# ------------------------------------------------------------------------------
+brew "starship"     # cross-shell prompt (works in bash and zsh)
+brew "atuin"        # cross-machine shell history sync
+
+# ------------------------------------------------------------------------------
+# Git enhancements
+# ------------------------------------------------------------------------------
+brew "lazygit"      # terminal UI for git
+brew "delta"        # better git diffs
+brew "gh"           # GitHub CLI
+
+# ------------------------------------------------------------------------------
+# Media / utilities
+# ------------------------------------------------------------------------------
+brew "ffmpeg"
+brew "openssl"
+brew "htop"
+brew "btop"

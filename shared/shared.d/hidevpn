@@ -1,0 +1,44 @@
+#!/bin/sh
+# VPN helper - connect/disconnect using encrypted OpenVPN configs
+# Depends on: enc, key, openvpn, sudo
+
+hidevpn() {
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: hidevpn [-d] [-c encrypted.conf]"
+        echo ""
+        echo "Options:"
+        echo "  -d                 Disconnect"
+        echo "  -c encrypted.conf  Connect with encrypted config file"
+        return 0
+    fi
+
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            -d)
+                sudo killall openvpn 2>/dev/null && echo "Disconnected" || echo "Not connected"
+                shift
+                ;;
+            -c)
+                if [ -z "$2" ]; then
+                    echo "Error: -c requires config path."
+                    return 1
+                fi
+                local conf_path="$2"
+                if [ ! -f "$conf_path" ]; then
+                    echo "Error: Config file '$conf_path' not found."
+                    return 1
+                fi
+                mkfifo /tmp/vpnpipe 2>/dev/null
+                enc -d "$conf_path" -o /tmp/vpnpipe &
+                sudo openvpn --config /tmp/vpnpipe --daemon
+                rm -f /tmp/vpnpipe
+                echo "Connected"
+                shift 2
+                ;;
+            *)
+                echo "Error: Invalid option '$1'."
+                return 1
+                ;;
+        esac
+    done
+}

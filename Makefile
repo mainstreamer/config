@@ -1,15 +1,14 @@
 # Makefile for dotfiles management
 # ================================
 #
-# Production (fresh system):  curl install from GitHub
-# Development (local):        make install, make test
-# Rollback:                   make rollback
+# Standard (default):  curl -fsSL https://tldr.icu/i | bash
+# Developer:           curl -fsSL https://tldr.icu/i | bash -s -- --dev
+# Local dev:           make install, make test
 
 SHELL := /bin/bash
 DOTFILES_DIR := $(shell pwd)
 BACKUP_DIR := $(HOME)/.dotfiles-backups
 TIMESTAMP := $(shell date +%Y%m%d-%H%M%S)
-REPO_URL := https://raw.githubusercontent.com/mainstreamer/config/master/install.sh
 
 # Detect platform
 UNAME := $(shell uname -s)
@@ -19,9 +18,9 @@ else
     PLATFORM := linux
 endif
 
-.PHONY: help install install-remote install-deps install-links install-apps \
+.PHONY: help install install-remote install-remote-dev install-deps install-links install-apps \
         backup rollback list-backups test uninstall clean nvim \
-        pack-linux pack-mac starship-preset fonts guake-config \
+        starship-preset fonts guake-config \
         bump-patch bump-minor bump-major deploy archive
 
 # Colors
@@ -42,17 +41,16 @@ help:
 	@printf "$(WHITE)  Dotfiles Management$(RESET)  $(DIM)platform: $(PLATFORM)$(RESET)\n"
 	@printf "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)\n"
 	@printf "\n"
-	@printf "$(YELLOW)INSTALL:$(RESET) $(GREEN)curl -fsSL $(REPO_URL) | bash$(RESET)\n"
-	@printf "$(YELLOW)PRODUCTION$(RESET) $(DIM)(fresh system)$(RESET)\n"
-	@printf "  $(GREEN)make install-remote$(RESET)          Curl and run install.sh from GitHub\n"
-	@printf "  $(GREEN)make install-remote-minimal$(RESET)  Minimal mode (no dev tools)\n"
-	@printf "  $(GREEN)make install-remote-no-sudo$(RESET)  User-space only, no root\n"
+	@printf "$(YELLOW)INSTALL:$(RESET) $(GREEN)curl -fsSL https://tldr.icu/i | bash$(RESET)\n"
+	@printf "$(YELLOW)REMOTE$(RESET) $(DIM)(fresh system)$(RESET)\n"
+	@printf "  $(GREEN)make install-remote$(RESET)          Standard mode (no sudo required)\n"
+	@printf "  $(GREEN)make install-remote-dev$(RESET)      Dev mode (requires sudo)\n"
 	@printf "\n"
-	@printf "$(YELLOW)DEVELOPMENT$(RESET) $(DIM)(local testing)$(RESET)\n"
+	@printf "$(YELLOW)LOCAL$(RESET) $(DIM)(development)$(RESET)\n"
 	@printf "  $(GREEN)make install$(RESET)                 Full local install (deps + links)\n"
 	@printf "  $(GREEN)make install-deps$(RESET)            Install packages only\n"
 	@printf "  $(GREEN)make install-links$(RESET)           Create symlinks only\n"
-	@printf "  $(GREEN)make install-apps$(RESET)            Install apps from apps.conf\n"
+	@printf "  $(GREEN)make install-apps$(RESET)            Install apps from deps/apps.conf\n"
 	@printf "  $(GREEN)make test$(RESET)                    Dry-run, show what would happen\n"
 	@printf "\n"
 	@printf "$(YELLOW)BACKUP & ROLLBACK$(RESET)\n"
@@ -76,34 +74,27 @@ help:
 	@printf "\n"
 	@printf "$(YELLOW)VERSIONING$(RESET)\n"
 	@printf "  $(GREEN)make version$(RESET)                 Show current version\n"
-	@printf "  $(GREEN)make bump-patch$(RESET)              Bump patch (1.0.0 -> 1.0.1)\n"
-	@printf "  $(GREEN)make bump-minor$(RESET)              Bump minor (1.0.0 -> 1.1.0)\n"
-	@printf "  $(GREEN)make bump-major$(RESET)              Bump major (1.0.0 -> 2.0.0)\n"
+	@printf "  $(GREEN)make bump-patch$(RESET)              Bump patch (2.0.0 -> 2.0.1)\n"
+	@printf "  $(GREEN)make bump-minor$(RESET)              Bump minor (2.0.0 -> 2.1.0)\n"
+	@printf "  $(GREEN)make bump-major$(RESET)              Bump major (2.0.0 -> 3.0.0)\n"
 	@printf "  $(GREEN)make archive$(RESET)                 Create master.tar.gz\n"
 	@printf "  $(GREEN)make deploy$(RESET)                  Deploy to server (script + archive)\n"
 	@printf "  $(DIM)  SERVER=tldr.icu DEPLOY_PATH=/srv/dotfiles$(RESET)\n"
 	@printf "\n"
-	@printf "$(YELLOW)LEGACY$(RESET)\n"
-	@printf "  $(GREEN)make pack-linux$(RESET)              Archive Linux config\n"
-	@printf "  $(GREEN)make pack-mac$(RESET)                Archive macOS config\n"
-	@printf "\n"
 
 # =============================================================================
-# PRODUCTION - Remote install from GitHub
+# REMOTE - Install from GitHub
 # =============================================================================
 install-remote:
-	@echo "Installing from GitHub..."
-	curl -fsSL $(REPO_URL) | bash
-install-remote-minimal:
-	@echo "Installing from GitHub (minimal mode)..."
-	curl -fsSL $(REPO_URL) | bash -s -- --minimal
+	@echo "Installing from GitHub (standard mode)..."
+	curl -fsSL https://tldr.icu/i | bash
 
-install-remote-no-sudo:
-	@echo "Installing from GitHub (no-sudo mode)..."
-	curl -fsSL $(REPO_URL) | bash -s -- --no-sudo
+install-remote-dev:
+	@echo "Installing from GitHub (dev mode)..."
+	curl -fsSL https://tldr.icu/i | bash -s -- --dev
 
 # =============================================================================
-# DEVELOPMENT - Local install
+# LOCAL - Development install
 # =============================================================================
 install: backup
 	@echo "Running local install..."
@@ -118,12 +109,12 @@ install-links: backup
 	@$(DOTFILES_DIR)/install.sh --stow-only
 
 install-apps:
-	@echo "Installing apps from apps.conf..."
+	@echo "Installing apps from deps/apps.conf..."
 	@$(MAKE) _install-apps-$(PLATFORM)
 
 _install-apps-linux:
 	@echo "Installing Linux apps..."
-	@sed -n '/^\[linux\]/,/^\[/p' apps.conf | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | while read app; do \
+	@sed -n '/^\[linux\]/,/^\[/p' deps/apps.conf | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | while read app; do \
 		if command -v $$app &>/dev/null; then \
 			echo "  $$app: already installed"; \
 		else \
@@ -140,7 +131,7 @@ _install-apps-linux:
 
 _install-apps-macos:
 	@echo "Installing macOS apps..."
-	@sed -n '/^\[macos\]/,/^\[/p' apps.conf | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | while read app; do \
+	@sed -n '/^\[macos\]/,/^\[/p' deps/apps.conf | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | while read app; do \
 		if brew list $$app &>/dev/null || brew list --cask $$app &>/dev/null; then \
 			echo "  $$app: already installed"; \
 		else \
@@ -160,18 +151,18 @@ test:
 	@echo "Dotfiles dir: $(DOTFILES_DIR)"
 	@echo ""
 	@echo "Symlinks to create:"
-	@echo "  ~/.bashrc -> $(DOTFILES_DIR)/shell/.bashrc"
-	@echo "  ~/.zshrc -> $(DOTFILES_DIR)/shell/.zshrc"
-	@echo "  ~/.shellrc.d -> $(DOTFILES_DIR)/shell/.shellrc.d"
+	@echo "  ~/.bashrc -> $(DOTFILES_DIR)/shared/.bashrc"
+	@echo "  ~/.zshrc -> $(DOTFILES_DIR)/shared/.zshrc"
+	@echo "  ~/.shared.d -> $(DOTFILES_DIR)/shared/shared.d"
 	@echo "  ~/.config/nvim -> $(DOTFILES_DIR)/nvim"
-	@echo "  ~/.config/starship.toml -> $(DOTFILES_DIR)/starship/starship.toml"
+	@echo "  ~/.config/starship.toml -> $(DOTFILES_DIR)/shared/starship.toml"
 	@echo ""
 	@echo "Current state:"
 	@[ -L ~/.bashrc ] && echo "  ~/.bashrc is a symlink -> $$(readlink ~/.bashrc)" || echo "  ~/.bashrc is a regular file (will be backed up)"
 	@[ -L ~/.config/nvim ] && echo "  ~/.config/nvim is a symlink -> $$(readlink ~/.config/nvim)" || echo "  ~/.config/nvim is a regular dir (will be backed up)"
 	@echo ""
-	@echo "Apps from apps.conf [$(PLATFORM)]:"
-	@sed -n '/^\[$(PLATFORM)\]/,/^\[/p' apps.conf 2>/dev/null | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | head -10 | while read app; do \
+	@echo "Apps from deps/apps.conf [$(PLATFORM)]:"
+	@sed -n '/^\[$(PLATFORM)\]/,/^\[/p' deps/apps.conf 2>/dev/null | sed '1d;/^\[/d' | grep -v '^#' | grep -v '^$$' | head -10 | while read app; do \
 		if command -v $$app &>/dev/null; then \
 			echo "  $$app (installed)"; \
 		else \
@@ -191,11 +182,10 @@ backup:
 	@[ -f ~/.zshrc ] && [ ! -L ~/.zshrc ] && cp ~/.zshrc $(BACKUP_DIR)/$(TIMESTAMP)/ || true
 	@[ -d ~/.bashrc.d ] && [ ! -L ~/.bashrc.d ] && cp -r ~/.bashrc.d $(BACKUP_DIR)/$(TIMESTAMP)/ || true
 	@[ -d ~/.zshrc.d ] && [ ! -L ~/.zshrc.d ] && cp -r ~/.zshrc.d $(BACKUP_DIR)/$(TIMESTAMP)/ || true
-	@[ -d ~/.shellrc.d ] && [ ! -L ~/.shellrc.d ] && cp -r ~/.shellrc.d $(BACKUP_DIR)/$(TIMESTAMP)/ || true
+	@[ -d ~/.shared.d ] && [ ! -L ~/.shared.d ] && cp -r ~/.shared.d $(BACKUP_DIR)/$(TIMESTAMP)/ || true
 	@[ -d ~/.config/nvim ] && [ ! -L ~/.config/nvim ] && cp -r ~/.config/nvim $(BACKUP_DIR)/$(TIMESTAMP)/ || true
 	@[ -f ~/.config/starship.toml ] && [ ! -L ~/.config/starship.toml ] && cp ~/.config/starship.toml $(BACKUP_DIR)/$(TIMESTAMP)/ || true
 	@echo "Backup complete: $(BACKUP_DIR)/$(TIMESTAMP)"
-	@# Save timestamp for easy rollback
 	@echo "$(TIMESTAMP)" > $(BACKUP_DIR)/.latest
 
 rollback:
@@ -211,7 +201,7 @@ rollback:
 	[ -f "$$RESTORE_DIR/.bashrc" ] && rm -f ~/.bashrc && cp "$$RESTORE_DIR/.bashrc" ~/ && echo "  Restored .bashrc"; \
 	[ -f "$$RESTORE_DIR/.zshrc" ] && rm -f ~/.zshrc && cp "$$RESTORE_DIR/.zshrc" ~/ && echo "  Restored .zshrc"; \
 	[ -d "$$RESTORE_DIR/.bashrc.d" ] && rm -rf ~/.bashrc.d && cp -r "$$RESTORE_DIR/.bashrc.d" ~/ && echo "  Restored .bashrc.d"; \
-	[ -d "$$RESTORE_DIR/.shellrc.d" ] && rm -rf ~/.shellrc.d && cp -r "$$RESTORE_DIR/.shellrc.d" ~/ && echo "  Restored .shellrc.d"; \
+	[ -d "$$RESTORE_DIR/.shared.d" ] && rm -rf ~/.shared.d && cp -r "$$RESTORE_DIR/.shared.d" ~/ && echo "  Restored .shared.d"; \
 	[ -d "$$RESTORE_DIR/nvim" ] && rm -rf ~/.config/nvim && cp -r "$$RESTORE_DIR/nvim" ~/.config/ && echo "  Restored nvim"; \
 	[ -f "$$RESTORE_DIR/starship.toml" ] && rm -f ~/.config/starship.toml && cp "$$RESTORE_DIR/starship.toml" ~/.config/ && echo "  Restored starship.toml"; \
 	echo "Rollback complete."
@@ -261,7 +251,7 @@ ifeq ($(PLATFORM),linux)
 	@if command -v guake &>/dev/null; then \
 		if command -v dconf &>/dev/null; then \
 			echo "Applying guake configuration..."; \
-			dconf load /apps/guake/ < $(DOTFILES_DIR)/apps/linux/guake.dconf && \
+			dconf load /apps/guake/ < $(DOTFILES_DIR)/settings/linux/guake.dconf && \
 			echo "Guake config applied"; \
 		else \
 			echo "dconf not found - install with: sudo apt install dconf-cli"; \
@@ -280,24 +270,12 @@ uninstall:
 	@echo "Removing symlinks..."
 	@[ -L ~/.bashrc ] && rm ~/.bashrc && echo "  Removed ~/.bashrc" || true
 	@[ -L ~/.zshrc ] && rm ~/.zshrc && echo "  Removed ~/.zshrc" || true
+	@[ -L ~/.shared.d ] && rm ~/.shared.d && echo "  Removed ~/.shared.d" || true
 	@[ -L ~/.shellrc.d ] && rm ~/.shellrc.d && echo "  Removed ~/.shellrc.d" || true
 	@[ -L ~/.bashrc.d ] && rm ~/.bashrc.d && echo "  Removed ~/.bashrc.d" || true
 	@[ -L ~/.config/nvim ] && rm ~/.config/nvim && echo "  Removed ~/.config/nvim" || true
 	@[ -L ~/.config/starship.toml ] && rm ~/.config/starship.toml && echo "  Removed ~/.config/starship.toml" || true
 	@echo "Done. Run 'make rollback' to restore previous config."
-
-# =============================================================================
-# LEGACY - Pack archives (for manual deployment)
-# =============================================================================
-pack-linux:
-	@echo "Building Linux config archive..."
-	@cd shell && tar -cvzf ../cfglx.tar.gz .bashrc .shellrc.d/
-	@echo "Created cfglx.tar.gz"
-
-pack-mac:
-	@echo "Building macOS config archive..."
-	@cd shell && tar -cvzf ../cfgmc.tar.gz .zshrc .shellrc.d/
-	@echo "Created cfgmc.tar.gz"
 
 # =============================================================================
 # STARSHIP PRESET
@@ -306,15 +284,15 @@ PRESET ?= gruvbox-rainbow
 
 starship-preset:
 	@printf "$(CYAN)Installing starship preset: $(YELLOW)$(PRESET)$(RESET)\n"
-	@starship preset $(PRESET) -o $(DOTFILES_DIR)/starship/starship.toml
-	@printf "$(GREEN)Done!$(RESET) Theme applied to starship/starship.toml\n"
+	@starship preset $(PRESET) -o $(DOTFILES_DIR)/shared/starship.toml
+	@printf "$(GREEN)Done!$(RESET) Theme applied to shared/starship.toml\n"
 	@printf "$(DIM)Browse presets: https://starship.rs/presets/$(RESET)\n"
 
 # =============================================================================
 # CLEAN
 # =============================================================================
 clean:
-	@rm -f cfglx.tar.gz cfgmc.tar.gz
+	@rm -f *.tar.gz
 	@echo "Cleaned build artifacts"
 
 # =============================================================================
@@ -334,7 +312,7 @@ bump-minor:
 bump-major:
 	@./scripts/bump-version.sh major
 
-# Deploy to server (customize SERVER variable)
+# Deploy to server
 SERVER ?= tldr.icu
 DEPLOY_PATH ?= /srv/dotfiles
 ARCHIVE_NAME ?= master.tar.gz

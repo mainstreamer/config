@@ -1,0 +1,6 @@
+#!/bin/sh
+# IP geolocation - shows your current country
+
+where() {
+    curl -s "ipinfo.io/$(curl -s ifconfig.me)" | jq '.country'
+}

@@ -1,9 +1,9 @@
--- Minimal mode detection
--- Set NVIM_MINIMAL=1 or create ~/.config/nvim/.minimal to enable
-local minimal = os.getenv("NVIM_MINIMAL") == "1" or
-    vim.fn.filereadable(vim.fn.expand("~/.config/nvim/.minimal")) == 1
-if minimal then
-    require('config.lazy-minimal')
+-- Standard mode detection
+-- Set NVIM_STANDARD=1 or create ~/.config/nvim/.standard to enable
+local standard = os.getenv("NVIM_STANDARD") == "1" or
+    vim.fn.filereadable(vim.fn.expand("~/.config/nvim/.standard")) == 1
+if standard then
+    require('config.lazy-standard')
     return
 end
 
@@ -13,7 +13,7 @@ vim.opt.clipboard = "unnamedplus"
 -- Map <Esc> to exit Terminal mode and enter Normal mode
 vim.api.nvim_set_keymap("t", "<Esc>", "<C-\\><C-n>", { noremap = true })
 
--- Show erorrs in popup window
+-- Show errors in popup window
 vim.keymap.set("n", "<C-k>", vim.diagnostic.open_float, { desc = "Line Diagnostics" })
 
 -- Add relative line numbers
@@ -27,8 +27,3 @@ vim.o.background = "dark"
 vim.api.nvim_set_keymap('n', '<leader>fix', ':!phpcbf %<CR>', { noremap = true, silent = true })
 
 require('config.lazy')
-
--- Variables to track terminal buffer and window
-local terminal_bufnr = nil
-local terminal_winid = nil
-

@@ -1,5 +1,0 @@
-function get_country {
-    curl -s ipinfo.io/$(curl -s ifconfig.me) | jq '.country'
-}
-
-alias 'where'='get_country'

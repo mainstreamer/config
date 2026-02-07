@@ -1,12 +1,12 @@
 # Dependency checker - run with: depcheck
-# Checks tools listed in ~/.shellrc.d/dep.lst
+# Checks tools listed in ~/.shared.d/dep.lst
 
 depcheck() {
     local GREEN='\033[0;32m'
     local RED='\033[0;31m'
     local YELLOW='\033[0;33m'
     local NC='\033[0m'
-    local DEP_FILE="$HOME/.shellrc.d/dep.lst"
+    local DEP_FILE="$HOME/.shared.d/dep.lst"
 
     if [ ! -f "$DEP_FILE" ]; then
         echo -e "${RED}Error: Dependency file '$DEP_FILE' not found.${NC}"

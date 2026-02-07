@@ -1,6 +1,6 @@
--- Minimal Neovim configuration
+-- Standard Neovim configuration
 -- Excludes LSP, autocompletion, and language-specific tooling
--- Use for lightweight editing on resource-constrained systems
+-- Use --dev mode install for full developer environment
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -269,8 +269,6 @@ vim.opt.listchars = {
 	extends = ">",
 	precedes = "<",
 }
-
-vim.opt.clipboard = "unnamedplus"
 
 -- Key bindings for commenting code
 vim.api.nvim_set_keymap(

@@ -499,9 +499,6 @@ vim.opt.listchars = {
 	precedes = "<", -- Indicate text that wraps before the left margin
 }
 
--- yank to system clipboard by default
-vim.opt.clipboard = "unnamedplus"
-
 -- Key bindings for commenting code
 vim.api.nvim_set_keymap("n", "<C-_>", "<cmd>lua require('Comment.api').toggle.linewise.current()<CR>", { noremap = true, silent = true }) -- Normal mode
 vim.api.nvim_set_keymap("v", "<C-_>", "<cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<CR>", { noremap = true, silent = true }) -- Visual mode
@@ -546,29 +543,5 @@ vim.g.loaded_netrwPlugin = 1
 -- Keybinding for opening/closing nvim-tree
 vim.api.nvim_set_keymap('n', '<C-n>', ':NvimTreeToggle<CR>', { noremap = true, silent = true })
 
-
--- Set GitSigns highlights
-vim.api.nvim_set_hl(0, 'GitSignsAdd', { link = 'GitSignsAdd' })
-vim.api.nvim_set_hl(0, 'GitSignsChange', { link = 'GitSignsChange' })
-vim.api.nvim_set_hl(0, 'GitSignsDelete', { link = 'GitSignsDelete' })
-vim.api.nvim_set_hl(0, 'GitSignsTopdelete', { link = 'GitSignsDelete' })
-vim.api.nvim_set_hl(0, 'GitSignsChangedelete', { link = 'GitSignsChangeDelete' })
-
--- Set up GitSigns keymaps
-vim.keymap.set('n', '<leader>gs', '<cmd>Gitsigns stage_hunk<cr>', { noremap = true })
-vim.keymap.set('n', '<leader>gr', '<cmd>Gitsigns reset_hunk<cr>', { noremap = true })
-vim.keymap.set('n', '<leader>gp', '<cmd>Gitsigns preview_hunk<cr>', { noremap = true })
-vim.keymap.set('n', '<leader>gn', '<cmd>Gitsigns next_hunk<cr>', { noremap = true })
-vim.keymap.set('n', '<leader>gp', '<cmd>Gitsigns prev_hunk<cr>', { noremap = true })
-
--- Optional: Set up custom highlights for blame information (if desired)
-vim.api.nvim_set_hl(0, 'GitSignsBlame', { fg = '#D4D4D4' })  -- Example highlight color
-
--- Keymap to show blame for the current line
-vim.keymap.set('n', '<leader>gb', function()
-	require('gitsigns').blame_line({full=true})
-end)
-
--- Terminal keymaps handled by toggleterm plugin
 
 

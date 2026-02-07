@@ -1,0 +1,64 @@
+#!/bin/sh
+# cleanup [days] - Organize media files into date-based folders
+#
+# Finds media files (video/image) larger than 512KB modified within N days
+# and moves them to ~/Documents/Cleanup/YYYY-MM-DD/ by file creation date.
+#
+# Usage:
+#   cleanup        # files modified in the last 1 day
+#   cleanup 7      # files modified in the last 7 days
+
+cleanup() {
+    local days="${1:-1}"
+    local base_dir="$HOME"
+    local cleanup_dir="$HOME/Documents/Cleanup"
+    local count=0
+
+    echo "Running ${days} day(s) cleanup..."
+    echo "Searching for media files >512KB..."
+
+    mkdir -p "$cleanup_dir"
+
+    find "$base_dir" -maxdepth 5 -type f \( \
+        -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.avi' \
+        -o -iname '*.mov' -o -iname '*.webm' \
+        -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \
+        -o -iname '*.gif' -o -iname '*.bmp' -o -iname '*.webp' \
+    \) -size +512k -mtime -"$days" \
+        ! -path "$cleanup_dir/*" \
+        ! -path "*/.*" \
+        -print0 2>/dev/null | while IFS= read -r -d '' file; do
+
+        # Get file date: try birth time first, fall back to mtime
+        local date_dir=""
+        if [ "$(uname -s)" = "Darwin" ]; then
+            # macOS: stat -f %B gives birth time in epoch
+            local btime
+            btime=$(stat -f %B "$file" 2>/dev/null)
+            if [ -n "$btime" ] && [ "$btime" != "0" ]; then
+                date_dir=$(date -r "$btime" +%Y-%m-%d 2>/dev/null)
+            else
+                date_dir=$(date -r "$(stat -f %m "$file")" +%Y-%m-%d 2>/dev/null)
+            fi
+        else
+            # Linux: stat -c %W gives birth time (0 if unsupported)
+            local btime
+            btime=$(stat -c %W "$file" 2>/dev/null)
+            if [ -n "$btime" ] && [ "$btime" != "0" ]; then
+                date_dir=$(date -d "@$btime" +%Y-%m-%d 2>/dev/null)
+            else
+                date_dir=$(date -d "@$(stat -c %Y "$file")" +%Y-%m-%d 2>/dev/null)
+            fi
+        fi
+
+        # Final fallback: today's date
+        [ -z "$date_dir" ] && date_dir=$(date +%Y-%m-%d)
+
+        local target="$cleanup_dir/$date_dir"
+        mkdir -p "$target"
+        mv "$file" "$target/" && echo "  $(basename "$file") -> $target/"
+        count=$((count + 1))
+    done
+
+    echo "Cleanup complete. $count file(s) moved."
+}

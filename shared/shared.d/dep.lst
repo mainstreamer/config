@@ -1,0 +1,27 @@
+# Standard CLI tools
+git
+curl
+wget
+jq
+fzf
+rg
+fd
+bat
+eza
+zoxide
+starship
+lazygit
+delta
+gh
+nvim
+htop
+btop
+atuin
+tree
+
+# Media
+feh
+ffmpeg
+
+# Encryption
+openssl

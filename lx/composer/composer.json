@@ -1,6 +1,0 @@
-{
-    "require": {
-        "phpactor/phpactor": "^2024.6",
-        "squizlabs/php_codesniffer": "^3.10"
-    }
-}

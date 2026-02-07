@@ -1,5 +1,0 @@
-alias gpom='git push origin master'
-alias gcb='git checkout -b'
-alias gcq='git commit -a -m "commit $(date)"'
-alias gca='git commit -a -m '
-alias gc='git commit'
