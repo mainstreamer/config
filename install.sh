@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.13"
+VERSION="2.2.14"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -136,8 +136,32 @@ setup_config_dir() {
         error "Expected 'shared' and 'nvim' directories not found."
         return 1
     fi
-    
-    ok "Configuration archive downloaded successfully"
+
+    # Check for critical files that must exist
+    local missing_files=0
+    local critical_files=(
+        "$TEMP_EXTRACT/shared/.bashrc"
+        "$TEMP_EXTRACT/shared/.bash_profile"
+        "$TEMP_EXTRACT/shared/.profile"
+        "$TEMP_EXTRACT/shared/.zshrc"
+        "$TEMP_EXTRACT/shared/shared.d/aliases"
+        "$TEMP_EXTRACT/shared/starship.toml"
+    )
+
+    for file in "${critical_files[@]}"; do
+        if [ ! -f "$file" ]; then
+            error "Critical file missing: $file"
+            missing_files=$((missing_files + 1))
+        fi
+    done
+
+    if [ $missing_files -gt 0 ]; then
+        error "Archive is incomplete! $missing_files critical files missing."
+        error "Please try again or check your internet connection."
+        return 1
+    fi
+
+    ok "Configuration archive downloaded and verified successfully"
     
     # Backup existing configuration if present
     if [ -d "$DOTFILES_TARGET" ]; then
@@ -147,10 +171,33 @@ setup_config_dir() {
     
     # Move new configuration into place (atomic operation)
     info "Activating new configuration..."
-    rm -rf "$DOTFILES_TARGET"
-    mv "$TEMP_EXTRACT" "$DOTFILES_TARGET"
+    
+    # Self-healing: Ensure target directory is completely removed
+    if [ -d "$DOTFILES_TARGET" ]; then
+        info "Removing old configuration..."
+        rm -rf "$DOTFILES_TARGET" || {
+            error "Failed to remove old configuration!"
+            error "Please manually remove: $DOTFILES_TARGET"
+            return 1
+        }
+    fi
+    
+    # Move new configuration
+    mv "$TEMP_EXTRACT" "$DOTFILES_TARGET" || {
+        error "Failed to move new configuration!"
+        error "Please check permissions and try again."
+        return 1
+    }
+    
+    # Verify the move was successful
+    if [ ! -d "$DOTFILES_TARGET" ]; then
+        error "Configuration move failed! Target directory not found."
+        error "Please check disk space and permissions."
+        return 1
+    fi
+    
     DOTFILES_DIR="$DOTFILES_TARGET"
-    ok "Configuration activated"
+    ok "Configuration activated successfully"
     
     # Run platform configuration after extraction
     run_platform_config
@@ -849,6 +896,38 @@ link_shell() {
     else
         warn "Shell config not found, skipping"
     fi
+    
+    # Verify all symlinks were created successfully
+    info "Verifying symlinks..."
+    local broken_symlinks=0
+    local symlinks_to_check=(
+        "$HOME/.shared.d"
+        "$HOME/.bashrc"
+        "$HOME/.zshrc"
+        "$HOME/.bash_profile"
+        "$HOME/.profile"
+    )
+    
+    for symlink in "${symlinks_to_check[@]}"; do
+        if [ -L "$symlink" ]; then
+            # Check if symlink target exists
+            if [ ! -e "$symlink" ]; then
+                error "Broken symlink: $symlink -> $(readlink $symlink)"
+                broken_symlinks=$((broken_symlinks + 1))
+            fi
+        else
+            # Symlink doesn't exist (only warn, not error)
+            warn "Symlink not created: $symlink"
+        fi
+    done
+    
+    if [ $broken_symlinks -gt 0 ]; then
+        error "$broken_symlinks broken symlinks found!"
+        error "Please check the installation and try again."
+        return 1
+    fi
+    
+    ok "All symlinks verified"
 }
 
 link_nvim() {
