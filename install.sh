@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.14"
+VERSION="2.2.15"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -1039,17 +1039,55 @@ post_install() {
     # Initialize zoxide
     command -v zoxide &>/dev/null && eval "$(zoxide init bash)" 2>/dev/null || true
 
-    # Sync neovim plugins
+    # Sync neovim plugins - enhanced with better error handling
     if command -v nvim &>/dev/null; then
         info "Syncing Neovim plugins (this may take a moment)..."
-        if [ "$DEV_MODE" != true ]; then
-            NVIM_STANDARD=1 nvim --headless "+Lazy! sync" +qa 2>/dev/null || warn "Nvim plugin sync skipped"
+        
+        # Try multiple times if needed
+        local max_attempts=3
+        local attempt=1
+        local success=false
+        
+        while [ $attempt -le $max_attempts ] && [ "$success" = false ]; do
+            info "Attempt $attempt/$max_attempts..."
+            
+            if [ "$DEV_MODE" != true ]; then
+                if NVIM_STANDARD=1 nvim --headless "+Lazy! sync" +qa; then
+                    success=true
+                fi
+            else
+                if nvim --headless "+Lazy! sync" +qa; then
+                    success=true
+                fi
+            fi
+            
+            if [ "$success" = false ]; then
+                warn "Plugin sync attempt $attempt failed, retrying..."
+                attempt=$((attempt + 1))
+                sleep 2
+            fi
+        done
+        
+        if [ "$success" = false ]; then
+            error "Failed to sync Neovim plugins after $max_attempts attempts!"
+            error "Please run: nvim --headless \"+Lazy! sync\" +qa"
         else
-            nvim --headless "+Lazy! sync" +qa 2>/dev/null || warn "Nvim plugin sync skipped"
+            ok "Neovim plugins synced successfully"
         fi
+    else
+        warn "nvim not found, skipping plugin sync"
     fi
 
     ok "Post-install complete"
+    
+    # Install treesitter parsers if nvim is available
+    if command -v nvim &>/dev/null; then
+        info "Installing treesitter parsers..."
+        nvim --headless "+TSInstall all" +qa 2>/dev/null || {
+            warn "Some treesitter parsers may not be installed"
+            nvim --headless "+TSInstall lua vim bash javascript typescript python json" +qa 2>/dev/null || true
+        }
+    fi
 }
 
 # ------------------------------------------------------------------------------
