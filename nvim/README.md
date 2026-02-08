@@ -4,6 +4,29 @@
  
 - https://www.nerdfonts.com/ (any)
 
+#### Troubleshooting
+
+If you encounter the error `module 'nvim-treesitter.configs' not found`, it means the treesitter plugin hasn't been installed yet. Run these commands to fix it:
+
+```bash
+# Install the treesitter plugin and parsers
+nvim --headless "+TSInstall all" +qa
+
+# Or install specific parsers
+nvim --headless "+TSInstall lua vim bash javascript python json" +qa
+
+# Then restart Neovim
+```
+
+If the issue persists, try:
+```bash
+# Update all plugins
+nvim --headless "+Lazy! sync" +qa
+
+# Then install treesitter parsers
+nvim --headless "+TSInstall all" +qa
+```
+
 #### Key bindings
 
 ### Navigation

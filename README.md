@@ -25,3 +25,20 @@ epicli-conf update    # Update to latest
 Fedora, Debian, Ubuntu, Pop!_OS, Arch, Alpine, macOS
 
 See [CLAUDE.md](CLAUDE.md) for full documentation.
+
+## Troubleshooting
+
+### Neovim Treesitter Issues
+
+If you encounter the error `module 'nvim-treesitter.configs' not found` when starting Neovim:
+
+```bash
+# Run the fix script
+./scripts/fix-treesitter.sh
+
+# Or manually:
+nvim --headless "+TSInstall all" +qa
+nvim --headless "+Lazy! sync" +qa
+```
+
+This installs the required treesitter parsers for syntax highlighting.

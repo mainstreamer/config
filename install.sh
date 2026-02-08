@@ -1091,10 +1091,28 @@ post_install() {
     # Install treesitter parsers if nvim is available
     if command -v nvim &>/dev/null; then
         info "Installing treesitter parsers..."
-        nvim --headless "+TSInstall all" +qa 2>/dev/null || {
-            warn "Some treesitter parsers may not be installed"
-            nvim --headless "+TSInstall lua vim bash javascript typescript python json" +qa 2>/dev/null || true
-        }
+        
+        # First, ensure the treesitter plugin is installed
+        if [ "$DEV_MODE" != true ]; then
+            info "Ensuring treesitter plugin is available (standard mode)..."
+            NVIM_STANDARD=1 nvim --headless "+Lazy! install nvim-treesitter" +qa 2>/dev/null || true
+        else
+            info "Ensuring treesitter plugin is available (dev mode)..."
+            nvim --headless "+Lazy! install nvim-treesitter" +qa 2>/dev/null || true
+        fi
+        
+        # Try to install all parsers first
+        if nvim --headless "+TSInstall all" +qa 2>/dev/null; then
+            ok "Treesitter parsers installed successfully"
+        else
+            warn "Failed to install all treesitter parsers, trying essential ones..."
+            if nvim --headless "+TSInstall lua vim bash javascript typescript python json" +qa 2>/dev/null; then
+                ok "Essential treesitter parsers installed"
+            else
+                warn "Treesitter parser installation failed - some syntax highlighting may not work"
+                warn "Please run: nvim --headless \"+TSInstall all\" +qa manually"
+            fi
+        fi
     fi
 }
 
@@ -1135,6 +1153,15 @@ print_summary() {
     if [ "$DEV_MODE" != true ]; then
         echo "Standard mode installed. For full dev environment:"
         echo "  curl -fsSL https://tldr.icu/i | bash -s -- --dev"
+        echo ""
+    fi
+
+    # Add treesitter troubleshooting info if parsers might not be installed
+    if command -v nvim &>/dev/null; then
+        echo "Troubleshooting:"
+        echo "  If you see 'nvim-treesitter.configs not found' errors:"
+        echo "    nvim --headless \"+TSInstall all\" +qa"
+        echo "    nvim --headless \"+Lazy! sync\" +qa"
         echo ""
     fi
 

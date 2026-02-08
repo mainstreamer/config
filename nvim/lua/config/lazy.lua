@@ -57,7 +57,13 @@ local plugins = {
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
 		config = function()
-			require("nvim-treesitter.configs").setup({
+			local status_ok, configs = pcall(require, "nvim-treesitter.configs")
+			if not status_ok then
+				vim.notify("nvim-treesitter.configs not found. Please run :TSUpdate to install parsers.", vim.log.levels.WARN)
+				return
+			end
+			
+			configs.setup({
 				ensure_installed = { "javascript", "python", "lua", "php", "html", "css", "rust", "go", "c", "ruby" },
 				highlight = { enable = true, additional_vim_regex_highlighting = true },
 				-- TODO WTF is this?
