@@ -26,6 +26,14 @@ export PATH="$PATH:$HOME/.cargo/bin"
 [ -d "$HOME/.config/composer/vendor/bin" ] && export PATH="$PATH:$HOME/.config/composer/vendor/bin"
 [ -d "$HOME/.composer/vendor/bin" ] && export PATH="$PATH:$HOME/.composer/vendor/bin"
 
+# Linuxbrew (Homebrew on Linux)
+if [ -d "/home/linuxbrew/.linuxbrew/bin" ]; then
+    export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
+fi
+if [ -d "$HOME/.linuxbrew/bin" ]; then
+    export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"
+fi
+
 # FZF
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 

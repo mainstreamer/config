@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.5"
+VERSION="2.2.6"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -204,8 +204,22 @@ install_homebrew() {
     # Add to path for this session
     if [ "$PLATFORM" = "linux" ]; then
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    else
-        eval "$(/opt/homebrew/bin/brew shellenv)"
+        # Add Linuxbrew to PATH permanently
+        echo '# Linuxbrew (Homebrew on Linux)' >> "$HOME/.bashrc"
+        echo 'if [ -d "/home/linuxbrew/.linuxbrew/bin" ]; then' >> "$HOME/.bashrc"
+        echo '    export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"' >> "$HOME/.bashrc"
+        echo 'fi' >> "$HOME/.bashrc"
+        echo 'if [ -d "$HOME/.linuxbrew/bin" ]; then' >> "$HOME/.bashrc"
+        echo '    export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"' >> "$HOME/.bashrc"
+        echo 'fi' >> "$HOME/.bashrc"
+        
+        echo '# Linuxbrew (Homebrew on Linux)' >> "$HOME/.zshrc"
+        echo 'if [ -d "/home/linuxbrew/.linuxbrew/bin" ]; then' >> "$HOME/.zshrc"
+        echo '    export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"' >> "$HOME/.zshrc"
+        echo 'fi' >> "$HOME/.zshrc"
+        echo 'if [ -d "$HOME/.linuxbrew/bin" ]; then' >> "$HOME/.zshrc"
+        echo '    export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"' >> "$HOME/.zshrc"
+        echo 'fi' >> "$HOME/.zshrc"
     fi
 
     # Apply Linuxbrew performance optimizations
