@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# CLI commands: version, check, update, uninstall
+# Also generates the standalone CLI helper script
+
+cmd_uninstall() {
+    echo -e "${RED}================================${NC}"
+    echo -e "${RED}  $PROJECT_NAME Uninstall${NC}"
+    echo -e "${RED}================================${NC}"
+    echo ""
+    echo "This will remove:"
+    echo "  - $DOTFILES_TARGET"
+    echo "  - $VERSION_FILE"
+    echo "  - $MANIFEST_FILE"
+    echo "  - ~/.local/bin/$PROJECT_NAME"
+    echo "  - Symlinks (~/.bashrc, ~/.bash_profile, ~/.profile, ~/.config/nvim, etc.)"
+    echo "  - Homebrew (/home/linuxbrew/.linuxbrew)"
+    echo ""
+    read -p "Are you sure? [y/N] " confirm
+    [[ "$confirm" != [yY] ]] && echo "Aborted." && exit 0
+
+    info "Removing symlinks..."
+    rm -f "$HOME/.bashrc" 2>/dev/null
+    rm -f "$HOME/.zshrc" 2>/dev/null
+    rm -f "$HOME/.bash_profile" 2>/dev/null
+    rm -f "$HOME/.profile" 2>/dev/null
+    rm -rf "$HOME/.shared.d" 2>/dev/null
+    rm -rf "$HOME/.shellrc.d" 2>/dev/null
+    rm -rf "$HOME/.bashrc.d" 2>/dev/null
+    rm -rf "$HOME/.config/nvim" 2>/dev/null
+    rm -f "$HOME/.config/starship.toml" 2>/dev/null
+
+    info "Removing $PROJECT_NAME..."
+    rm -rf "$DOTFILES_TARGET"
+    rm -f "$VERSION_FILE"
+    rm -f "$MANIFEST_FILE"
+    rm -f "$HOME/.local/bin/$PROJECT_NAME"
+
+    info "Removing Homebrew..."
+    if [ -d "/home/linuxbrew/.linuxbrew" ]; then
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)" -- --force
+    fi
+    if [ -d "$HOME/.linuxbrew" ]; then
+        rm -rf "$HOME/.linuxbrew"
+    fi
+
+    echo ""
+    ok "Uninstall complete."
+    echo ""
+    echo "You may want to restore your original .bashrc:"
+    echo "  cp /etc/skel/.bashrc ~/"
+    echo ""
+    echo "Then restart your shell or: exec bash"
+}
+
+cmd_version() {
+    echo -e "${BLUE}$PROJECT_NAME${NC} v$(get_local_version) ($(get_install_date))"
+
+    if [ -f "$MANIFEST_FILE" ]; then
+        local mode=$(grep '^mode=' "$MANIFEST_FILE" | cut -d= -f2)
+        local platform=$(grep '^platform=' "$MANIFEST_FILE" | cut -d= -f2)
+        echo "  Mode: $mode | Platform: $platform | Location: $DOTFILES_TARGET"
+
+        # Display each section from manifest
+        local sections="tools dev-tools configs utilities"
+        for section in $sections; do
+            local content
+            content=$(sed -n "/^\[$section\]/,/^\[/{/^\[/d;/^#/d;/^$/d;p}" "$MANIFEST_FILE" 2>/dev/null)
+            [ -z "$content" ] && continue
+
+            local count
+            count=$(echo "$content" | wc -l)
+            local label="$section"
+            case "$section" in
+                tools)     label="Tools ($count)" ;;
+                dev-tools) label="Dev tools ($count)" ;;
+                configs)   label="Configs" ;;
+                utilities) label="Utilities ($count)" ;;
+            esac
+
+            echo ""
+            echo -e "  ${GREEN}$label:${NC}"
+            echo "$content" | while IFS= read -r line; do
+                echo "    $line"
+            done
+        done
+    else
+        echo "  Location: $DOTFILES_TARGET"
+        echo "  (no manifest - run install to generate)"
+    fi
+}
+
+cmd_check() {
+    local local_ver=$(get_local_version)
+    local remote_ver=$(get_remote_version)
+
+    echo "Installed: $local_ver"
+    echo "Available: $remote_ver"
+
+    if [ "$local_ver" = "none" ]; then
+        echo -e "\n${YELLOW}Not installed.${NC} Run: curl -fsSL $BASE_URL/i | bash"
+        return 1
+    elif [ "$local_ver" = "$remote_ver" ]; then
+        echo -e "\n${GREEN}Up to date.${NC}"
+        return 0
+    else
+        echo -e "\n${YELLOW}Update available.${NC} Run: curl -fsSL $BASE_URL/i | bash"
+        return 2
+    fi
+}
+
+cmd_update() {
+    local local_ver=$(get_local_version)
+    local remote_ver=$(get_remote_version)
+
+    if [ "$local_ver" = "$remote_ver" ]; then
+        ok "Already at $local_ver"
+        return 0
+    fi
+
+    info "Updating $local_ver -> $remote_ver"
+    exec curl -fsSL "$BASE_URL/i" | bash
+}
+
+cmd_force_update() {
+    info "Forcing fresh installation (ignoring version check)..."
+    exec curl -fsSL "$BASE_URL/i" | bash
+}
+
+# Generate and install the standalone CLI helper to ~/.local/bin
+install_cli() {
+    local cli_path="$HOME/.local/bin/$PROJECT_NAME"
+    mkdir -p "$HOME/.local/bin"
+
+    cat > "$cli_path" << EOF
+#!/usr/bin/env bash
+URL="https://tldr.icu"
+VER_FILE="\$HOME/.${PROJECT_NAME}-version"
+DOTFILES="\${DOTFILES_TARGET:-\$HOME/.$PROJECT_NAME}"
+
+case "\${1:-status}" in
+    status|version)
+        if [ -f "\$VER_FILE" ]; then
+            MANIFEST="\$HOME/.${PROJECT_NAME}-manifest"
+            ver=\$(head -1 "\$VER_FILE")
+            date=\$(sed -n '2p' "\$VER_FILE")
+            echo "$PROJECT_NAME v\$ver (\$date)"
+            if [ -f "\$MANIFEST" ]; then
+                mode=\$(grep '^mode=' "\$MANIFEST" | cut -d= -f2)
+                platform=\$(grep '^platform=' "\$MANIFEST" | cut -d= -f2)
+                echo "  Mode: \$mode | Platform: \$platform"
+                echo ""
+                for section in tools dev-tools configs utilities; do
+                    content=\$(sed -n "/^\[\$section\]/,/^\[/{/^\[/d;/^#/d;/^\$/d;p}" "\$MANIFEST" 2>/dev/null)
+                    [ -z "\$content" ] && continue
+                    count=\$(echo "\$content" | wc -l)
+                    case "\$section" in
+                        tools)     label="Tools (\$count)" ;;
+                        dev-tools) label="Dev tools (\$count)" ;;
+                        configs)   label="Configs" ;;
+                        utilities) label="Utilities (\$count)" ;;
+                    esac
+                    echo "  \$label:"
+                    echo "\$content" | while IFS= read -r line; do echo "    \$line"; done
+                    echo ""
+                done
+            fi
+        else
+            echo "not installed"
+        fi
+        ;;
+    check)
+        local_ver=\$(head -1 "\$VER_FILE" 2>/dev/null || echo "none")
+        remote_ver=\$(curl -fsSL "\$URL/latest" 2>/dev/null || echo "?")
+        echo "Installed: \$local_ver"
+        echo "Available: \$remote_ver"
+        [ "\$local_ver" = "\$remote_ver" ] && echo "Up to date." || echo "Run: $PROJECT_NAME update"
+        ;;
+    update)
+        curl -fsSL "\$URL/i" | bash
+        ;;
+    force-update|--force)
+        curl -fsSL "\$URL/i" | bash
+        ;;
+    uninstall)
+        [ -f "\$DOTFILES/install.sh" ] && bash "\$DOTFILES/install.sh" uninstall || curl -fsSL "\$URL/i" | bash -s -- uninstall
+        ;;
+    *)
+        echo "Usage: $PROJECT_NAME [status|check|update|force-update|uninstall]"
+        ;;
+esac
+EOF
+
+    chmod +x "$cli_path"
+    ok "Installed '$PROJECT_NAME' CLI"
+}

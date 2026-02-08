@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.3.0"
+VERSION="2.4.0"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -44,124 +44,9 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # Prevent apt from hanging on prompts
 export DEBIAN_FRONTEND=noninteractive
 
-# Version helpers
-get_local_version() {
-    [ -f "$VERSION_FILE" ] && head -1 "$VERSION_FILE" || echo "none"
-}
-
-get_remote_version() {
-    curl -fsSL "$BASE_URL/latest" 2>/dev/null || echo "unknown"
-}
-
-get_install_date() {
-    [ -f "$VERSION_FILE" ] && sed -n '2p' "$VERSION_FILE" || echo "never"
-}
-
-save_version() {
-    echo "$VERSION" > "$VERSION_FILE"
-    date +%Y-%m-%d >> "$VERSION_FILE"
-}
-
-generate_manifest() {
-    local mode="standard"
-    [ "$DEV_MODE" = true ] && mode="dev"
-
-    cat > "$MANIFEST_FILE" << MEOF
-# $PROJECT_NAME manifest - generated $(date +%Y-%m-%d)
-mode=$mode
-version=$VERSION
-platform=${DISTRO:-unknown}
-MEOF
-
-    # Tools section - only list what's actually installed
-    echo "" >> "$MANIFEST_FILE"
-    echo "[tools]" >> "$MANIFEST_FILE"
-    local tools=(
-        "nvim:Modern editor"
-        "starship:Cross-shell prompt"
-        "fzf:Fuzzy finder"
-        "rg:Fast grep (ripgrep)"
-        "fd:Fast find"
-        "bat:cat + syntax highlighting"
-        "eza:Modern ls"
-        "zoxide:Smart cd (z)"
-        "lazygit:Terminal git UI"
-        "delta:Better git diffs"
-        "gh:GitHub CLI"
-        "tmux:Terminal multiplexer"
-        "atuin:Shell history sync"
-        "htop:Process viewer"
-        "btop:Process viewer"
-        "ffmpeg:Media toolkit"
-        "tree:Directory tree"
-    )
-    for entry in "${tools[@]}"; do
-        local cmd="${entry%%:*}"
-        local desc="${entry#*:}"
-        if command -v "$cmd" &>/dev/null; then
-            printf "%-12s %s\n" "$cmd" "$desc" >> "$MANIFEST_FILE"
-        fi
-    done
-
-    # Dev tools (only if dev mode)
-    if [ "$DEV_MODE" = true ]; then
-        echo "" >> "$MANIFEST_FILE"
-        echo "[dev-tools]" >> "$MANIFEST_FILE"
-        local dev_tools=(
-            "node:Node.js runtime"
-            "tsc:TypeScript compiler"
-            "php:PHP runtime"
-            "composer:PHP package manager"
-            "python3:Python runtime"
-            "rustc:Rust compiler"
-            "go:Go runtime"
-            "gopls:Go LSP"
-            "pyright:Python LSP"
-            "rust-analyzer:Rust LSP"
-        )
-        for entry in "${dev_tools[@]}"; do
-            local cmd="${entry%%:*}"
-            local desc="${entry#*:}"
-            if command -v "$cmd" &>/dev/null; then
-                printf "%-12s %s\n" "$cmd" "$desc" >> "$MANIFEST_FILE"
-            fi
-        done
-    fi
-
-    # Configs section - check what was linked
-    echo "" >> "$MANIFEST_FILE"
-    echo "[configs]" >> "$MANIFEST_FILE"
-    [ -L "$HOME/.bashrc" ] && printf "%-12s %s\n" "shell" "bashrc, zshrc, shared.d" >> "$MANIFEST_FILE"
-    [ -L "$HOME/.config/nvim" ] && printf "%-12s %s\n" "nvim" "Neovim ($mode mode)" >> "$MANIFEST_FILE"
-    [ -L "$HOME/.config/starship.toml" ] && printf "%-12s %s\n" "starship" "Starship prompt" >> "$MANIFEST_FILE"
-
-    # Shell utilities section
-    echo "" >> "$MANIFEST_FILE"
-    echo "[utilities]" >> "$MANIFEST_FILE"
-    local utils=(
-        "aliases:Shell aliases & git shortcuts"
-        "prompt:Starship prompt init"
-        "docker:Docker helpers (dc, dsh, dclean)"
-        "cleanup:Media file organizer"
-        "depcheck:Dependency checker"
-        "enc:File encryption"
-        "key:USB key management"
-        "rec:Screen recording (ffmpeg)"
-        "where:IP geolocation"
-        "hidevpn:VPN toggle"
-        "atuin:Shell history (opt-in)"
-        "unglitch:Terminal reset"
-    )
-    if [ -d "$DOTFILES_DIR/shared/shared.d" ]; then
-        for entry in "${utils[@]}"; do
-            local name="${entry%%:*}"
-            local desc="${entry#*:}"
-            if [ -f "$DOTFILES_DIR/shared/shared.d/$name" ]; then
-                printf "%-12s %s\n" "$name" "$desc" >> "$MANIFEST_FILE"
-            fi
-        done
-    fi
-}
+# ------------------------------------------------------------------------------
+# Utility helpers (needed by both bootstrap and lib/ code)
+# ------------------------------------------------------------------------------
 
 # Run command with sudo (dev mode only)
 maybe_sudo() {
@@ -203,8 +88,10 @@ print_install_hint() {
 }
 
 # ------------------------------------------------------------------------------
-# Detect if running from repo or standalone (curl | bash)
+# Bootstrap: detect environment and download repo if needed
+# (Must work standalone before lib/ files are available)
 # ------------------------------------------------------------------------------
+
 setup_config_dir() {
     local script_dir=""
 
@@ -254,10 +141,10 @@ setup_config_dir() {
 
     # Download and extract archive
     info "Trying $BASE_URL..."
-    
+
     # Always extract to temporary directory first
     TEMP_EXTRACT=$(mktemp -d)
-    
+
     # Download from primary source
     if ! curl -fsSL "$ARCHIVE_URL_SELF" 2>/dev/null | tar -xz -C "$TEMP_EXTRACT" --strip-components=1 2>/dev/null; then
         info "Falling back to GitHub..."
@@ -267,7 +154,7 @@ setup_config_dir() {
             return 1
         fi
     fi
-    
+
     # Verify download was successful
     if [ ! -d "$TEMP_EXTRACT/shared" ] || [ ! -d "$TEMP_EXTRACT/nvim" ]; then
         error "Downloaded archive is corrupted or incomplete!"
@@ -300,16 +187,16 @@ setup_config_dir() {
     fi
 
     ok "Configuration archive downloaded and verified successfully"
-    
+
     # Backup existing configuration if present
     if [ -d "$DOTFILES_TARGET" ]; then
         info "Backing up existing configuration..."
         backup_existing
     fi
-    
+
     # Move new configuration into place (atomic operation)
     info "Activating new configuration..."
-    
+
     # Self-healing: Ensure target directory is completely removed
     if [ -d "$DOTFILES_TARGET" ]; then
         info "Removing old configuration..."
@@ -319,33 +206,55 @@ setup_config_dir() {
             return 1
         }
     fi
-    
+
     # Move new configuration
     mv "$TEMP_EXTRACT" "$DOTFILES_TARGET" || {
         error "Failed to move new configuration!"
         error "Please check permissions and try again."
         return 1
     }
-    
+
     # Verify the move was successful
     if [ ! -d "$DOTFILES_TARGET" ]; then
         error "Configuration move failed! Target directory not found."
         error "Please check disk space and permissions."
         return 1
     fi
-    
+
     DOTFILES_DIR="$DOTFILES_TARGET"
     ok "Configuration activated successfully"
-    
+
     # Run platform configuration after extraction (dev mode only - needs sudo)
     if [ "$DEV_MODE" = true ]; then
         run_platform_config
     fi
 }
 
+# Platform-specific configuration (delegates to deps/platform/)
+run_platform_config() {
+    local platform_installer="$DOTFILES_DIR/deps/platform/installer.sh"
+
+    if [ ! -f "$platform_installer" ]; then
+        warn "Platform installer script not found: $platform_installer"
+        return 1
+    fi
+
+    info "Running platform configuration for $DISTRO..."
+
+    # Run the platform installation driver
+    if source "$platform_installer" "$DISTRO"; then
+        ok "Platform configuration completed for $DISTRO"
+        return 0
+    else
+        warn "Failed to complete platform configuration for $DISTRO"
+        return 1
+    fi
+}
+
 # ------------------------------------------------------------------------------
 # Detect OS and Distro
 # ------------------------------------------------------------------------------
+
 detect_os() {
     case "$OS" in
         Linux*)
@@ -381,940 +290,9 @@ detect_os() {
 }
 
 # ------------------------------------------------------------------------------
-# Install Homebrew (Fedora, Debian, macOS)
-# ------------------------------------------------------------------------------
-install_homebrew() {
-    if command -v brew &>/dev/null; then
-        ok "Homebrew already installed"
-        return
-    fi
-
-    # Homebrew requires git + gcc
-    local missing_prereqs
-    missing_prereqs=$(check_commands_present git gcc make curl) || true
-    if [ -n "$missing_prereqs" ]; then
-        if [ "$DEV_MODE" = true ]; then
-            info "Installing Homebrew prerequisites: $missing_prereqs"
-            case "$DISTRO" in
-                fedora)
-                    maybe_sudo dnf install -y git gcc gcc-c++ make curl
-                    ;;
-                debian|ubuntu|popos)
-                    maybe_sudo apt update && maybe_sudo apt install -y git build-essential curl
-                    ;;
-            esac
-        else
-            warn "Missing Homebrew prerequisites: $missing_prereqs"
-            case "$DISTRO" in
-                fedora) print_install_hint "git gcc gcc-c++ make curl" ;;
-                debian|ubuntu|popos) print_install_hint "git build-essential curl" ;;
-            esac
-            warn "Attempting Homebrew install anyway..."
-        fi
-    fi
-
-    info "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-    # Add to path for this session
-    if [ "$PLATFORM" = "linux" ]; then
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    fi
-
-    # Set performance env vars for this session (repo shell configs handle persistence)
-    export HOMEBREW_NO_AUTO_UPDATE=1
-    export HOMEBREW_INSTALL_FROM_API=1
-
-    ok "Homebrew installed"
-}
-
-# Platform-specific configuration
-# ------------------------------------------------------------------------------
-run_platform_config() {
-    local platform_installer="$DOTFILES_DIR/deps/platform/installer.sh"
-    
-    if [ ! -f "$platform_installer" ]; then
-        warn "Platform installer script not found: $platform_installer"
-        return 1
-    fi
-    
-    info "Running platform configuration for $DISTRO..."
-    
-    # Run the platform installation driver
-    if source "$platform_installer" "$DISTRO"; then
-        ok "Platform configuration completed for $DISTRO"
-        return 0
-    else
-        warn "Failed to complete platform configuration for $DISTRO"
-        return 1
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Install dependencies based on distro
-# ------------------------------------------------------------------------------
-install_deps() {
-    mkdir -p "$HOME/.local/bin"
-    export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-
-    case "$DISTRO" in
-        fedora|debian|macos)
-            install_homebrew
-            install_brew_packages
-            ;;
-        ubuntu|popos)
-            install_ubuntu_packages
-            ;;
-        arch)
-            install_arch_packages
-            ;;
-        alpine)
-            install_alpine_packages
-            ;;
-        *)
-            warn "Unknown distro '$DISTRO', attempting Homebrew install"
-            install_homebrew
-            install_brew_packages
-            ;;
-    esac
-
-    # Platform-specific extras
-    if [ "$PLATFORM" = "linux" ]; then
-        install_linux_extras
-    else
-        install_macos_extras
-    fi
-
-    ok "Dependencies installed"
-}
-
-# ------------------------------------------------------------------------------
-# Homebrew-based install (Fedora, Debian, macOS)
-# ------------------------------------------------------------------------------
-install_brew_packages() {
-    info "Installing packages from Brewfile..."
-    cd "$DOTFILES_DIR"
-
-    # Standard packages (always)
-    brew bundle --file=deps/Brewfile 2>/dev/null || {
-        # Fallback: install core packages individually
-        brew install curl wget jq fzf ripgrep fd bat eza zoxide tree \
-            neovim tmux starship lazygit delta gh htop btop atuin 2>/dev/null || true
-    }
-
-    # Dev packages (only in dev mode)
-    if [ "$DEV_MODE" = true ] && [ -f "$DOTFILES_DIR/deps/Brewfile.dev" ]; then
-        info "Installing dev packages from Brewfile.dev..."
-        brew bundle --file=deps/Brewfile.dev 2>/dev/null || true
-    fi
-
-    # Ensure proper permissions for shared scripts
-    info "Setting proper permissions for shared scripts..."
-    find "$DOTFILES_DIR/shared/shared.d" -type f -exec chmod +x {} \; 2>/dev/null || true
-    chmod +x "$DOTFILES_DIR/shared/.bashrc" 2>/dev/null || true
-    chmod +x "$DOTFILES_DIR/shared/.zshrc" 2>/dev/null || true
-
-    # Verify critical tools are installed
-    info "Verifying critical tools..."
-    
-    # Starship is CRITICAL for prompt - install it first
-    if ! command -v starship &>/dev/null; then
-        warn "starship not found - this is required for prompt!"
-        if command -v brew &>/dev/null; then
-            if brew install starship; then
-                ok "starship installed via brew"
-            else
-                error "brew failed to install starship"
-                return 1
-            fi
-        else
-            info "Installing starship via curl..."
-            if curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir "$HOME/.local/bin"; then
-                ok "starship installed via curl"
-            else
-                error "Failed to install starship - this is critical!"
-                return 1
-            fi
-        fi
-    else
-        ok "starship already installed"
-    fi
-
-    # Other tools
-    if ! command -v eza &>/dev/null; then
-        warn "eza not found, installing..."
-        brew install eza 2>/dev/null || echo "Failed to install eza"
-    fi
-
-    if ! command -v bat &>/dev/null; then
-        warn "bat not found, installing..."
-        brew install bat 2>/dev/null || echo "Failed to install bat"
-    fi
-
-    if ! command -v zoxide &>/dev/null; then
-        warn "zoxide not found, installing..."
-        brew install zoxide 2>/dev/null || echo "Failed to install zoxide"
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Ubuntu/Pop!_OS packages (apt + GitHub releases)
-# ------------------------------------------------------------------------------
-install_ubuntu_packages() {
-    info "Installing packages via apt..."
-
-    local apt_packages="git curl wget jq fzf tree htop btop neovim make gcc"
-    local apt_extras="fd-find bat ripgrep"
-    local missing_apt=""
-    local missing_extras=""
-
-    for pkg in $apt_packages; do
-        dpkg -s "$pkg" &>/dev/null 2>&1 || missing_apt="$missing_apt $pkg"
-    done
-    for pkg in $apt_extras; do
-        dpkg -s "$pkg" &>/dev/null 2>&1 || missing_extras="$missing_extras $pkg"
-    done
-
-    if [ -n "$missing_apt" ] || [ -n "$missing_extras" ]; then
-        if [ "$DEV_MODE" = true ]; then
-            maybe_sudo apt update || true
-            [ -n "$missing_apt" ] && maybe_sudo apt install -y $missing_apt 2>/dev/null || warn "Some apt packages failed"
-            [ -n "$missing_extras" ] && maybe_sudo apt install -y $missing_extras 2>/dev/null || true
-        else
-            local all_missing="$missing_apt $missing_extras"
-            warn "Missing packages:$all_missing"
-            print_install_hint "$all_missing"
-            info "Continuing with user-space tools..."
-        fi
-    else
-        ok "All apt packages already installed"
-    fi
-
-    # Create symlinks for fd and bat (Ubuntu uses different names)
-    mkdir -p "$HOME/.local/bin"
-    [ -f /usr/bin/fdfind ] && [ ! -e "$HOME/.local/bin/fd" ] && \
-        ln -sf /usr/bin/fdfind "$HOME/.local/bin/fd"
-    [ -f /usr/bin/batcat ] && [ ! -e "$HOME/.local/bin/bat" ] && \
-        ln -sf /usr/bin/batcat "$HOME/.local/bin/bat"
-
-    # Install tools from GitHub releases (no sudo needed)
-    install_github_tools
-
-    if [ "$DEV_MODE" = true ]; then
-        install_ubuntu_dev_packages
-    fi
-}
-
-install_ubuntu_dev_packages() {
-    info "Installing development packages..."
-    maybe_sudo apt install -y \
-        nodejs npm php php-cli composer python3 python3-pip \
-        golang-go \
-        2>/dev/null || warn "Some dev packages failed"
-
-    # Language servers
-    if command -v npm &>/dev/null; then
-        maybe_sudo npm install -g typescript typescript-language-server 2>/dev/null || \
-            npm install -g --prefix "$HOME/.local" typescript typescript-language-server 2>/dev/null || true
-    fi
-
-    if command -v pip3 &>/dev/null; then
-        pip3 install --user pyright 2>/dev/null || true
-    fi
-
-    if command -v go &>/dev/null; then
-        go install golang.org/x/tools/gopls@latest 2>/dev/null || true
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Install tools from GitHub releases (Ubuntu/Pop!_OS)
-# ------------------------------------------------------------------------------
-install_github_tools() {
-    local tools_dir="$HOME/.local/bin"
-    mkdir -p "$tools_dir"
-
-    # Install atuin via official script
-    if ! command -v atuin &>/dev/null; then
-        info "Installing atuin..."
-        curl -fsSL https://setup.atuin.sh | bash 2>/dev/null || warn "Atuin install failed"
-    fi
-
-    # Install starship (CRITICAL for prompt)
-    if ! command -v starship &>/dev/null; then
-        info "Installing starship..."
-        if curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir "$HOME/.local/bin"; then
-            ok "starship installed"
-            # Verify installation
-            if command -v starship &>/dev/null; then
-                info "starship verified: $(starship --version)"
-            else
-                error "Starship installation failed - command not found after install"
-                return 1
-            fi
-        else
-            error "Starship install failed - this is critical for prompt!"
-            return 1
-        fi
-    fi
-
-    # Install zoxide
-    if ! command -v zoxide &>/dev/null; then
-        info "Installing zoxide..."
-        curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh 2>/dev/null || warn "Zoxide install failed"
-    fi
-
-    # Install lazygit
-    if ! command -v lazygit &>/dev/null; then
-        info "Installing lazygit..."
-        LAZYGIT_VERSION=$(curl -fsSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "0.44.1")
-        curl -fsSLo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" 2>/dev/null && {
-            tar -xzf /tmp/lazygit.tar.gz -C /tmp lazygit
-            mv /tmp/lazygit "$tools_dir/"
-            rm /tmp/lazygit.tar.gz
-        } || warn "lazygit install failed"
-    fi
-
-    # Install gh (GitHub CLI)
-    if ! command -v gh &>/dev/null; then
-        info "Installing GitHub CLI..."
-        GH_VERSION=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "2.63.2")
-        curl -fsSLo /tmp/gh.tar.gz "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" 2>/dev/null && {
-            tar -xzf /tmp/gh.tar.gz -C /tmp
-            mv "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" "$tools_dir/"
-            rm -rf /tmp/gh*
-        } || warn "gh install failed"
-    fi
-
-    # Install eza
-    if ! command -v eza &>/dev/null; then
-        info "Installing eza..."
-        EZA_VERSION=$(curl -fsSL https://api.github.com/repos/eza-community/eza/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "0.18.0")
-        curl -fsSLo /tmp/eza.tar.gz "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_x86_64-unknown-linux-gnu.tar.gz" 2>/dev/null && {
-            tar -xzf /tmp/eza.tar.gz -C "$tools_dir"
-            rm /tmp/eza.tar.gz
-        } || {
-            command -v cargo &>/dev/null && cargo install eza 2>/dev/null || warn "eza install failed"
-        }
-    fi
-
-    # Install delta
-    if ! command -v delta &>/dev/null; then
-        info "Installing delta..."
-        DELTA_VERSION=$(curl -fsSL https://api.github.com/repos/dandavison/delta/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/' || echo "0.18.2")
-        curl -fsSLo /tmp/delta.tar.gz "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/delta-${DELTA_VERSION}-x86_64-unknown-linux-gnu.tar.gz" 2>/dev/null && {
-            tar -xzf /tmp/delta.tar.gz -C /tmp
-            mv "/tmp/delta-${DELTA_VERSION}-x86_64-unknown-linux-gnu/delta" "$tools_dir/"
-            rm -rf /tmp/delta*
-        } || {
-            command -v cargo &>/dev/null && cargo install git-delta 2>/dev/null || warn "delta install failed"
-        }
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Arch Linux packages (pacman + AUR)
-# ------------------------------------------------------------------------------
-install_arch_packages() {
-    info "Checking installed packages..."
-
-    # Standard packages
-    local packages="git curl wget jq fzf ripgrep fd bat eza zoxide tree \
-        neovim starship lazygit git-delta github-cli htop btop atuin"
-
-    if [ "$DEV_MODE" = true ]; then
-        packages="$packages nodejs npm php composer python python-pip \
-            go gopls rust rust-analyzer pyright"
-    fi
-
-    local missing=""
-    for pkg in $packages; do
-        pacman -Q "$pkg" &>/dev/null || missing="$missing $pkg"
-    done
-
-    if [ -n "$missing" ]; then
-        if [ "$DEV_MODE" = true ]; then
-            info "Installing missing packages:$missing"
-            maybe_sudo pacman -Syu --noconfirm $missing 2>/dev/null || warn "Some pacman packages failed"
-        else
-            warn "Missing packages:$missing"
-            print_install_hint "$missing"
-            info "Continuing without them..."
-        fi
-    else
-        ok "All packages already installed"
-    fi
-
-    # Dev-only: typescript-language-server via npm
-    if [ "$DEV_MODE" = true ] && command -v npm &>/dev/null; then
-        maybe_sudo npm install -g typescript typescript-language-server 2>/dev/null || \
-            npm install -g --prefix "$HOME/.local" typescript typescript-language-server 2>/dev/null || true
-    fi
-
-    # Detect and use AUR helper for additional packages
-    local aur_helper=""
-    if command -v yay &>/dev/null; then
-        aur_helper="yay"
-    elif command -v paru &>/dev/null; then
-        aur_helper="paru"
-    fi
-
-    if [ -n "$aur_helper" ] && [ "$DEV_MODE" = true ]; then
-        info "Installing AUR packages via $aur_helper..."
-        $aur_helper -S --noconfirm phpactor 2>/dev/null || warn "phpactor AUR install failed"
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Alpine Linux packages (apk + cargo)
-# ------------------------------------------------------------------------------
-install_alpine_packages() {
-    info "Checking installed packages..."
-
-    local apk_packages="git curl wget jq fzf ripgrep fd bat tree neovim starship htop btop build-base cargo"
-    local missing=""
-    for pkg in $apk_packages; do
-        apk info -e "$pkg" &>/dev/null || missing="$missing $pkg"
-    done
-
-    if [ -n "$missing" ]; then
-        if [ "$DEV_MODE" = true ]; then
-            info "Installing missing packages:$missing"
-            maybe_sudo apk add --no-cache $missing 2>/dev/null || warn "Some apk packages failed"
-        else
-            warn "Missing packages:$missing"
-            print_install_hint "$missing"
-            info "Continuing without them..."
-        fi
-    else
-        ok "All apk packages already installed"
-    fi
-
-    # Install tools via cargo
-    if command -v cargo &>/dev/null; then
-        info "Installing Rust-based tools via cargo..."
-        cargo install eza zoxide atuin git-delta 2>/dev/null || warn "Some cargo installs failed"
-    fi
-
-    # Install lazygit from binary
-    if ! command -v lazygit &>/dev/null; then
-        info "Installing lazygit..."
-        local tools_dir="$HOME/.local/bin"
-        mkdir -p "$tools_dir"
-        LAZYGIT_VERSION=$(wget -qO- https://api.github.com/repos/jesseduffield/lazygit/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "0.44.1")
-        wget -qO /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" && {
-            tar -xzf /tmp/lazygit.tar.gz -C /tmp lazygit
-            mv /tmp/lazygit "$tools_dir/"
-            rm /tmp/lazygit.tar.gz
-        } || warn "lazygit install failed"
-    fi
-
-    # Install gh from binary
-    if ! command -v gh &>/dev/null; then
-        info "Installing GitHub CLI..."
-        local tools_dir="$HOME/.local/bin"
-        mkdir -p "$tools_dir"
-        GH_VERSION=$(wget -qO- https://api.github.com/repos/cli/cli/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "2.63.2")
-        wget -qO /tmp/gh.tar.gz "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" && {
-            tar -xzf /tmp/gh.tar.gz -C /tmp
-            mv "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" "$tools_dir/"
-            rm -rf /tmp/gh*
-        } || warn "gh install failed"
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Platform-specific extras
-# ------------------------------------------------------------------------------
-install_linux_extras() {
-    info "Installing Linux-specific packages..."
-
-    # phpactor via composer (dev mode only)
-    if [ "$DEV_MODE" = true ] && command -v composer &>/dev/null && ! command -v phpactor &>/dev/null; then
-        composer global require phpactor/phpactor 2>/dev/null || warn "phpactor install failed"
-    fi
-
-    # GUI tools (dev mode has sudo)
-    if [ "$DEV_MODE" = true ]; then
-        case "$DISTRO" in
-            fedora)
-                maybe_sudo dnf install -y guake feh dconf 2>/dev/null || warn "Some dnf packages failed"
-                ;;
-            debian|ubuntu|popos)
-                maybe_sudo apt install -y guake feh dconf-cli 2>/dev/null || warn "Some apt packages failed"
-                ;;
-            arch)
-                maybe_sudo pacman -S --noconfirm guake feh dconf 2>/dev/null || warn "Some pacman packages failed"
-                ;;
-        esac
-
-        # Install Nerd Fonts
-        install_nerd_fonts
-
-        # Apply guake configuration
-        configure_guake
-    fi
-}
-
-install_macos_extras() {
-    info "Installing macOS-specific packages..."
-    brew install --cask iterm2 2>/dev/null || true
-    brew install --cask font-jetbrains-mono-nerd-font 2>/dev/null || true
-}
-
-# ------------------------------------------------------------------------------
-# Install Nerd Fonts (Linux)
-# ------------------------------------------------------------------------------
-install_nerd_fonts() {
-    local fonts_dir="$HOME/.local/share/fonts"
-    local nerd_font="Hack"
-
-    if fc-list 2>/dev/null | grep -qi "Hack.*Nerd"; then
-        ok "Nerd Fonts already installed"
-        return
-    fi
-
-    info "Installing $nerd_font Nerd Font..."
-    mkdir -p "$fonts_dir"
-
-    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${nerd_font}.zip"
-    local tmp_zip="/tmp/${nerd_font}-nerd-font.zip"
-
-    if curl -fsSL "$font_url" -o "$tmp_zip" 2>/dev/null; then
-        unzip -o "$tmp_zip" -d "$fonts_dir/${nerd_font}NerdFont" 2>/dev/null || {
-            unzip -o "$tmp_zip" -d "$fonts_dir" 2>/dev/null
-        }
-        rm -f "$tmp_zip"
-        command -v fc-cache &>/dev/null && fc-cache -fv "$fonts_dir" 2>/dev/null || true
-        ok "$nerd_font Nerd Font installed"
-    else
-        warn "Failed to download Nerd Font"
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Apply guake configuration
-# ------------------------------------------------------------------------------
-configure_guake() {
-    command -v guake &>/dev/null || return
-    command -v dconf &>/dev/null || return
-
-    if [ -f "$DOTFILES_DIR/settings/linux/guake.dconf" ]; then
-        info "Applying guake configuration..."
-        dconf load /apps/guake/ < "$DOTFILES_DIR/settings/linux/guake.dconf" 2>/dev/null && \
-            ok "Guake config applied" || \
-            warn "Failed to apply guake config"
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Setup Rust toolchain (dev mode only)
-# ------------------------------------------------------------------------------
-setup_rust() {
-    if [ "$DEV_MODE" != true ]; then
-        return
-    fi
-
-    if command -v rustc &>/dev/null; then
-        ok "Rust already installed"
-        [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
-        return
-    fi
-
-    if command -v rustup-init &>/dev/null; then
-        info "Setting up Rust toolchain..."
-        rustup-init -y --no-modify-path
-        [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
-        rustup component add rustfmt clippy
-        ok "Rust toolchain ready"
-    elif command -v rustup &>/dev/null; then
-        ok "Rust already installed via rustup"
-    else
-        info "Installing Rust via rustup..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path 2>/dev/null || warn "Rust install failed"
-        [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
-        if command -v rustup &>/dev/null; then
-            rustup component add rustfmt clippy 2>/dev/null || true
-        fi
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Install PHP tools via composer (dev mode only)
-# ------------------------------------------------------------------------------
-install_php_tools() {
-    if [ "$DEV_MODE" != true ]; then
-        return
-    fi
-
-    if ! command -v composer &>/dev/null; then
-        warn "Composer not found, skipping PHP tools"
-        return
-    fi
-
-    if ! command -v php &>/dev/null; then
-        warn "PHP not found, skipping PHP tools"
-        return
-    fi
-
-    info "Installing PHP tools via composer..."
-
-    if [ -f "$DOTFILES_DIR/deps/composer.json" ]; then
-        local composer_home="${COMPOSER_HOME:-$HOME/.config/composer}"
-        mkdir -p "$composer_home"
-
-        command -v phpactor &>/dev/null || \
-            composer global require phpactor/phpactor 2>/dev/null || warn "phpactor install failed"
-
-        command -v phpcs &>/dev/null || \
-            composer global require squizlabs/php_codesniffer 2>/dev/null || warn "phpcs install failed"
-
-        command -v php-cs-fixer &>/dev/null || \
-            composer global require friendsofphp/php-cs-fixer 2>/dev/null || warn "php-cs-fixer install failed"
-    else
-        composer global require phpactor/phpactor squizlabs/php_codesniffer 2>/dev/null || warn "Some PHP tools failed"
-    fi
-
-    ok "PHP tools installed"
-}
-
-# ------------------------------------------------------------------------------
-# Create symlinks
-# ------------------------------------------------------------------------------
-link_configs() {
-    cd "$DOTFILES_DIR"
-
-    info "Creating symlinks..."
-
-    # Backup existing configs
-    backup_existing
-
-    # Ensure .config directory exists
-    mkdir -p "$HOME/.config"
-
-    # Link shell config
-    link_shell
-
-    # Link nvim config
-    link_nvim
-
-    # Link starship config
-    link_starship
-
-    # Install custom apps (dev mode only, needs sudo)
-    if [ "$DEV_MODE" = true ]; then
-        install_custom_apps
-    fi
-
-    # Set mode marker for nvim
-    if [ "$DEV_MODE" != true ]; then
-        touch "$HOME/.config/nvim/.standard"
-        ok "Standard mode marker created"
-    else
-        rm -f "$HOME/.config/nvim/.standard"
-    fi
-
-    ok "Symlinks created"
-}
-
-link_shell() {
-    info "Linking shell config..."
-
-    # Clean up old symlinks (both old and new naming)
-    rm -f "$HOME/.bashrc" 2>/dev/null || true
-    rm -f "$HOME/.zshrc" 2>/dev/null || true
-    rm -rf "$HOME/.bashrc.d" 2>/dev/null || true
-    rm -rf "$HOME/.zshrc.d" 2>/dev/null || true
-    rm -rf "$HOME/.shellrc.d" 2>/dev/null || true
-    rm -rf "$HOME/.shared.d" 2>/dev/null || true
-
-    if [ -d "$DOTFILES_DIR/shared" ]; then
-        ln -sf "$DOTFILES_DIR/shared/shared.d" "$HOME/.shared.d"
-
-        if [ "$PLATFORM" = "linux" ]; then
-            ln -sf "$DOTFILES_DIR/shared/.bashrc" "$HOME/.bashrc"
-            # Also link .zshrc on Linux for users who might use Zsh
-            ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
-            # Link .bash_profile for SSH login shells
-            ln -sf "$DOTFILES_DIR/shared/.bash_profile" "$HOME/.bash_profile"
-            # Link .profile for non-bash shells and fallback
-            ln -sf "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
-        else
-            ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
-            # Link .profile on macOS too for compatibility
-            ln -sf "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
-        fi
-    else
-        warn "Shell config not found, skipping"
-    fi
-    
-    # Verify all symlinks were created successfully
-    info "Verifying symlinks..."
-    local broken_symlinks=0
-    local symlinks_to_check=(
-        "$HOME/.shared.d"
-        "$HOME/.bashrc"
-        "$HOME/.zshrc"
-        "$HOME/.bash_profile"
-        "$HOME/.profile"
-    )
-    
-    for symlink in "${symlinks_to_check[@]}"; do
-        if [ -L "$symlink" ]; then
-            # Check if symlink target exists
-            if [ ! -e "$symlink" ]; then
-                error "Broken symlink: $symlink -> $(readlink $symlink)"
-                broken_symlinks=$((broken_symlinks + 1))
-            fi
-        else
-            # Symlink doesn't exist (only warn, not error)
-            warn "Symlink not created: $symlink"
-        fi
-    done
-    
-    if [ $broken_symlinks -gt 0 ]; then
-        error "$broken_symlinks broken symlinks found!"
-        error "Please check the installation and try again."
-        return 1
-    fi
-    
-    ok "All symlinks verified"
-}
-
-link_nvim() {
-    info "Linking Neovim config..."
-
-    rm -rf "$HOME/.config/nvim" 2>/dev/null || true
-
-    if [ -d "$DOTFILES_DIR/nvim" ]; then
-        ln -sf "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
-    else
-        warn "Neovim config not found, skipping"
-    fi
-}
-
-link_starship() {
-    info "Linking Starship config..."
-
-    if [ -f "$DOTFILES_DIR/shared/starship.toml" ]; then
-        mkdir -p "$HOME/.config"
-        rm -f "$HOME/.config/starship.toml" 2>/dev/null || true
-        ln -sf "$DOTFILES_DIR/shared/starship.toml" "$HOME/.config/starship.toml"
-    else
-        warn "Starship config not found, skipping"
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Install custom apps from apps.conf
-# ------------------------------------------------------------------------------
-install_custom_apps() {
-    local apps_conf="$DOTFILES_DIR/deps/apps.conf"
-    [ -f "$apps_conf" ] || return
-
-    info "Installing custom apps from apps.conf..."
-
-    local section=""
-    if [ "$PLATFORM" = "linux" ]; then
-        section="linux"
-    else
-        section="macos"
-    fi
-
-    local in_section=false
-    while IFS= read -r line || [ -n "$line" ]; do
-        [[ "$line" =~ ^[[:space:]]*# ]] && continue
-        [[ -z "${line// }" ]] && continue
-
-        if [[ "$line" =~ ^\[([a-z]+)\] ]]; then
-            if [[ "${BASH_REMATCH[1]}" == "$section" ]]; then
-                in_section=true
-            else
-                in_section=false
-            fi
-            continue
-        fi
-
-        if [ "$in_section" = true ]; then
-            local app="${line// /}"
-            [ -z "$app" ] && continue
-
-            info "Installing $app..."
-            if [ "$PLATFORM" = "linux" ]; then
-                if command -v dnf &>/dev/null; then
-                    maybe_sudo dnf install -y "$app" 2>/dev/null || true
-                elif command -v apt &>/dev/null; then
-                    maybe_sudo apt install -y "$app" 2>/dev/null || true
-                elif command -v pacman &>/dev/null; then
-                    maybe_sudo pacman -S --noconfirm "$app" 2>/dev/null || true
-                fi
-            else
-                brew install --cask "$app" 2>/dev/null || brew install "$app" 2>/dev/null || true
-            fi
-        fi
-    done < "$apps_conf"
-
-    # Also process [cli] section (cross-platform tools)
-    in_section=false
-    while IFS= read -r line || [ -n "$line" ]; do
-        [[ "$line" =~ ^[[:space:]]*# ]] && continue
-        [[ -z "${line// }" ]] && continue
-
-        if [[ "$line" =~ ^\[([a-z]+)\] ]]; then
-            [[ "${BASH_REMATCH[1]}" == "cli" ]] && in_section=true || in_section=false
-            continue
-        fi
-
-        if [ "$in_section" = true ]; then
-            local app="${line// /}"
-            [ -z "$app" ] && continue
-            command -v "$app" &>/dev/null && continue
-
-            info "Installing CLI tool: $app..."
-            if command -v brew &>/dev/null; then
-                brew install "$app" 2>/dev/null || true
-            elif command -v dnf &>/dev/null; then
-                maybe_sudo dnf install -y "$app" 2>/dev/null || true
-            elif command -v apt &>/dev/null; then
-                maybe_sudo apt install -y "$app" 2>/dev/null || true
-            elif command -v pacman &>/dev/null; then
-                maybe_sudo pacman -S --noconfirm "$app" 2>/dev/null || true
-            fi
-        fi
-    done < "$apps_conf"
-}
-
-backup_existing() {
-    local backup_dir="$HOME/.${PROJECT_NAME}-backup-$(date +%Y%m%d-%H%M%S)"
-    local needs_backup=false
-
-    [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ] && needs_backup=true
-    [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && needs_backup=true
-    [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && needs_backup=true
-    [ -f "$HOME/.profile" ] && [ ! -L "$HOME/.profile" ] && needs_backup=true
-    [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && needs_backup=true
-
-    if [ "$needs_backup" = true ]; then
-        info "Backing up existing configs to $backup_dir"
-        mkdir -p "$backup_dir"
-
-        [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ] && mv "$HOME/.bashrc" "$backup_dir/"
-        [ -d "$HOME/.bashrc.d" ] && [ ! -L "$HOME/.bashrc.d" ] && mv "$HOME/.bashrc.d" "$backup_dir/"
-        [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && mv "$HOME/.zshrc" "$backup_dir/"
-        [ -d "$HOME/.zshrc.d" ] && [ ! -L "$HOME/.zshrc.d" ] && mv "$HOME/.zshrc.d" "$backup_dir/"
-        [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && mv "$HOME/.bash_profile" "$backup_dir/"
-        [ -f "$HOME/.profile" ] && [ ! -L "$HOME/.profile" ] && mv "$HOME/.profile" "$backup_dir/"
-        [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && mv "$HOME/.config/nvim" "$backup_dir/"
-
-        ok "Backup created at $backup_dir"
-    fi
-}
-
-# ------------------------------------------------------------------------------
-# Post-install setup
-# ------------------------------------------------------------------------------
-post_install() {
-    info "Running post-install tasks..."
-
-    # Initialize zoxide
-    command -v zoxide &>/dev/null && eval "$(zoxide init bash)" 2>/dev/null || true
-
-    # Sync neovim plugins
-    if command -v nvim &>/dev/null; then
-        info "Syncing Neovim plugins (this may take a moment)..."
-
-        local sync_ok=false
-        for attempt in 1 2 3; do
-            if [ "$DEV_MODE" != true ]; then
-                NVIM_STANDARD=1 nvim --headless "+Lazy! sync" +qa 2>/dev/null && sync_ok=true && break
-            else
-                nvim --headless "+Lazy! sync" +qa 2>/dev/null && sync_ok=true && break
-            fi
-            warn "Plugin sync attempt $attempt failed, retrying..."
-            sleep 2
-        done
-
-        if [ "$sync_ok" = true ]; then
-            ok "Neovim plugins synced"
-        else
-            warn "Plugin sync failed. Run manually: nvim --headless '+Lazy! sync' +qa"
-        fi
-    else
-        warn "nvim not found, skipping plugin sync"
-    fi
-
-    ok "Post-install complete"
-}
-
-# ------------------------------------------------------------------------------
-# Print summary
-# ------------------------------------------------------------------------------
-print_summary() {
-    echo ""
-    echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}  Installation complete! (v${VERSION})${NC}"
-    echo -e "${GREEN}========================================${NC}"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Restart your terminal (or run: source ~/.bashrc)"
-    echo ""
-    echo "Manage config:"
-    echo "  $PROJECT_NAME status   : show installed version"
-    echo "  $PROJECT_NAME check    : check for updates"
-    echo "  $PROJECT_NAME update   : update to latest"
-    echo "  version                : show version (shell alias)"
-    echo ""
-    echo "New tools to try:"
-    echo "  z <dir>      : smart cd (zoxide)"
-    echo "  eza -la      : modern ls"
-    echo "  bat <file>   : cat with syntax highlighting"
-    echo "  lazygit      : terminal git UI"
-    echo "  fzf          : fuzzy finder (Ctrl+R for history)"
-    echo "  cleanup [N]  : organize media files from last N days"
-    echo ""
-
-    if command -v atuin &>/dev/null; then
-        echo -e "${YELLOW}Atuin installed but disabled.${NC} To enable:"
-        echo "  touch ~/.config/atuin/.enabled"
-        echo "  Then: atuin register / atuin login"
-        echo ""
-    fi
-
-    if [ "$DEV_MODE" != true ]; then
-        echo "Standard mode installed. For full dev environment:"
-        echo "  curl -fsSL https://tldr.icu/i | bash -s -- --dev"
-        echo ""
-    fi
-
-    # Try to activate configuration in current session
-    if [ -f "$HOME/.bashrc" ]; then
-        echo "Attempting to activate configuration..."
-        
-        # Special handling for Debian systems
-        if [ "$DISTRO" = "debian" ] && [ "$(readlink /bin/sh)" = "dash" ]; then
-            echo -e "${YELLOW}⚠ Debian dash detected - configuration may not fully activate${NC}"
-            echo "  Please run: sudo dpkg-reconfigure dash and select 'No'"
-            echo "  Then restart your terminal or run: exec bash -l"
-        fi
-        
-        if source "$HOME/.bashrc" 2>/dev/null; then
-            echo -e "${GREEN}✓ Configuration activated for this session${NC}"
-            
-            # Verify critical components
-            echo "Verifying installation:"
-            command -v starship &>/dev/null && echo "  ✓ starship prompt" || echo "  ✗ starship missing"
-            command -v eza &>/dev/null && echo "  ✓ eza (modern ls)" || echo "  ✗ eza missing"
-            type ll 2>/dev/null | grep -q "alias" && echo "  ✓ aliases loaded" || echo "  ✗ aliases not loaded"
-            
-        else
-            echo -e "${YELLOW}⚠ Configuration not activated. Please run: source ~/.bashrc${NC}"
-        fi
-    fi
-}
-
-# ------------------------------------------------------------------------------
 # Parse arguments
 # ------------------------------------------------------------------------------
+
 parse_args() {
     DEPS_ONLY=false
     STOW_ONLY=false
@@ -1409,225 +387,66 @@ EOF
 }
 
 # ------------------------------------------------------------------------------
-# Commands: version, check, update, uninstall
+# Source library modules (available after repo is on disk)
 # ------------------------------------------------------------------------------
-cmd_uninstall() {
-    echo -e "${RED}================================${NC}"
-    echo -e "${RED}  $PROJECT_NAME Uninstall${NC}"
-    echo -e "${RED}================================${NC}"
-    echo ""
-    echo "This will remove:"
-    echo "  - $DOTFILES_TARGET"
-    echo "  - $VERSION_FILE"
-    echo "  - $MANIFEST_FILE"
-    echo "  - ~/.local/bin/$PROJECT_NAME"
-    echo "  - Symlinks (~/.bashrc, ~/.bash_profile, ~/.profile, ~/.config/nvim, etc.)"
-    echo "  - Homebrew (/home/linuxbrew/.linuxbrew)"
-    echo ""
-    read -p "Are you sure? [y/N] " confirm
-    [[ "$confirm" != [yY] ]] && echo "Aborted." && exit 0
 
-    info "Removing symlinks..."
-    rm -f "$HOME/.bashrc" 2>/dev/null
-    rm -f "$HOME/.zshrc" 2>/dev/null
-    rm -f "$HOME/.bash_profile" 2>/dev/null
-    rm -f "$HOME/.profile" 2>/dev/null
-    rm -rf "$HOME/.shared.d" 2>/dev/null
-    rm -rf "$HOME/.shellrc.d" 2>/dev/null
-    rm -rf "$HOME/.bashrc.d" 2>/dev/null
-    rm -rf "$HOME/.config/nvim" 2>/dev/null
-    rm -f "$HOME/.config/starship.toml" 2>/dev/null
+source_libs() {
+    local lib_dir=""
 
-    info "Removing $PROJECT_NAME..."
-    rm -rf "$DOTFILES_TARGET"
-    rm -f "$VERSION_FILE"
-    rm -f "$MANIFEST_FILE"
-    rm -f "$HOME/.local/bin/$PROJECT_NAME"
-
-    info "Removing Homebrew..."
-    if [ -d "/home/linuxbrew/.linuxbrew" ]; then
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)" -- --force
-    fi
-    if [ -d "$HOME/.linuxbrew" ]; then
-        rm -rf "$HOME/.linuxbrew"
-    fi
-
-    echo ""
-    ok "Uninstall complete."
-    echo ""
-    echo "You may want to restore your original .bashrc:"
-    echo "  cp /etc/skel/.bashrc ~/"
-    echo ""
-    echo "Then restart your shell or: exec bash"
-}
-
-cmd_version() {
-    echo -e "${BLUE}$PROJECT_NAME${NC} v$(get_local_version) ($(get_install_date))"
-
-    if [ -f "$MANIFEST_FILE" ]; then
-        local mode=$(grep '^mode=' "$MANIFEST_FILE" | cut -d= -f2)
-        local platform=$(grep '^platform=' "$MANIFEST_FILE" | cut -d= -f2)
-        echo "  Mode: $mode | Platform: $platform | Location: $DOTFILES_TARGET"
-
-        # Display each section from manifest
-        local sections="tools dev-tools configs utilities"
-        for section in $sections; do
-            local content
-            content=$(sed -n "/^\[$section\]/,/^\[/{/^\[/d;/^#/d;/^$/d;p}" "$MANIFEST_FILE" 2>/dev/null)
-            [ -z "$content" ] && continue
-
-            local count
-            count=$(echo "$content" | wc -l)
-            local label="$section"
-            case "$section" in
-                tools)     label="Tools ($count)" ;;
-                dev-tools) label="Dev tools ($count)" ;;
-                configs)   label="Configs" ;;
-                utilities) label="Utilities ($count)" ;;
-            esac
-
-            echo ""
-            echo -e "  ${GREEN}$label:${NC}"
-            echo "$content" | while IFS= read -r line; do
-                echo "    $line"
-            done
-        done
-    else
-        echo "  Location: $DOTFILES_TARGET"
-        echo "  (no manifest - run install to generate)"
-    fi
-}
-
-cmd_check() {
-    local local_ver=$(get_local_version)
-    local remote_ver=$(get_remote_version)
-
-    echo "Installed: $local_ver"
-    echo "Available: $remote_ver"
-
-    if [ "$local_ver" = "none" ]; then
-        echo -e "\n${YELLOW}Not installed.${NC} Run: curl -fsSL $BASE_URL/i | bash"
-        return 1
-    elif [ "$local_ver" = "$remote_ver" ]; then
-        echo -e "\n${GREEN}Up to date.${NC}"
-        return 0
-    else
-        echo -e "\n${YELLOW}Update available.${NC} Run: curl -fsSL $BASE_URL/i | bash"
-        return 2
-    fi
-}
-
-cmd_update() {
-    local local_ver=$(get_local_version)
-    local remote_ver=$(get_remote_version)
-
-    if [ "$local_ver" = "$remote_ver" ]; then
-        ok "Already at $local_ver"
-        return 0
-    fi
-
-    info "Updating $local_ver -> $remote_ver"
-    exec curl -fsSL "$BASE_URL/i" | bash
-}
-
-cmd_force_update() {
-    info "Forcing fresh installation (ignoring version check)..."
-    exec curl -fsSL "$BASE_URL/i" | bash
-}
-
-# ------------------------------------------------------------------------------
-# Install CLI helper
-# ------------------------------------------------------------------------------
-install_cli() {
-    local cli_path="$HOME/.local/bin/$PROJECT_NAME"
-    mkdir -p "$HOME/.local/bin"
-
-    cat > "$cli_path" << EOF
-#!/usr/bin/env bash
-URL="https://tldr.icu"
-VER_FILE="\$HOME/.${PROJECT_NAME}-version"
-DOTFILES="\${DOTFILES_TARGET:-\$HOME/.$PROJECT_NAME}"
-
-case "\${1:-status}" in
-    status|version)
-        if [ -f "\$VER_FILE" ]; then
-            MANIFEST="\$HOME/.${PROJECT_NAME}-manifest"
-            ver=\$(head -1 "\$VER_FILE")
-            date=\$(sed -n '2p' "\$VER_FILE")
-            echo "$PROJECT_NAME v\$ver (\$date)"
-            if [ -f "\$MANIFEST" ]; then
-                mode=\$(grep '^mode=' "\$MANIFEST" | cut -d= -f2)
-                platform=\$(grep '^platform=' "\$MANIFEST" | cut -d= -f2)
-                echo "  Mode: \$mode | Platform: \$platform"
-                echo ""
-                for section in tools dev-tools configs utilities; do
-                    content=\$(sed -n "/^\[\$section\]/,/^\[/{/^\[/d;/^#/d;/^\$/d;p}" "\$MANIFEST" 2>/dev/null)
-                    [ -z "\$content" ] && continue
-                    count=\$(echo "\$content" | wc -l)
-                    case "\$section" in
-                        tools)     label="Tools (\$count)" ;;
-                        dev-tools) label="Dev tools (\$count)" ;;
-                        configs)   label="Configs" ;;
-                        utilities) label="Utilities (\$count)" ;;
-                    esac
-                    echo "  \$label:"
-                    echo "\$content" | while IFS= read -r line; do echo "    \$line"; done
-                    echo ""
-                done
-            fi
-        else
-            echo "not installed"
+    # When running from repo (DOTFILES_DIR set by setup_config_dir)
+    if [ -n "${DOTFILES_DIR:-}" ] && [ -d "$DOTFILES_DIR/lib" ]; then
+        lib_dir="$DOTFILES_DIR/lib"
+    # When running CLI commands before setup_config_dir (repo already installed)
+    elif [ -d "$DOTFILES_TARGET/lib" ]; then
+        lib_dir="$DOTFILES_TARGET/lib"
+        DOTFILES_DIR="$DOTFILES_TARGET"
+    # Fallback: script directory
+    elif [ -n "${BASH_SOURCE[0]}" ] && [ "${BASH_SOURCE[0]}" != "bash" ]; then
+        local script_dir
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || true
+        if [ -n "$script_dir" ] && [ -d "$script_dir/lib" ]; then
+            lib_dir="$script_dir/lib"
         fi
-        ;;
-    check)
-        local_ver=\$(head -1 "\$VER_FILE" 2>/dev/null || echo "none")
-        remote_ver=\$(curl -fsSL "\$URL/latest" 2>/dev/null || echo "?")
-        echo "Installed: \$local_ver"
-        echo "Available: \$remote_ver"
-        [ "\$local_ver" = "\$remote_ver" ] && echo "Up to date." || echo "Run: $PROJECT_NAME update"
-        ;;
-    update)
-        curl -fsSL "\$URL/i" | bash
-        ;;
-    force-update|--force)
-        curl -fsSL "\$URL/i" | bash
-        ;;
-    uninstall)
-        [ -f "\$DOTFILES/install.sh" ] && bash "\$DOTFILES/install.sh" uninstall || curl -fsSL "\$URL/i" | bash -s -- uninstall
-        ;;
-    *)
-        echo "Usage: $PROJECT_NAME [status|check|update|force-update|uninstall]"
-        ;;
-esac
-EOF
+    fi
 
-    chmod +x "$cli_path"
-    ok "Installed '$PROJECT_NAME' CLI"
+    if [ -z "$lib_dir" ] || [ ! -d "$lib_dir" ]; then
+        error "Library directory not found. Is $PROJECT_NAME installed?"
+    fi
+
+    for f in "$lib_dir"/*.sh; do
+        [ -f "$f" ] && source "$f"
+    done
 }
 
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
+
 main() {
-    # Handle commands first
+    # Handle CLI commands first (repo must already be installed)
     case "${1:-}" in
         version|--version|-v)
+            source_libs
             cmd_version
             exit 0
             ;;
         check)
+            source_libs
             cmd_check
             exit $?
             ;;
         update)
+            source_libs
             cmd_update
             exit $?
             ;;
         force-update|--force)
+            source_libs
             cmd_force_update
             exit $?
             ;;
         uninstall)
+            source_libs
             cmd_uninstall
             exit $?
             ;;
@@ -1643,23 +462,22 @@ main() {
     setup_config_dir
     detect_os
 
+    # Load library modules (repo now on disk)
+    source_libs
+
     if [ "$STOW_ONLY" = true ]; then
         link_configs
     elif [ "$DEPS_ONLY" = true ]; then
         install_deps
-        [ "$DEV_MODE" = true ] && setup_rust
-        [ "$DEV_MODE" = true ] && install_php_tools
+        [ "$DEV_MODE" = true ] && setup_dev_tools
     else
         install_deps
-        [ "$DEV_MODE" = true ] && setup_rust
-        [ "$DEV_MODE" = true ] && install_php_tools
+        [ "$DEV_MODE" = true ] && setup_dev_tools
         link_configs
         post_install
-
         save_version
         generate_manifest
         install_cli
-
         print_summary
     fi
 }
