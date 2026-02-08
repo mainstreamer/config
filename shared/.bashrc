@@ -6,7 +6,11 @@
 
 # Environment
 export SHELL_TYPE="bash"
-export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+# Ensure .local/bin is in PATH (critical for CLI tools)
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+export PATH="$HOME/bin:$PATH"
 export PATH="$PATH:$HOME/.cargo/bin"
 
 # Cargo
@@ -43,4 +47,12 @@ if [ -d ~/.shared.d ]; then
         [ -f "$rc" ] && [[ "$rc" != *.archived ]] && [[ "$rc" != *.lst ]] && . "$rc"
     done
     unset rc
+else
+    # Fallback: try to source from the original location if symlink is broken
+    if [ -d "$HOME/.epicli-conf/shared/shared.d" ]; then
+        for rc in "$HOME/.epicli-conf/shared/shared.d"/*; do
+            [ -f "$rc" ] && [[ "$rc" != *.archived ]] && [[ "$rc" != *.lst ]] && . "$rc"
+        done
+        unset rc
+    fi
 fi

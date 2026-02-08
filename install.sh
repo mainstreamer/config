@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.6"
+VERSION="2.2.7"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -461,6 +461,13 @@ install_github_tools() {
         info "Installing starship..."
         if curl -fsSL https://starship.rs/install.sh | sh; then
             ok "starship installed"
+            # Verify installation
+            if command -v starship &>/dev/null; then
+                info "starship verified: $(starship --version)"
+            else
+                error "Starship installation failed - command not found after install"
+                return 1
+            fi
         else
             error "Starship install failed - this is critical for prompt!"
             return 1
@@ -813,6 +820,8 @@ link_shell() {
 
         if [ "$PLATFORM" = "linux" ]; then
             ln -sf "$DOTFILES_DIR/shared/.bashrc" "$HOME/.bashrc"
+            # Also link .zshrc on Linux for users who might use Zsh
+            ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
         else
             ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
         fi
