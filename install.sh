@@ -18,12 +18,13 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.19"
+VERSION="2.3.0"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
 DOTFILES_TARGET="${DOTFILES_TARGET:-$HOME/.$PROJECT_NAME}"
 VERSION_FILE="$HOME/.${PROJECT_NAME}-version"
+MANIFEST_FILE="$HOME/.${PROJECT_NAME}-manifest"
 
 OS="$(uname -s)"
 DEV_MODE=false
@@ -61,6 +62,107 @@ save_version() {
     date +%Y-%m-%d >> "$VERSION_FILE"
 }
 
+generate_manifest() {
+    local mode="standard"
+    [ "$DEV_MODE" = true ] && mode="dev"
+
+    cat > "$MANIFEST_FILE" << MEOF
+# $PROJECT_NAME manifest - generated $(date +%Y-%m-%d)
+mode=$mode
+version=$VERSION
+platform=${DISTRO:-unknown}
+MEOF
+
+    # Tools section - only list what's actually installed
+    echo "" >> "$MANIFEST_FILE"
+    echo "[tools]" >> "$MANIFEST_FILE"
+    local tools=(
+        "nvim:Modern editor"
+        "starship:Cross-shell prompt"
+        "fzf:Fuzzy finder"
+        "rg:Fast grep (ripgrep)"
+        "fd:Fast find"
+        "bat:cat + syntax highlighting"
+        "eza:Modern ls"
+        "zoxide:Smart cd (z)"
+        "lazygit:Terminal git UI"
+        "delta:Better git diffs"
+        "gh:GitHub CLI"
+        "tmux:Terminal multiplexer"
+        "atuin:Shell history sync"
+        "htop:Process viewer"
+        "btop:Process viewer"
+        "ffmpeg:Media toolkit"
+        "tree:Directory tree"
+    )
+    for entry in "${tools[@]}"; do
+        local cmd="${entry%%:*}"
+        local desc="${entry#*:}"
+        if command -v "$cmd" &>/dev/null; then
+            printf "%-12s %s\n" "$cmd" "$desc" >> "$MANIFEST_FILE"
+        fi
+    done
+
+    # Dev tools (only if dev mode)
+    if [ "$DEV_MODE" = true ]; then
+        echo "" >> "$MANIFEST_FILE"
+        echo "[dev-tools]" >> "$MANIFEST_FILE"
+        local dev_tools=(
+            "node:Node.js runtime"
+            "tsc:TypeScript compiler"
+            "php:PHP runtime"
+            "composer:PHP package manager"
+            "python3:Python runtime"
+            "rustc:Rust compiler"
+            "go:Go runtime"
+            "gopls:Go LSP"
+            "pyright:Python LSP"
+            "rust-analyzer:Rust LSP"
+        )
+        for entry in "${dev_tools[@]}"; do
+            local cmd="${entry%%:*}"
+            local desc="${entry#*:}"
+            if command -v "$cmd" &>/dev/null; then
+                printf "%-12s %s\n" "$cmd" "$desc" >> "$MANIFEST_FILE"
+            fi
+        done
+    fi
+
+    # Configs section - check what was linked
+    echo "" >> "$MANIFEST_FILE"
+    echo "[configs]" >> "$MANIFEST_FILE"
+    [ -L "$HOME/.bashrc" ] && printf "%-12s %s\n" "shell" "bashrc, zshrc, shared.d" >> "$MANIFEST_FILE"
+    [ -L "$HOME/.config/nvim" ] && printf "%-12s %s\n" "nvim" "Neovim ($mode mode)" >> "$MANIFEST_FILE"
+    [ -L "$HOME/.config/starship.toml" ] && printf "%-12s %s\n" "starship" "Starship prompt" >> "$MANIFEST_FILE"
+
+    # Shell utilities section
+    echo "" >> "$MANIFEST_FILE"
+    echo "[utilities]" >> "$MANIFEST_FILE"
+    local utils=(
+        "aliases:Shell aliases & git shortcuts"
+        "prompt:Starship prompt init"
+        "docker:Docker helpers (dc, dsh, dclean)"
+        "cleanup:Media file organizer"
+        "depcheck:Dependency checker"
+        "enc:File encryption"
+        "key:USB key management"
+        "rec:Screen recording (ffmpeg)"
+        "where:IP geolocation"
+        "hidevpn:VPN toggle"
+        "atuin:Shell history (opt-in)"
+        "unglitch:Terminal reset"
+    )
+    if [ -d "$DOTFILES_DIR/shared/shared.d" ]; then
+        for entry in "${utils[@]}"; do
+            local name="${entry%%:*}"
+            local desc="${entry#*:}"
+            if [ -f "$DOTFILES_DIR/shared/shared.d/$name" ]; then
+                printf "%-12s %s\n" "$name" "$desc" >> "$MANIFEST_FILE"
+            fi
+        done
+    fi
+}
+
 # Run command with sudo (dev mode only)
 maybe_sudo() {
     if command -v sudo &>/dev/null; then
@@ -68,6 +170,35 @@ maybe_sudo() {
     else
         warn "sudo not available, skipping: $*"
         return 1
+    fi
+}
+
+# Check if required commands are already available
+# Returns: 0 if all present, 1 if some missing (outputs missing names)
+check_commands_present() {
+    local missing=()
+    for cmd in "$@"; do
+        command -v "$cmd" &>/dev/null || missing+=("$cmd")
+    done
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "${missing[*]}"
+        return 1
+    fi
+    return 0
+}
+
+# Print sudo install hint for missing packages (distro-aware)
+print_install_hint() {
+    local packages="$1"
+    [ -z "$packages" ] && return
+    if command -v dnf &>/dev/null; then
+        warn "Install with: sudo dnf install -y $packages"
+    elif command -v apt &>/dev/null; then
+        warn "Install with: sudo apt install -y $packages"
+    elif command -v pacman &>/dev/null; then
+        warn "Install with: sudo pacman -S $packages"
+    elif command -v apk &>/dev/null; then
+        warn "Install with: sudo apk add $packages"
     fi
 }
 
@@ -104,16 +235,20 @@ setup_config_dir() {
 
     # Ensure curl is available
     if ! command -v curl &>/dev/null; then
-        if command -v apt &>/dev/null; then
-            maybe_sudo apt update && maybe_sudo apt install -y curl
-        elif command -v dnf &>/dev/null; then
-            maybe_sudo dnf install -y curl
-        elif command -v pacman &>/dev/null; then
-            maybe_sudo pacman -Sy --noconfirm curl
-        elif command -v apk &>/dev/null; then
-            maybe_sudo apk add curl
+        if [ "$DEV_MODE" = true ]; then
+            if command -v apt &>/dev/null; then
+                maybe_sudo apt update && maybe_sudo apt install -y curl
+            elif command -v dnf &>/dev/null; then
+                maybe_sudo dnf install -y curl
+            elif command -v pacman &>/dev/null; then
+                maybe_sudo pacman -Sy --noconfirm curl
+            elif command -v apk &>/dev/null; then
+                maybe_sudo apk add curl
+            fi
         else
-            error "curl not found and cannot install it. Please install curl first."
+            error "curl is required but not installed."
+            print_install_hint "curl"
+            return 1
         fi
     fi
 
@@ -202,8 +337,10 @@ setup_config_dir() {
     DOTFILES_DIR="$DOTFILES_TARGET"
     ok "Configuration activated successfully"
     
-    # Run platform configuration after extraction
-    run_platform_config
+    # Run platform configuration after extraction (dev mode only - needs sudo)
+    if [ "$DEV_MODE" = true ]; then
+        run_platform_config
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -253,15 +390,28 @@ install_homebrew() {
     fi
 
     # Homebrew requires git + gcc
-    info "Installing Homebrew prerequisites..."
-    case "$DISTRO" in
-        fedora)
-            maybe_sudo dnf install -y git gcc gcc-c++ make curl
-            ;;
-        debian|ubuntu|popos)
-            maybe_sudo apt update && maybe_sudo apt install -y git build-essential curl
-            ;;
-    esac
+    local missing_prereqs
+    missing_prereqs=$(check_commands_present git gcc make curl) || true
+    if [ -n "$missing_prereqs" ]; then
+        if [ "$DEV_MODE" = true ]; then
+            info "Installing Homebrew prerequisites: $missing_prereqs"
+            case "$DISTRO" in
+                fedora)
+                    maybe_sudo dnf install -y git gcc gcc-c++ make curl
+                    ;;
+                debian|ubuntu|popos)
+                    maybe_sudo apt update && maybe_sudo apt install -y git build-essential curl
+                    ;;
+            esac
+        else
+            warn "Missing Homebrew prerequisites: $missing_prereqs"
+            case "$DISTRO" in
+                fedora) print_install_hint "git gcc gcc-c++ make curl" ;;
+                debian|ubuntu|popos) print_install_hint "git build-essential curl" ;;
+            esac
+            warn "Attempting Homebrew install anyway..."
+        fi
+    fi
 
     info "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -269,61 +419,13 @@ install_homebrew() {
     # Add to path for this session
     if [ "$PLATFORM" = "linux" ]; then
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        # Add Linuxbrew to PATH permanently
-        echo '# Linuxbrew (Homebrew on Linux)' >> "$HOME/.bashrc"
-        echo 'if [ -d "/home/linuxbrew/.linuxbrew/bin" ]; then' >> "$HOME/.bashrc"
-        echo '    export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"' >> "$HOME/.bashrc"
-        echo 'fi' >> "$HOME/.bashrc"
-        echo 'if [ -d "$HOME/.linuxbrew/bin" ]; then' >> "$HOME/.bashrc"
-        echo '    export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"' >> "$HOME/.bashrc"
-        echo 'fi' >> "$HOME/.bashrc"
-        
-        echo '# Linuxbrew (Homebrew on Linux)' >> "$HOME/.zshrc"
-        echo 'if [ -d "/home/linuxbrew/.linuxbrew/bin" ]; then' >> "$HOME/.zshrc"
-        echo '    export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"' >> "$HOME/.zshrc"
-        echo 'fi' >> "$HOME/.zshrc"
-        echo 'if [ -d "$HOME/.linuxbrew/bin" ]; then' >> "$HOME/.zshrc"
-        echo '    export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"' >> "$HOME/.zshrc"
-        echo 'fi' >> "$HOME/.zshrc"
     fi
 
-    # Apply Linuxbrew performance optimizations
-    info "Configuring Homebrew for optimal performance..."
-    
-    # Set parallel compilation jobs
-    echo 'export HOMEBREW_MAKE_JOBS=$(nproc)' >> "$HOME/.bashrc"
-    echo 'export HOMEBREW_MAKE_JOBS=$(sysctl -n hw.ncpu)' >> "$HOME/.zshrc"
-    export HOMEBREW_MAKE_JOBS=$(nproc)
-    
-    # Prefer bottles (pre-compiled binaries) when available
-    echo 'export HOMEBREW_INSTALL_FROM_API=1' >> "$HOME/.bashrc"
-    echo 'export HOMEBREW_INSTALL_FROM_API=1' >> "$HOME/.zshrc"
-    export HOMEBREW_INSTALL_FROM_API=1
-    
-    # Disable auto-update to control when updates happen
-    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> "$HOME/.bashrc"
-    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> "$HOME/.zshrc"
+    # Set performance env vars for this session (repo shell configs handle persistence)
     export HOMEBREW_NO_AUTO_UPDATE=1
-    
-    # Keep builds for potential reuse (reduces recompilation)
-    echo 'export HOMEBREW_NO_INSTALL_CLEANUP=1' >> "$HOME/.bashrc"
-    echo 'export HOMEBREW_NO_INSTALL_CLEANUP=1' >> "$HOME/.zshrc"
-    export HOMEBREW_NO_INSTALL_CLEANUP=1
-    
-    # Use tmpfs for build directory if sufficient RAM available (Linux only)
-    if [ "$PLATFORM" = "linux" ] && [ -d /dev/shm ] && [ $(free -m | awk '/Mem:/ {print $2}') -gt 4000 ]; then
-        echo '# Use tmpfs for Homebrew builds (faster I/O)' >> "$HOME/.bashrc"
-        echo 'if [ -d /dev/shm ]; then' >> "$HOME/.bashrc"
-        echo '    export HOMEBREW_TEMP=$(mktemp -d /dev/shm/homebrew-XXXXXX)' >> "$HOME/.bashrc"
-        echo 'fi' >> "$HOME/.bashrc"
-        
-        echo '# Use tmpfs for Homebrew builds (faster I/O)' >> "$HOME/.zshrc"
-        echo 'if [ -d /dev/shm ]; then' >> "$HOME/.zshrc"
-        echo '    export HOMEBREW_TEMP=$(mktemp -d /dev/shm/homebrew-XXXXXX)' >> "$HOME/.zshrc"
-        echo 'fi' >> "$HOME/.zshrc"
-    fi
+    export HOMEBREW_INSTALL_FROM_API=1
 
-    ok "Homebrew installed and optimized"
+    ok "Homebrew installed"
 }
 
 # Platform-specific configuration
@@ -427,7 +529,7 @@ install_brew_packages() {
             fi
         else
             info "Installing starship via curl..."
-            if curl -fsSL https://starship.rs/install.sh | sh; then
+            if curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir "$HOME/.local/bin"; then
                 ok "starship installed via curl"
             else
                 error "Failed to install starship - this is critical!"
@@ -460,16 +562,33 @@ install_brew_packages() {
 # ------------------------------------------------------------------------------
 install_ubuntu_packages() {
     info "Installing packages via apt..."
-    maybe_sudo apt update || true
 
-    # Core packages available in apt
-    maybe_sudo apt install -y \
-        git curl wget jq fzf tree htop btop \
-        neovim make gcc \
-        2>/dev/null || warn "Some apt packages failed"
+    local apt_packages="git curl wget jq fzf tree htop btop neovim make gcc"
+    local apt_extras="fd-find bat ripgrep"
+    local missing_apt=""
+    local missing_extras=""
 
-    # fd and bat have different names on Ubuntu
-    maybe_sudo apt install -y fd-find bat ripgrep 2>/dev/null || true
+    for pkg in $apt_packages; do
+        dpkg -s "$pkg" &>/dev/null 2>&1 || missing_apt="$missing_apt $pkg"
+    done
+    for pkg in $apt_extras; do
+        dpkg -s "$pkg" &>/dev/null 2>&1 || missing_extras="$missing_extras $pkg"
+    done
+
+    if [ -n "$missing_apt" ] || [ -n "$missing_extras" ]; then
+        if [ "$DEV_MODE" = true ]; then
+            maybe_sudo apt update || true
+            [ -n "$missing_apt" ] && maybe_sudo apt install -y $missing_apt 2>/dev/null || warn "Some apt packages failed"
+            [ -n "$missing_extras" ] && maybe_sudo apt install -y $missing_extras 2>/dev/null || true
+        else
+            local all_missing="$missing_apt $missing_extras"
+            warn "Missing packages:$all_missing"
+            print_install_hint "$all_missing"
+            info "Continuing with user-space tools..."
+        fi
+    else
+        ok "All apt packages already installed"
+    fi
 
     # Create symlinks for fd and bat (Ubuntu uses different names)
     mkdir -p "$HOME/.local/bin"
@@ -478,7 +597,7 @@ install_ubuntu_packages() {
     [ -f /usr/bin/batcat ] && [ ! -e "$HOME/.local/bin/bat" ] && \
         ln -sf /usr/bin/batcat "$HOME/.local/bin/bat"
 
-    # Install tools from GitHub releases
+    # Install tools from GitHub releases (no sudo needed)
     install_github_tools
 
     if [ "$DEV_MODE" = true ]; then
@@ -524,7 +643,7 @@ install_github_tools() {
     # Install starship (CRITICAL for prompt)
     if ! command -v starship &>/dev/null; then
         info "Installing starship..."
-        if curl -fsSL https://starship.rs/install.sh | sh; then
+        if curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir "$HOME/.local/bin"; then
             ok "starship installed"
             # Verify installation
             if command -v starship &>/dev/null; then
@@ -597,7 +716,7 @@ install_github_tools() {
 # Arch Linux packages (pacman + AUR)
 # ------------------------------------------------------------------------------
 install_arch_packages() {
-    info "Installing packages via pacman..."
+    info "Checking installed packages..."
 
     # Standard packages
     local packages="git curl wget jq fzf ripgrep fd bat eza zoxide tree \
@@ -608,7 +727,23 @@ install_arch_packages() {
             go gopls rust rust-analyzer pyright"
     fi
 
-    maybe_sudo pacman -Syu --noconfirm $packages 2>/dev/null || warn "Some pacman packages failed"
+    local missing=""
+    for pkg in $packages; do
+        pacman -Q "$pkg" &>/dev/null || missing="$missing $pkg"
+    done
+
+    if [ -n "$missing" ]; then
+        if [ "$DEV_MODE" = true ]; then
+            info "Installing missing packages:$missing"
+            maybe_sudo pacman -Syu --noconfirm $missing 2>/dev/null || warn "Some pacman packages failed"
+        else
+            warn "Missing packages:$missing"
+            print_install_hint "$missing"
+            info "Continuing without them..."
+        fi
+    else
+        ok "All packages already installed"
+    fi
 
     # Dev-only: typescript-language-server via npm
     if [ "$DEV_MODE" = true ] && command -v npm &>/dev/null; then
@@ -634,13 +769,26 @@ install_arch_packages() {
 # Alpine Linux packages (apk + cargo)
 # ------------------------------------------------------------------------------
 install_alpine_packages() {
-    info "Installing packages via apk..."
+    info "Checking installed packages..."
 
-    maybe_sudo apk add --no-cache \
-        git curl wget jq fzf ripgrep fd bat tree \
-        neovim starship htop btop \
-        build-base cargo \
-        2>/dev/null || warn "Some apk packages failed"
+    local apk_packages="git curl wget jq fzf ripgrep fd bat tree neovim starship htop btop build-base cargo"
+    local missing=""
+    for pkg in $apk_packages; do
+        apk info -e "$pkg" &>/dev/null || missing="$missing $pkg"
+    done
+
+    if [ -n "$missing" ]; then
+        if [ "$DEV_MODE" = true ]; then
+            info "Installing missing packages:$missing"
+            maybe_sudo apk add --no-cache $missing 2>/dev/null || warn "Some apk packages failed"
+        else
+            warn "Missing packages:$missing"
+            print_install_hint "$missing"
+            info "Continuing without them..."
+        fi
+    else
+        ok "All apk packages already installed"
+    fi
 
     # Install tools via cargo
     if command -v cargo &>/dev/null; then
@@ -1005,6 +1153,35 @@ install_custom_apps() {
             fi
         fi
     done < "$apps_conf"
+
+    # Also process [cli] section (cross-platform tools)
+    in_section=false
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line// }" ]] && continue
+
+        if [[ "$line" =~ ^\[([a-z]+)\] ]]; then
+            [[ "${BASH_REMATCH[1]}" == "cli" ]] && in_section=true || in_section=false
+            continue
+        fi
+
+        if [ "$in_section" = true ]; then
+            local app="${line// /}"
+            [ -z "$app" ] && continue
+            command -v "$app" &>/dev/null && continue
+
+            info "Installing CLI tool: $app..."
+            if command -v brew &>/dev/null; then
+                brew install "$app" 2>/dev/null || true
+            elif command -v dnf &>/dev/null; then
+                maybe_sudo dnf install -y "$app" 2>/dev/null || true
+            elif command -v apt &>/dev/null; then
+                maybe_sudo apt install -y "$app" 2>/dev/null || true
+            elif command -v pacman &>/dev/null; then
+                maybe_sudo pacman -S --noconfirm "$app" 2>/dev/null || true
+            fi
+        fi
+    done < "$apps_conf"
 }
 
 backup_existing() {
@@ -1242,6 +1419,7 @@ cmd_uninstall() {
     echo "This will remove:"
     echo "  - $DOTFILES_TARGET"
     echo "  - $VERSION_FILE"
+    echo "  - $MANIFEST_FILE"
     echo "  - ~/.local/bin/$PROJECT_NAME"
     echo "  - Symlinks (~/.bashrc, ~/.bash_profile, ~/.profile, ~/.config/nvim, etc.)"
     echo "  - Homebrew (/home/linuxbrew/.linuxbrew)"
@@ -1263,6 +1441,7 @@ cmd_uninstall() {
     info "Removing $PROJECT_NAME..."
     rm -rf "$DOTFILES_TARGET"
     rm -f "$VERSION_FILE"
+    rm -f "$MANIFEST_FILE"
     rm -f "$HOME/.local/bin/$PROJECT_NAME"
 
     info "Removing Homebrew..."
@@ -1283,10 +1462,40 @@ cmd_uninstall() {
 }
 
 cmd_version() {
-    echo -e "${BLUE}$PROJECT_NAME${NC}"
-    echo "  Installed: $(get_local_version)"
-    echo "  Date:      $(get_install_date)"
-    echo "  Location:  $DOTFILES_TARGET"
+    echo -e "${BLUE}$PROJECT_NAME${NC} v$(get_local_version) ($(get_install_date))"
+
+    if [ -f "$MANIFEST_FILE" ]; then
+        local mode=$(grep '^mode=' "$MANIFEST_FILE" | cut -d= -f2)
+        local platform=$(grep '^platform=' "$MANIFEST_FILE" | cut -d= -f2)
+        echo "  Mode: $mode | Platform: $platform | Location: $DOTFILES_TARGET"
+
+        # Display each section from manifest
+        local sections="tools dev-tools configs utilities"
+        for section in $sections; do
+            local content
+            content=$(sed -n "/^\[$section\]/,/^\[/{/^\[/d;/^#/d;/^$/d;p}" "$MANIFEST_FILE" 2>/dev/null)
+            [ -z "$content" ] && continue
+
+            local count
+            count=$(echo "$content" | wc -l)
+            local label="$section"
+            case "$section" in
+                tools)     label="Tools ($count)" ;;
+                dev-tools) label="Dev tools ($count)" ;;
+                configs)   label="Configs" ;;
+                utilities) label="Utilities ($count)" ;;
+            esac
+
+            echo ""
+            echo -e "  ${GREEN}$label:${NC}"
+            echo "$content" | while IFS= read -r line; do
+                echo "    $line"
+            done
+        done
+    else
+        echo "  Location: $DOTFILES_TARGET"
+        echo "  (no manifest - run install to generate)"
+    fi
 }
 
 cmd_check() {
@@ -1341,7 +1550,34 @@ DOTFILES="\${DOTFILES_TARGET:-\$HOME/.$PROJECT_NAME}"
 
 case "\${1:-status}" in
     status|version)
-        [ -f "\$VER_FILE" ] && cat "\$VER_FILE" || echo "not installed"
+        if [ -f "\$VER_FILE" ]; then
+            MANIFEST="\$HOME/.${PROJECT_NAME}-manifest"
+            ver=\$(head -1 "\$VER_FILE")
+            date=\$(sed -n '2p' "\$VER_FILE")
+            echo "$PROJECT_NAME v\$ver (\$date)"
+            if [ -f "\$MANIFEST" ]; then
+                mode=\$(grep '^mode=' "\$MANIFEST" | cut -d= -f2)
+                platform=\$(grep '^platform=' "\$MANIFEST" | cut -d= -f2)
+                echo "  Mode: \$mode | Platform: \$platform"
+                echo ""
+                for section in tools dev-tools configs utilities; do
+                    content=\$(sed -n "/^\[\$section\]/,/^\[/{/^\[/d;/^#/d;/^\$/d;p}" "\$MANIFEST" 2>/dev/null)
+                    [ -z "\$content" ] && continue
+                    count=\$(echo "\$content" | wc -l)
+                    case "\$section" in
+                        tools)     label="Tools (\$count)" ;;
+                        dev-tools) label="Dev tools (\$count)" ;;
+                        configs)   label="Configs" ;;
+                        utilities) label="Utilities (\$count)" ;;
+                    esac
+                    echo "  \$label:"
+                    echo "\$content" | while IFS= read -r line; do echo "    \$line"; done
+                    echo ""
+                done
+            fi
+        else
+            echo "not installed"
+        fi
         ;;
     check)
         local_ver=\$(head -1 "\$VER_FILE" 2>/dev/null || echo "none")
@@ -1421,6 +1657,7 @@ main() {
         post_install
 
         save_version
+        generate_manifest
         install_cli
 
         print_summary

@@ -38,6 +38,12 @@ if [ -d "$HOME/.linuxbrew/bin" ]; then
     export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"
 fi
 
+# Homebrew performance settings
+if command -v brew &>/dev/null; then
+    export HOMEBREW_NO_AUTO_UPDATE=1
+    export HOMEBREW_INSTALL_FROM_API=1
+fi
+
 # FZF
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 

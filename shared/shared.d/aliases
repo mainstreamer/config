@@ -32,8 +32,18 @@ alias glog='git log --oneline --graph --decorate'
 # Config version
 version() {
     local ver_file="$HOME/.epicli-conf-version"
+    local manifest_file="$HOME/.epicli-conf-manifest"
     if [ -f "$ver_file" ]; then
-        printf "epicli-conf v%s (%s)\n" "$(head -1 "$ver_file")" "$(sed -n '2p' "$ver_file")"
+        local ver mode tool_count
+        ver="$(head -1 "$ver_file")"
+        if [ -f "$manifest_file" ]; then
+            mode=$(grep '^mode=' "$manifest_file" | cut -d= -f2)
+            tool_count=$(sed -n '/^\[tools\]/,/^\[/{/^\[/d;/^#/d;/^$/d;p}' "$manifest_file" | wc -l)
+            printf "epicli-conf v%s (%s) %s | %s tools\n" "$ver" "$(sed -n '2p' "$ver_file")" "${mode:-standard}" "$tool_count"
+            printf "  Run 'epicli-conf version' for details\n"
+        else
+            printf "epicli-conf v%s (%s)\n" "$ver" "$(sed -n '2p' "$ver_file")"
+        fi
     else
         echo "epicli-conf: not installed"
     fi

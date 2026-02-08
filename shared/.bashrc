@@ -43,6 +43,12 @@ if [ -d "$HOME/.linuxbrew/bin" ]; then
     export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"
 fi
 
+# Homebrew performance settings
+if command -v brew &>/dev/null; then
+    export HOMEBREW_NO_AUTO_UPDATE=1
+    export HOMEBREW_INSTALL_FROM_API=1
+fi
+
 # Bash completion
 [ -f /etc/bash_completion ] && . /etc/bash_completion
 
@@ -70,4 +76,3 @@ else
         unset rc
     fi
 fi
-echo "BASHRC WAS SOURCED"

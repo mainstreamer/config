@@ -17,4 +17,4 @@ if [[ -n "$SSH_CONNECTION" ]] && [[ "$-" != *i* ]]; then
 fi
 
 # User specific environment and startup programs
-. "$HOME/.cargo/env"
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
