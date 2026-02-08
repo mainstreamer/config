@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.10"
+VERSION="2.2.11"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -119,10 +119,25 @@ setup_config_dir() {
     
     # Always extract to temporary directory first
     TEMP_EXTRACT=$(mktemp -d)
+    
+    # Download from primary source
     if ! curl -fsSL "$ARCHIVE_URL_SELF" 2>/dev/null | tar -xz -C "$TEMP_EXTRACT" --strip-components=1 2>/dev/null; then
         info "Falling back to GitHub..."
-        curl -fsSL "$ARCHIVE_URL_GITHUB" | tar -xz -C "$TEMP_EXTRACT" --strip-components=1
+        if ! curl -fsSL "$ARCHIVE_URL_GITHUB" | tar -xz -C "$TEMP_EXTRACT" --strip-components=1; then
+            error "Failed to download configuration archive from both sources!"
+            error "Please check your internet connection and try again."
+            return 1
+        fi
     fi
+    
+    # Verify download was successful
+    if [ ! -d "$TEMP_EXTRACT/shared" ] || [ ! -d "$TEMP_EXTRACT/nvim" ]; then
+        error "Downloaded archive is corrupted or incomplete!"
+        error "Expected 'shared' and 'nvim' directories not found."
+        return 1
+    fi
+    
+    ok "Configuration archive downloaded successfully"
     
     # Backup existing configuration if present
     if [ -d "$DOTFILES_TARGET" ]; then
@@ -824,8 +839,12 @@ link_shell() {
             ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
             # Link .bash_profile for SSH login shells
             ln -sf "$DOTFILES_DIR/shared/.bash_profile" "$HOME/.bash_profile"
+            # Link .profile for non-bash shells and fallback
+            ln -sf "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
         else
             ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
+            # Link .profile on macOS too for compatibility
+            ln -sf "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
         fi
     else
         warn "Shell config not found, skipping"
@@ -913,6 +932,7 @@ backup_existing() {
     [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ] && needs_backup=true
     [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && needs_backup=true
     [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && needs_backup=true
+    [ -f "$HOME/.profile" ] && [ ! -L "$HOME/.profile" ] && needs_backup=true
     [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && needs_backup=true
 
     if [ "$needs_backup" = true ]; then
@@ -924,6 +944,7 @@ backup_existing() {
         [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && mv "$HOME/.zshrc" "$backup_dir/"
         [ -d "$HOME/.zshrc.d" ] && [ ! -L "$HOME/.zshrc.d" ] && mv "$HOME/.zshrc.d" "$backup_dir/"
         [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && mv "$HOME/.bash_profile" "$backup_dir/"
+        [ -f "$HOME/.profile" ] && [ ! -L "$HOME/.profile" ] && mv "$HOME/.profile" "$backup_dir/"
         [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && mv "$HOME/.config/nvim" "$backup_dir/"
 
         ok "Backup created at $backup_dir"
@@ -1066,12 +1087,14 @@ COMMANDS:
     ./install.sh version      Show installed version
     ./install.sh check        Check for updates
     ./install.sh update       Update to latest version
+    ./install.sh force-update Force fresh installation (bypass version check)
     ./install.sh uninstall    Remove everything
 
     # After install, use the '$PROJECT_NAME' CLI:
     $PROJECT_NAME status      Show installed version
     $PROJECT_NAME check       Check for updates
-    $PROJECT_NAME update      Update to latest
+    $PROJECT_NAME update      Update to latest version
+    $PROJECT_NAME force-update Force fresh installation
 
 OPTIONS:
   --dev         Full developer environment (requires sudo)
@@ -1124,7 +1147,7 @@ cmd_uninstall() {
     echo "  - $DOTFILES_TARGET"
     echo "  - $VERSION_FILE"
     echo "  - ~/.local/bin/$PROJECT_NAME"
-    echo "  - Symlinks (~/.bashrc, ~/.config/nvim, etc.)"
+    echo "  - Symlinks (~/.bashrc, ~/.bash_profile, ~/.profile, ~/.config/nvim, etc.)"
     echo "  - Homebrew (/home/linuxbrew/.linuxbrew)"
     echo ""
     read -p "Are you sure? [y/N] " confirm
@@ -1134,6 +1157,7 @@ cmd_uninstall() {
     rm -f "$HOME/.bashrc" 2>/dev/null
     rm -f "$HOME/.zshrc" 2>/dev/null
     rm -f "$HOME/.bash_profile" 2>/dev/null
+    rm -f "$HOME/.profile" 2>/dev/null
     rm -rf "$HOME/.shared.d" 2>/dev/null
     rm -rf "$HOME/.shellrc.d" 2>/dev/null
     rm -rf "$HOME/.bashrc.d" 2>/dev/null
@@ -1201,6 +1225,11 @@ cmd_update() {
     exec curl -fsSL "$BASE_URL/i" | bash
 }
 
+cmd_force_update() {
+    info "Forcing fresh installation (ignoring version check)..."
+    exec curl -fsSL "$BASE_URL/i" | bash
+}
+
 # ------------------------------------------------------------------------------
 # Install CLI helper
 # ------------------------------------------------------------------------------
@@ -1228,11 +1257,14 @@ case "\${1:-status}" in
     update)
         curl -fsSL "\$URL/i" | bash
         ;;
+    force-update|--force)
+        curl -fsSL "\$URL/i" | bash
+        ;;
     uninstall)
         [ -f "\$DOTFILES/install.sh" ] && bash "\$DOTFILES/install.sh" uninstall || curl -fsSL "\$URL/i" | bash -s -- uninstall
         ;;
     *)
-        echo "Usage: $PROJECT_NAME [status|check|update|uninstall]"
+        echo "Usage: $PROJECT_NAME [status|check|update|force-update|uninstall]"
         ;;
 esac
 EOF
@@ -1257,6 +1289,10 @@ main() {
             ;;
         update)
             cmd_update
+            exit $?
+            ;;
+        force-update|--force)
+            cmd_force_update
             exit $?
             ;;
         uninstall)
