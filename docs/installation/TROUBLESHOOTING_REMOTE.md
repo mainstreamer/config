@@ -89,7 +89,7 @@ brew install eza bat zoxide
 ### 2. **Fix Permissions**
 ```bash
 chmod +x ~/.shared.d/*
-chmod +x ~/.epicli-conf/shared/shared.d/*
+chmod +x ~/.epicli/shared/shared.d/*
 ```
 
 ### 3. **Force Shell Reload**
@@ -164,7 +164,7 @@ ok "Configuration activated!"
 
 After applying fixes, run:
 ```bash
-# Should show epicli-conf version
+# Should show epicli version
 version
 
 # Should show styled prompt

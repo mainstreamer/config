@@ -1,7 +1,7 @@
-# Project Review: epicli-conf v2.0.0
+# Project Review: epicli v2.0.0
 
 ## Overview
-**epicli-conf** is a personal cross-platform developer environment configuration system for Linux and macOS. It provides unified configuration management with smart platform detection and supports two installation modes: **standard** (no sudo required) and **dev** (full toolchain, requires sudo).
+**epicli** is a personal cross-platform developer environment configuration system for Linux and macOS. It provides unified configuration management with smart platform detection and supports two installation modes: **standard** (no sudo required) and **dev** (full toolchain, requires sudo).
 
 ## Key Features
 
@@ -80,6 +80,6 @@ Supports Fedora, Debian, Ubuntu, Pop!_OS, Arch, Alpine, and macOS with appropria
 
 ## Conclusion
 
-epicli-conf is a well-designed, comprehensive configuration management system that addresses the common pain points of setting up and maintaining consistent developer environments across multiple platforms. The dual-mode approach is particularly innovative, allowing users to start with a basic setup and upgrade to a full developer environment when needed.
+epicli is a well-designed, comprehensive configuration management system that addresses the common pain points of setting up and maintaining consistent developer environments across multiple platforms. The dual-mode approach is particularly innovative, allowing users to start with a basic setup and upgrade to a full developer environment when needed.
 
 The project demonstrates good software engineering practices with its modular architecture, comprehensive documentation, and robust backup/rollback system. It would be particularly valuable for developers who work across multiple machines or platforms and want to maintain consistent configurations.

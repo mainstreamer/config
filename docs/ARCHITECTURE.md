@@ -2,7 +2,7 @@
 
 ## Overview
 
-epicli-conf is a cross-platform dotfiles manager that installs CLI tools, shell configuration, and Neovim setup. It supports Fedora, Debian, Ubuntu, Pop!_OS, Arch, Alpine, and macOS.
+epicli is a cross-platform dotfiles manager that installs CLI tools, shell configuration, and Neovim setup. It supports Fedora, Debian, Ubuntu, Pop!_OS, Arch, Alpine, and macOS.
 
 Two installation modes:
 - **Standard** (default) — no sudo required, installs CLI tools + shell config + basic Neovim
@@ -20,7 +20,7 @@ install.sh (runs standalone, no dependencies)
   |
   |- Phase 1: Bootstrap
   |   |- parse_args()       Parse --dev, --deps-only, --stow-only
-  |   |- setup_config_dir() Download repo archive to ~/.epicli-conf
+  |   |- setup_config_dir() Download repo archive to ~/.epicli
   |   |- detect_os()        Identify platform and distro
   |
   |- source_libs()          Load lib/*.sh from the downloaded repo
@@ -32,7 +32,7 @@ install.sh (runs standalone, no dependencies)
       |- post_install()     Sync nvim plugins
       |- save_version()     Write version file
       |- generate_manifest() Write manifest of installed tools
-      |- install_cli()      Generate ~/.local/bin/epicli-conf helper
+      |- install_cli()      Generate ~/.local/bin/epicli helper
       |- print_summary()    Show next steps
 ```
 

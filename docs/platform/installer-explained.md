@@ -246,7 +246,7 @@ configure_platform() {
 ./deps/platform/installer.sh debian
 
 # 1. Initialize
-PLATFORM_DIR=/home/user/.epicli-conf/deps/platform
+PLATFORM_DIR=/home/user/.epicli/deps/platform
 DATA_DIR=$PLATFORM_DIR/data
 HOOKS_DIR=$PLATFORM_DIR/hooks
 

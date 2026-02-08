@@ -49,6 +49,14 @@ if command -v brew &>/dev/null; then
     export HOMEBREW_INSTALL_FROM_API=1
 fi
 
+# Bash history (infinite, deduplicated, shared across sessions)
+shopt -s histappend
+export HISTSIZE=100000
+export HISTFILESIZE=100000
+export HISTCONTROL=ignoreboth
+export HISTTIMEFORMAT="%F %T  "
+PROMPT_COMMAND="history -a;${PROMPT_COMMAND:-}"
+
 # Bash completion
 [ -f /etc/bash_completion ] && . /etc/bash_completion
 
@@ -69,8 +77,8 @@ if [ -d ~/.shared.d ]; then
     unset rc
 else
     # Fallback: try to source from the original location if symlink is broken
-    if [ -d "$HOME/.epicli-conf/shared/shared.d" ]; then
-        for rc in "$HOME/.epicli-conf/shared/shared.d"/*; do
+    if [ -d "$HOME/.epicli/shared/shared.d" ]; then
+        for rc in "$HOME/.epicli/shared/shared.d"/*; do
             [ -f "$rc" ] && [[ "$rc" != *.archived ]] && [[ "$rc" != *.lst ]] && . "$rc"
         done
         unset rc

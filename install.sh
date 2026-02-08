@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# epicli-conf bootstrap script
+# epicli bootstrap script
 #
 # Usage:
 #   curl -fsSL https://tldr.icu/i | bash
@@ -15,10 +15,10 @@
 set -e
 
 # Project identity (change this to rename the project)
-PROJECT_NAME="epicli-conf"
+PROJECT_NAME="epicli"
 
 # Config
-VERSION="2.4.0"
+VERSION="2.5.0"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"

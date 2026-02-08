@@ -120,9 +120,9 @@ config/
 ~/.config/starship.toml → repo/shared/starship.toml
 ```
 
-**Repo location**: `~/.epicli-conf` (curl install) or wherever you clone it
+**Repo location**: `~/.epicli` (curl install) or wherever you clone it
 
-**Backups**: `~/.epicli-conf-backups/YYYYMMDD-HHMMSS/`
+**Backups**: `~/.epicli-backups/YYYYMMDD-HHMMSS/`
 
 ## Shell Scripts
 
@@ -165,9 +165,9 @@ Finds video/image files >512KB, moves to `~/Documents/Cleanup/YYYY-MM-DD/` folde
 ## Version Management
 
 ```bash
-epicli-conf status    # Show installed version
-epicli-conf check     # Compare with remote (tldr.icu/latest)
-epicli-conf update    # Update to latest
+epicli status    # Show installed version
+epicli check     # Compare with remote (tldr.icu/latest)
+epicli update    # Update to latest
 ```
 
 ## Atuin (Disabled by Default)

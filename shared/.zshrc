@@ -55,8 +55,8 @@ if [ -d ~/.shared.d ]; then
     unset rc
 else
     # Fallback: try to source from the original location if symlink is broken
-    if [ -d "$HOME/.epicli-conf/shared/shared.d" ]; then
-        for rc in "$HOME/.epicli-conf/shared/shared.d"/*; do
+    if [ -d "$HOME/.epicli/shared/shared.d" ]; then
+        for rc in "$HOME/.epicli/shared/shared.d"/*; do
             [ -f "$rc" ] && [[ "$rc" != *.archived ]] && [[ "$rc" != *.lst ]] && . "$rc"
         done
         unset rc

@@ -1,4 +1,4 @@
-# epicli-conf Documentation
+# epicli Documentation
 
 ## Platform Configuration
 

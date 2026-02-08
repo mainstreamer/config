@@ -2,20 +2,49 @@
 # Cross-platform aliases (works in bash and zsh)
 
 # Modern CLI replacements
-command -v eza &>/dev/null && alias ls='eza'
 command -v bat &>/dev/null && alias cat='bat --paging=never'
 command -v zoxide &>/dev/null && eval "$(zoxide init ${SHELL_TYPE:-bash})"
 
+# eza: modern ls replacement
+if command -v eza &>/dev/null; then
+    alias ls='eza --icons --group-directories-first'
+    alias ll='eza -lgh --icons --git --header --group-directories-first'
+    alias la='eza -lagh --icons --git --header --group-directories-first'
+    alias l='eza -l --icons --group-directories-first'
+    alias lt='eza --tree --icons --level=2 --group-directories-first'
+    alias lta='eza --tree --icons --level=3 --group-directories-first -a'
+    alias tree='eza --tree --icons --group-directories-first'
+else
+    alias ll='ls -la'
+    alias la='ls -a'
+    alias l='ls -l'
+fi
+
 # Common aliases
-alias ll='ls -la'
-alias la='ls -a'
-alias l='ls -l'
 alias ..='cd ..'
 alias ...='cd ../..'
+alias ....='cd ../../..'
 alias grep='grep --color=auto'
 alias mkdir='mkdir -pv'
 alias df='df -h'
 alias du='du -h'
+
+# fzf: fuzzy finder helpers
+if command -v fzf &>/dev/null; then
+    # fo: fuzzy-open file in editor (with bat preview)
+    fo() {
+        local file
+        file=$(fzf --preview 'bat --color=always --style=numbers --line-range=:500 {} 2>/dev/null || head -500 {}')
+        [ -n "$file" ] && ${EDITOR:-nano} "$file"
+    }
+
+    # fd: fuzzy-cd into directory
+    fcd() {
+        local dir
+        dir=$(find . -type d -not -path '*/\.*' 2>/dev/null | fzf --preview 'eza --tree --icons --level=1 {} 2>/dev/null || ls {}')
+        [ -n "$dir" ] && cd "$dir"
+    }
+fi
 
 # Git shortcuts
 alias g='git'
@@ -29,25 +58,8 @@ alias gco='git checkout'
 alias gb='git branch'
 alias glog='git log --oneline --graph --decorate'
 
-# Config version
-version() {
-    local ver_file="$HOME/.epicli-conf-version"
-    local manifest_file="$HOME/.epicli-conf-manifest"
-    if [ -f "$ver_file" ]; then
-        local ver mode tool_count
-        ver="$(head -1 "$ver_file")"
-        if [ -f "$manifest_file" ]; then
-            mode=$(grep '^mode=' "$manifest_file" | cut -d= -f2)
-            tool_count=$(sed -n '/^\[tools\]/,/^\[/{/^\[/d;/^#/d;/^$/d;p}' "$manifest_file" | wc -l)
-            printf "epicli-conf v%s (%s) %s | %s tools\n" "$ver" "$(sed -n '2p' "$ver_file")" "${mode:-standard}" "$tool_count"
-            printf "  Run 'epicli-conf version' for details\n"
-        else
-            printf "epicli-conf v%s (%s)\n" "$ver" "$(sed -n '2p' "$ver_file")"
-        fi
-    else
-        echo "epicli-conf: not installed"
-    fi
-}
+# Config version (delegates to epicli CLI)
+alias version='epicli version'
 
 # Safety nets
 alias rm='rm -i'

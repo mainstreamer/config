@@ -1,4 +1,4 @@
-# epicli-conf v2.0.0
+# epicli v2.0.0
 
 Personal cross-platform developer environment for Linux and macOS.
 
@@ -15,9 +15,9 @@ curl -fsSL https://tldr.icu/i | bash -s -- --dev
 ## Manage
 
 ```bash
-epicli-conf status    # Show installed version
-epicli-conf check     # Check for updates
-epicli-conf update    # Update to latest
+epicli status    # Show installed version
+epicli check     # Check for updates
+epicli update    # Update to latest
 ```
 
 ## Supported Platforms

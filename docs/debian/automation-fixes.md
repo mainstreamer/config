@@ -105,7 +105,7 @@ Installer:
 6. Attempts activation
 7. Provides verification output
 
-Result: Fully working epicli-conf installation!
+Result: Fully working epicli installation!
 ```
 
 ## 🛡️ Error Handling
@@ -124,7 +124,7 @@ After installation, users can verify:
 test "$(readlink /bin/sh)" != "dash" && echo "✓ bash is default" || echo "✗ still dash"
 
 # Check configuration
-version && echo "✓ epicli-conf active" || echo "✗ not active"
+version && echo "✓ epicli active" || echo "✗ not active"
 
 # Check tools
 command -v starship && echo "✓ starship" || echo "✗ starship"
@@ -172,4 +172,4 @@ Users on Debian can now simply run:
 curl -fsSL https://tldr.icu/i | bash
 ```
 
-And get a fully working epicli-conf installation with all features activated.
+And get a fully working epicli installation with all features activated.
