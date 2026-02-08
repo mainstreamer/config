@@ -32,17 +32,31 @@ local plugins = {
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
 		config = function()
-			local status_ok, configs = pcall(require, "nvim-treesitter.configs")
-			if not status_ok then
-				vim.notify("nvim-treesitter.configs not found. Please run :TSUpdate to install parsers.", vim.log.levels.WARN)
+			local parsers = { "lua", "bash", "json", "yaml", "markdown", "vim", "vimdoc" }
+
+			-- New API (nvim-treesitter 1.0+)
+			local ok, ts = pcall(require, "nvim-treesitter")
+			if ok and type(ts.install) == "function" then
+				pcall(ts.setup)
+				pcall(ts.install, parsers)
+				vim.api.nvim_create_autocmd("FileType", {
+					group = vim.api.nvim_create_augroup("ts-highlight", { clear = true }),
+					callback = function(ev)
+						pcall(vim.treesitter.start, ev.buf)
+					end,
+				})
 				return
 			end
-			
-			configs.setup({
-				ensure_installed = { "lua", "bash", "json", "yaml", "markdown", "vim", "vimdoc" },
-				highlight = { enable = true },
-				indent = { enable = true },
-			})
+
+			-- Legacy API (nvim-treesitter < 1.0)
+			local ok2, configs = pcall(require, "nvim-treesitter.configs")
+			if ok2 then
+				configs.setup({
+					ensure_installed = parsers,
+					highlight = { enable = true },
+					indent = { enable = true },
+				})
+			end
 		end,
 	},
 

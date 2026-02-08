@@ -57,30 +57,43 @@ local plugins = {
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
 		config = function()
-			local status_ok, configs = pcall(require, "nvim-treesitter.configs")
-			if not status_ok then
-				vim.notify("nvim-treesitter.configs not found. Please run :TSUpdate to install parsers.", vim.log.levels.WARN)
+			local parsers = { "javascript", "python", "lua", "php", "html", "css", "rust", "go", "c", "ruby" }
+
+			-- New API (nvim-treesitter 1.0+)
+			local ok, ts = pcall(require, "nvim-treesitter")
+			if ok and type(ts.install) == "function" then
+				pcall(ts.setup)
+				pcall(ts.install, parsers)
+				vim.api.nvim_create_autocmd("FileType", {
+					group = vim.api.nvim_create_augroup("ts-highlight", { clear = true }),
+					callback = function(ev)
+						pcall(vim.treesitter.start, ev.buf)
+					end,
+				})
 				return
 			end
-			
-			configs.setup({
-				ensure_installed = { "javascript", "python", "lua", "php", "html", "css", "rust", "go", "c", "ruby" },
-				highlight = { enable = true, additional_vim_regex_highlighting = true },
-				-- TODO WTF is this?
-				incremental_selection = {
-					enable = true,
-					keymaps = {
-						init_selection = "gnn",
-						node_incremental = "grn",
-						node_decremental = "grm",
+
+			-- Legacy API (nvim-treesitter < 1.0)
+			local ok2, configs = pcall(require, "nvim-treesitter.configs")
+			if ok2 then
+				configs.setup({
+					ensure_installed = parsers,
+					highlight = { enable = true, additional_vim_regex_highlighting = true },
+					incremental_selection = {
+						enable = true,
+						keymaps = {
+							init_selection = "gnn",
+							node_incremental = "grn",
+							node_decremental = "grm",
+						},
 					},
-				},
-				indent = { enable = true },
-				rainbow = {
-					enable = true,
-					extended_mode = true,
-				}
-			})
+					indent = { enable = true },
+					rainbow = {
+						enable = true,
+						extended_mode = true,
+					}
+				})
+			end
 		end,
 	},
 

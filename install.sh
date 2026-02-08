@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.16"
+VERSION="2.2.17"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -864,14 +864,6 @@ link_configs() {
     fi
 
     ok "Symlinks created"
-    
-    # Install treesitter parsers immediately after symlinking (if nvim available)
-    if command -v nvim &>/dev/null; then
-        info "Installing treesitter parsers (required for config)..."
-        if ! nvim --headless "+TSInstall all" +qa; then
-            warn "Treesitter installation failed - some features may not work"
-        fi
-    fi
 }
 
 link_shell() {
@@ -1047,73 +1039,31 @@ post_install() {
     # Initialize zoxide
     command -v zoxide &>/dev/null && eval "$(zoxide init bash)" 2>/dev/null || true
 
-    # Sync neovim plugins - enhanced with better error handling
+    # Sync neovim plugins
     if command -v nvim &>/dev/null; then
         info "Syncing Neovim plugins (this may take a moment)..."
-        
-        # Try multiple times if needed
-        local max_attempts=3
-        local attempt=1
-        local success=false
-        
-        while [ $attempt -le $max_attempts ] && [ "$success" = false ]; do
-            info "Attempt $attempt/$max_attempts..."
-            
+
+        local sync_ok=false
+        for attempt in 1 2 3; do
             if [ "$DEV_MODE" != true ]; then
-                if NVIM_STANDARD=1 nvim --headless "+Lazy! sync" +qa; then
-                    success=true
-                fi
+                NVIM_STANDARD=1 nvim --headless "+Lazy! sync" +qa 2>/dev/null && sync_ok=true && break
             else
-                if nvim --headless "+Lazy! sync" +qa; then
-                    success=true
-                fi
+                nvim --headless "+Lazy! sync" +qa 2>/dev/null && sync_ok=true && break
             fi
-            
-            if [ "$success" = false ]; then
-                warn "Plugin sync attempt $attempt failed, retrying..."
-                attempt=$((attempt + 1))
-                sleep 2
-            fi
+            warn "Plugin sync attempt $attempt failed, retrying..."
+            sleep 2
         done
-        
-        if [ "$success" = false ]; then
-            error "Failed to sync Neovim plugins after $max_attempts attempts!"
-            error "Please run: nvim --headless \"+Lazy! sync\" +qa"
+
+        if [ "$sync_ok" = true ]; then
+            ok "Neovim plugins synced"
         else
-            ok "Neovim plugins synced successfully"
+            warn "Plugin sync failed. Run manually: nvim --headless '+Lazy! sync' +qa"
         fi
     else
         warn "nvim not found, skipping plugin sync"
     fi
 
     ok "Post-install complete"
-    
-    # Install treesitter parsers if nvim is available
-    if command -v nvim &>/dev/null; then
-        info "Installing treesitter parsers..."
-        
-        # First, ensure the treesitter plugin is installed
-        if [ "$DEV_MODE" != true ]; then
-            info "Ensuring treesitter plugin is available (standard mode)..."
-            NVIM_STANDARD=1 nvim --headless "+Lazy! install nvim-treesitter" +qa 2>/dev/null || true
-        else
-            info "Ensuring treesitter plugin is available (dev mode)..."
-            nvim --headless "+Lazy! install nvim-treesitter" +qa 2>/dev/null || true
-        fi
-        
-        # Try to install all parsers first
-        if nvim --headless "+TSInstall all" +qa 2>/dev/null; then
-            ok "Treesitter parsers installed successfully"
-        else
-            warn "Failed to install all treesitter parsers, trying essential ones..."
-            if nvim --headless "+TSInstall lua vim bash javascript typescript python json" +qa 2>/dev/null; then
-                ok "Essential treesitter parsers installed"
-            else
-                warn "Treesitter parser installation failed - some syntax highlighting may not work"
-                warn "Please run: nvim --headless \"+TSInstall all\" +qa manually"
-            fi
-        fi
-    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -1153,15 +1103,6 @@ print_summary() {
     if [ "$DEV_MODE" != true ]; then
         echo "Standard mode installed. For full dev environment:"
         echo "  curl -fsSL https://tldr.icu/i | bash -s -- --dev"
-        echo ""
-    fi
-
-    # Add treesitter troubleshooting info if parsers might not be installed
-    if command -v nvim &>/dev/null; then
-        echo "Troubleshooting:"
-        echo "  If you see 'nvim-treesitter.configs not found' errors:"
-        echo "    nvim --headless \"+TSInstall all\" +qa"
-        echo "    nvim --headless \"+Lazy! sync\" +qa"
         echo ""
     fi
 
