@@ -335,11 +335,31 @@ install_brew_packages() {
 
     # Verify critical tools are installed
     info "Verifying critical tools..."
+    
+    # Starship is CRITICAL for prompt - install it first
     if ! command -v starship &>/dev/null; then
-        warn "starship not found, installing..."
-        brew install starship 2>/dev/null || echo "Failed to install starship"
+        warn "starship not found - this is required for prompt!"
+        if command -v brew &>/dev/null; then
+            if brew install starship; then
+                ok "starship installed via brew"
+            else
+                error "brew failed to install starship"
+                return 1
+            fi
+        else
+            info "Installing starship via curl..."
+            if curl -fsSL https://starship.rs/install.sh | sh; then
+                ok "starship installed via curl"
+            else
+                error "Failed to install starship - this is critical!"
+                return 1
+            fi
+        fi
+    else
+        ok "starship already installed"
     fi
 
+    # Other tools
     if ! command -v eza &>/dev/null; then
         warn "eza not found, installing..."
         brew install eza 2>/dev/null || echo "Failed to install eza"
@@ -422,10 +442,15 @@ install_github_tools() {
         curl -fsSL https://setup.atuin.sh | bash 2>/dev/null || warn "Atuin install failed"
     fi
 
-    # Install starship
+    # Install starship (CRITICAL for prompt)
     if ! command -v starship &>/dev/null; then
         info "Installing starship..."
-        curl -fsSL https://starship.rs/install.sh | sh -s -- -y 2>/dev/null || warn "Starship install failed"
+        if curl -fsSL https://starship.rs/install.sh | sh; then
+            ok "starship installed"
+        else
+            error "Starship install failed - this is critical for prompt!"
+            return 1
+        fi
     fi
 
     # Install zoxide
