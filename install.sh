@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.8"
+VERSION="2.2.9"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -822,6 +822,8 @@ link_shell() {
             ln -sf "$DOTFILES_DIR/shared/.bashrc" "$HOME/.bashrc"
             # Also link .zshrc on Linux for users who might use Zsh
             ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
+            # Link .bash_profile for SSH login shells
+            ln -sf "$DOTFILES_DIR/shared/.bash_profile" "$HOME/.bash_profile"
         else
             ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
         fi
@@ -910,6 +912,7 @@ backup_existing() {
 
     [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ] && needs_backup=true
     [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && needs_backup=true
+    [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && needs_backup=true
     [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && needs_backup=true
 
     if [ "$needs_backup" = true ]; then
@@ -920,6 +923,7 @@ backup_existing() {
         [ -d "$HOME/.bashrc.d" ] && [ ! -L "$HOME/.bashrc.d" ] && mv "$HOME/.bashrc.d" "$backup_dir/"
         [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && mv "$HOME/.zshrc" "$backup_dir/"
         [ -d "$HOME/.zshrc.d" ] && [ ! -L "$HOME/.zshrc.d" ] && mv "$HOME/.zshrc.d" "$backup_dir/"
+        [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && mv "$HOME/.bash_profile" "$backup_dir/"
         [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && mv "$HOME/.config/nvim" "$backup_dir/"
 
         ok "Backup created at $backup_dir"
@@ -1129,6 +1133,7 @@ cmd_uninstall() {
     info "Removing symlinks..."
     rm -f "$HOME/.bashrc" 2>/dev/null
     rm -f "$HOME/.zshrc" 2>/dev/null
+    rm -f "$HOME/.bash_profile" 2>/dev/null
     rm -rf "$HOME/.shared.d" 2>/dev/null
     rm -rf "$HOME/.shellrc.d" 2>/dev/null
     rm -rf "$HOME/.bashrc.d" 2>/dev/null
