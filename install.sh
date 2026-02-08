@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.17"
+VERSION="2.2.18"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -89,11 +89,14 @@ setup_config_dir() {
         return
     fi
 
-    # Check if already cloned to target
-    if [ -d "$DOTFILES_TARGET/shared" ] && [ -d "$DOTFILES_TARGET/nvim" ]; then
-        DOTFILES_DIR="$DOTFILES_TARGET"
-        info "Using existing config: $DOTFILES_DIR"
-        return
+    # Backup existing config for fresh install
+    if [ -d "$DOTFILES_TARGET" ]; then
+        local backup_dir="$HOME/.${PROJECT_NAME}-backup-$(date +%Y%m%d-%H%M%S)"
+        info "Backing up existing config to $backup_dir..."
+        mv "$DOTFILES_TARGET" "$backup_dir"
+        ok "Backup created: $backup_dir"
+        # Clear nvim cache to prevent stale module loading
+        rm -rf "$HOME/.cache/nvim" "$HOME/.local/state/nvim/lazy" 2>/dev/null || true
     fi
 
     # Need to download the repo
