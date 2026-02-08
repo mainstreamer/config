@@ -1,6 +1,11 @@
 # .bashrc - Linux entry point
 # Sources shared scripts from ~/.shared.d/
 
+# Fix TERM for starship and other tools (common issue in some terminals)
+if [ "$TERM" = "dumb" ] || [ -z "$TERM" ]; then
+    export TERM=xterm-256color
+fi
+
 # Source global definitions
 [ -f /etc/bashrc ] && . /etc/bashrc
 
@@ -56,3 +61,4 @@ else
         unset rc
     fi
 fi
+echo "BASHRC WAS SOURCED"
