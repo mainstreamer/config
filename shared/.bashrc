@@ -6,6 +6,15 @@ if [ "$TERM" = "dumb" ] || [ -z "$TERM" ]; then
     export TERM=xterm-256color
 fi
 
+# Force interactive behavior for non-interactive shells
+# This can happen in some terminal emulators or nested shells
+if [[ "$-" != *i* ]] && [[ -z "$SSH_CONNECTION" ]]; then
+    # This is a non-interactive shell, but we want to load our config anyway
+    # Set a minimal PS1 to indicate this is somewhat interactive
+    export PS1='\$ '
+    # Continue loading configuration
+fi
+
 # Source global definitions
 [ -f /etc/bashrc ] && . /etc/bashrc
 
