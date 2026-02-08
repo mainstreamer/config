@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli-conf"
 
 # Config
-VERSION="2.2.15"
+VERSION="2.2.16"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -864,6 +864,14 @@ link_configs() {
     fi
 
     ok "Symlinks created"
+    
+    # Install treesitter parsers immediately after symlinking (if nvim available)
+    if command -v nvim &>/dev/null; then
+        info "Installing treesitter parsers (required for config)..."
+        if ! nvim --headless "+TSInstall all" +qa; then
+            warn "Treesitter installation failed - some features may not work"
+        fi
+    fi
 }
 
 link_shell() {
