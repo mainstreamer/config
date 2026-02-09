@@ -15,6 +15,7 @@ brew "fd"           # fast find
 brew "bat"          # cat with syntax highlighting
 brew "eza"          # modern ls (successor to exa)
 brew "zoxide"       # smarter cd
+brew "broot"        # interactive tree browser (br)
 brew "tree"
 
 # ------------------------------------------------------------------------------

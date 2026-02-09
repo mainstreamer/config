@@ -1,0 +1,20 @@
+#!/bin/sh
+# broot: interactive tree browser with cd-on-exit
+# The br() function lets broot change the current directory of the parent shell.
+# This replaces the need for `broot --install` to generate the launcher.
+
+command -v broot &>/dev/null || return 0
+
+br() {
+    local cmd cmd_file code
+    cmd_file=$(mktemp)
+    if broot --outcmd "$cmd_file" "$@"; then
+        cmd=$(cat "$cmd_file")
+        command rm -f "$cmd_file"
+        eval "$cmd"
+    else
+        code=$?
+        command rm -f "$cmd_file"
+        return "$code"
+    fi
+}

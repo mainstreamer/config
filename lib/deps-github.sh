@@ -41,6 +41,16 @@ install_github_tools() {
         }
     fi
 
+    # Install broot (interactive tree browser)
+    if ! command -v broot &>/dev/null; then
+        install_from_github "broot" "Canop/broot" \
+            "https://github.com/Canop/broot/releases/download/v{VERSION}/broot_{VERSION}.zip" \
+            "unzip -o {ARCHIVE} -d /tmp/broot && mv /tmp/broot/x86_64-unknown-linux-musl/broot {BIN_DIR}/ && rm -rf /tmp/broot" \
+        || {
+            command -v cargo &>/dev/null && cargo install broot 2>/dev/null || warn "broot install failed"
+        }
+    fi
+
     # Install delta (with cargo fallback)
     if ! command -v delta &>/dev/null; then
         install_from_github "delta" "dandavison/delta" \

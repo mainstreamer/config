@@ -1,10 +1,15 @@
 #!/bin/sh
-# fzf: key-bindings (Ctrl+R history, Alt+C directory jump) and completion
+# fzf: key-bindings, completion, and custom helpers
+# Shortcuts: Ctrl+T (file search), Ctrl+R (history), Alt+C / Esc+C (cd into dir)
 
 command -v fzf &>/dev/null || return 0
 
-# Appearance: bottom panel with border
-export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --inline-info"
+# Appearance: bottom panel with border, nord-inspired colors
+export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --inline-info \
+--color=fg:#d8dee9,bg:#2e3440,hl:#88c0d0 \
+--color=fg+:#eceff4,bg+:#3b4252,hl+:#5e81ac \
+--color=info:#ebcb8b,prompt:#81a1c1,pointer:#bf616a \
+--color=marker:#a3be8c,spinner:#b48ead,header:#88c0d0"
 
 # Use fd for file search if available (respects .gitignore)
 if command -v fd &>/dev/null; then
@@ -54,3 +59,21 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
 esac
 
 unset -f _fzf_source
+
+# macOS fix: Alt+C sends 'ç' instead of escape sequence.
+# Bind Esc+C as portable alternative (press Esc, then C).
+# For native Alt+C: iTerm2 -> Profiles -> Keys -> Left Option -> Esc+
+if [ "$(uname -s)" = "Darwin" ]; then
+    case "${SHELL_TYPE:-${SHELL##*/}}" in
+        bash)
+            if type __fzf_cd__ &>/dev/null; then
+                bind '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"' 2>/dev/null
+            fi
+            ;;
+        zsh)
+            if type fzf-cd-widget &>/dev/null; then
+                bindkey '\ec' fzf-cd-widget 2>/dev/null
+            fi
+            ;;
+    esac
+fi

@@ -5,8 +5,41 @@
 command -v bat &>/dev/null && alias cat='bat --paging=never'
 command -v zoxide &>/dev/null && eval "$(zoxide init ${SHELL_TYPE:-bash})"
 
-# eza: modern ls replacement
+# eza: modern ls replacement with nord-inspired colors
 if command -v eza &>/dev/null; then
+    # Nord-aligned color scheme for eza
+    export EZA_COLORS="\
+di=1;34:\
+ln=36:\
+ex=1;32:\
+fi=37:\
+*.md=33:\
+*.yml=33:\
+*.yaml=33:\
+*.toml=33:\
+*.json=33:\
+*.js=33:\
+*.ts=33:\
+*.py=33:\
+*.rs=33:\
+*.go=33:\
+*.sh=32:\
+*.bash=32:\
+*.zsh=32:\
+*.log=90:\
+*.bak=90:\
+*.tmp=90:\
+*.swp=90:\
+*.lock=90:\
+*.git=90:\
+ur=35:uw=35:ux=35:ue=35:\
+gr=34:gw=34:gx=34:\
+tr=36:tw=36:tx=36:\
+sn=32:sb=32:\
+da=36:\
+uu=33:gu=33:\
+hd=4;37"
+
     alias ls='eza --icons --group-directories-first'
     alias ll='eza -lgh --icons --git --header --group-directories-first'
     alias la='eza -lagh --icons --git --header --group-directories-first'
@@ -38,11 +71,39 @@ if command -v fzf &>/dev/null; then
         [ -n "$file" ] && ${EDITOR:-nano} "$file"
     }
 
-    # fd: fuzzy-cd into directory
+    # fcd / fj: fuzzy-cd into directory
     fcd() {
         local dir
-        dir=$(find . -type d -not -path '*/\.*' 2>/dev/null | fzf --preview 'eza --tree --icons --level=1 {} 2>/dev/null || ls {}')
+        if command -v fd &>/dev/null; then
+            dir=$(fd --type d --hidden --follow --exclude .git 2>/dev/null | fzf --preview 'eza --tree --icons --level=1 {} 2>/dev/null || ls {}')
+        else
+            dir=$(find . -type d -not -path '*/\.*' 2>/dev/null | fzf --preview 'eza --tree --icons --level=1 {} 2>/dev/null || ls {}')
+        fi
         [ -n "$dir" ] && cd "$dir"
+    }
+    alias fj='fcd'
+
+    # gbr: interactive git branch picker with preview
+    gbr() {
+        local branch
+        branch=$(git branch --all --sort=-committerdate --format='%(refname:short)' 2>/dev/null | \
+            fzf --preview 'git log --oneline --graph --color=always -20 {}' \
+                --preview-window=right:50% \
+                --header='Select branch (Enter=checkout)')
+        if [ -n "$branch" ]; then
+            # Strip 'origin/' prefix for remote branches
+            branch="${branch#origin/}"
+            git checkout "$branch" 2>/dev/null || git checkout -b "$branch" "origin/$branch" 2>/dev/null
+        fi
+    }
+
+    # glog-fzf: interactive commit browser
+    gfzf() {
+        git log --oneline --graph --color=always --all | \
+            fzf --ansi --no-sort --reverse \
+                --preview 'echo {} | grep -o "[a-f0-9]\{7,\}" | head -1 | xargs git show --color=always' \
+                --preview-window=right:60% \
+                --header='Browse commits (Enter=show)'
     }
 fi
 

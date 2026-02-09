@@ -191,6 +191,21 @@ case "\${1:-status}" in
     uninstall)
         [ -f "\$DOTFILES/install.sh" ] && bash "\$DOTFILES/install.sh" uninstall || curl -fsSL "\$URL/i" | bash -s -- uninstall
         ;;
+    man)
+        local doc="\$DOTFILES/docs/COMMANDS.md"
+        if [ ! -f "\$doc" ]; then
+            echo "Manual not found at \$doc"
+            echo "Run '$PROJECT_NAME update' to install."
+            exit 1
+        fi
+        if command -v bat &>/dev/null; then
+            bat --language=md --style=plain --paging=always "\$doc"
+        elif command -v glow &>/dev/null; then
+            glow -p "\$doc"
+        else
+            less "\$doc"
+        fi
+        ;;
     help)
         echo "$PROJECT_NAME - dotfiles manager"
         echo ""
@@ -200,19 +215,27 @@ case "\${1:-status}" in
         echo "  update         Update to latest version"
         echo "  force-update   Force reinstall (ignore version check)"
         echo "  uninstall      Remove $PROJECT_NAME and all symlinks"
+        echo "  man            Full commands reference (paged)"
         echo "  help           Show this help message"
         echo ""
         echo "Shell extras (loaded in interactive shells):"
         echo "  themes [name]           Switch starship prompt theme"
         echo "  fo                      Fuzzy-open file in editor"
-        echo "  fcd                     Fuzzy-cd into directory"
+        echo "  fcd / fj                Fuzzy-cd into directory"
+        echo "  gbr                     Git branch picker (fzf)"
         echo "  dec <string>            URL-decode a string"
+        echo ""
+        echo "Keyboard shortcuts (fzf):"
+        echo "  Ctrl+T                  Fuzzy file search"
+        echo "  Ctrl+R                  Fuzzy history search"
+        echo "  Alt+C / Esc+C           Fuzzy cd into directory"
         echo ""
         echo "Aliases: g/gs/ga/gc/gp/gl/gd/gco/gb/glog (git shortcuts)"
         echo "         ll/la/lt/lta (eza listings)"
+        echo "         d/dc/dce/ds/dsh/dclean (docker)"
         ;;
     *)
-        echo "Usage: $PROJECT_NAME [status|check|update|force-update|uninstall|help]"
+        echo "Usage: $PROJECT_NAME [status|check|update|force-update|uninstall|man|help]"
         ;;
 esac
 EOF
