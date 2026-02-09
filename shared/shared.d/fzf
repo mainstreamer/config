@@ -69,20 +69,26 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
         ;;
 esac
 
-# macOS fix: Alt+C sends 'ç' instead of escape sequence.
-# Bind Esc+C as portable alternative (press Esc, then C).
-# For native Alt+C: iTerm2 -> Profiles -> Keys -> Left Option -> Esc+
-if [ "$(uname -s)" = "Darwin" ]; then
-    case "${SHELL_TYPE:-${SHELL##*/}}" in
-        bash)
-            if type __fzf_cd__ &>/dev/null; then
-                bind '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"' 2>/dev/null
-            fi
-            ;;
-        zsh)
-            if type fzf-cd-widget &>/dev/null; then
-                bindkey '\ec' fzf-cd-widget 2>/dev/null
-            fi
-            ;;
-    esac
-fi
+# Override Alt+C with bind -x to avoid __fzf_cd__ text flashing on command line
+# Also fixes macOS where Alt+C sends 'ç' (Esc+C works as fallback)
+case "${SHELL_TYPE:-${SHELL##*/}}" in
+    bash)
+        if type __fzf_cd__ &>/dev/null; then
+            __fzf_cd_clean__() {
+                local dir
+                dir=$(__fzf_cd__ 2>/dev/null)
+                if [ -n "$dir" ]; then
+                    eval "$dir"
+                fi
+            }
+            bind -x '"\ec": __fzf_cd_clean__'
+        fi
+        ;;
+    zsh)
+        # zsh uses proper widgets — no fix needed on Linux
+        # macOS: Alt+C sends 'ç', rebind Esc+C
+        if [ "$(uname -s)" = "Darwin" ] && type fzf-cd-widget &>/dev/null; then
+            bindkey '\ec' fzf-cd-widget 2>/dev/null
+        fi
+        ;;
+esac
