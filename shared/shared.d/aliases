@@ -107,17 +107,99 @@ if command -v fzf &>/dev/null; then
     }
 fi
 
-# Git shortcuts
+# Git shortcuts (oh-my-zsh compatible)
 alias g='git'
+
+# Status
 alias gs='git status'
+alias gss='git status --short'
+alias gst='git status'
+
+# Add
 alias ga='git add'
-alias gc='git commit'
-alias gp='git push'
-alias gl='git pull'
-alias gd='git diff'
-alias gco='git checkout'
+alias gaa='git add --all'
+alias gapa='git add --patch'
+
+# Commit
+alias gc='git commit --verbose'
+alias gc!='git commit --verbose --amend'
+alias gca='git commit --verbose --all'
+alias gca!='git commit --verbose --all --amend'
+alias gcam='git commit --all --message'
+alias gcmsg='git commit --message'
+alias gcn!='git commit --verbose --no-edit --amend'
+
+# Branch
 alias gb='git branch'
+alias gba='git branch --all'
+alias gbd='git branch --delete'
+alias gbD='git branch --delete --force'
+
+# Checkout / Switch
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gsw='git switch'
+alias gswc='git switch --create'
+
+# Push / Pull / Fetch
+alias gp='git push'
+alias gpf='git push --force-with-lease'
+alias gpf!='git push --force'
+alias gpsup='git push --set-upstream origin $(git branch --show-current)'
+alias gl='git pull'
+alias gf='git fetch'
+alias gfo='git fetch origin'
+
+# Diff
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gdca='git diff --cached'
+
+# Merge
+alias gm='git merge'
+alias gma='git merge --abort'
+
+# Rebase
+alias grb='git rebase'
+alias grbc='git rebase --continue'
+alias grba='git rebase --abort'
+alias grbs='git rebase --skip'
+
+# gri: interactive rebase (defaults to last 2 commits)
+gri() { git rebase -i "HEAD~${1:-2}"; }
+
+# Reset / Restore
+alias grh='git reset'
+alias grhh='git reset --hard'
+alias grs='git restore'
+alias grss='git restore --staged'
+alias gcl='git clean -fd'
+
+# Stash
+alias gsta='git stash push'
+alias gstp='git stash pop'
+alias gstaa='git stash apply'
+alias gstd='git stash drop'
+alias gstl='git stash list'
+
+# Log
 alias glog='git log --oneline --graph --decorate'
+alias gloga='git log --oneline --graph --decorate --all'
+alias glg='git log --stat'
+alias gsh='git show'
+
+# Cherry-pick
+alias gcp='git cherry-pick'
+alias gcpa='git cherry-pick --abort'
+alias gcpc='git cherry-pick --continue'
+
+# Remote
+alias gr='git remote'
+alias grv='git remote --verbose'
+
+# Tags
+alias gt='git tag'
+alias gts='git tag --sign'
 
 # gitgraph: pretty branch graph with colors and dates
 alias gitgraph='git log --graph --all --decorate --oneline --color=always --format="%C(bold blue)%h%C(reset) %C(bold green)(%ar)%C(reset) %s %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"'

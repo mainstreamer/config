@@ -128,19 +128,100 @@ Key bindings in broot:
 
 ## Git
 
-### Shortcuts
+### Shortcuts (oh-my-zsh compatible)
 
+**Status & Log**
 ```bash
-g                      # git
-gs                     # git status
-ga                     # git add
-gc                     # git commit
-gp                     # git push
-gl                     # git pull
-gd                     # git diff (powered by delta — syntax-highlighted, side-by-side)
-gco                    # git checkout
-gb                     # git branch
+gs / gst               # git status
+gss                    # git status --short
 glog                   # git log --oneline --graph --decorate
+gloga                  # git log --oneline --graph --decorate --all
+glg                    # git log --stat
+gsh                    # git show
+```
+
+**Add & Commit**
+```bash
+ga                     # git add
+gaa                    # git add --all
+gapa                   # git add --patch
+gc                     # git commit --verbose
+gc!                    # git commit --amend
+gca                    # git commit --all --verbose
+gca!                   # git commit --all --amend
+gcam                   # git commit --all --message
+gcmsg                  # git commit --message
+gcn!                   # git commit --amend --no-edit
+```
+
+**Branch & Checkout**
+```bash
+gb                     # git branch
+gba                    # git branch --all
+gbd                    # git branch --delete
+gbD                    # git branch --delete --force
+gco                    # git checkout
+gcb                    # git checkout -b (new branch)
+gsw                    # git switch
+gswc                   # git switch --create
+```
+
+**Push, Pull & Fetch**
+```bash
+gp                     # git push
+gpf                    # git push --force-with-lease (safe force push)
+gpf!                   # git push --force
+gpsup                  # git push --set-upstream origin <current-branch>
+gl                     # git pull
+gf                     # git fetch
+gfo                    # git fetch origin
+```
+
+**Diff** (powered by delta — syntax-highlighted, side-by-side)
+```bash
+gd                     # git diff
+gds                    # git diff --staged
+gdca                   # git diff --cached
+```
+
+**Merge & Rebase**
+```bash
+gm                     # git merge
+gma                    # git merge --abort
+grb                    # git rebase
+grbc                   # git rebase --continue
+grba                   # git rebase --abort
+grbs                   # git rebase --skip
+gri                    # git rebase -i HEAD~2 (default: last 2 commits)
+gri 5                  # git rebase -i HEAD~5
+```
+
+**Reset & Restore**
+```bash
+grh                    # git reset
+grhh                   # git reset --hard
+grs                    # git restore
+grss                   # git restore --staged
+gcl                    # git clean -fd
+```
+
+**Stash**
+```bash
+gsta                   # git stash push
+gstp                   # git stash pop
+gstaa                  # git stash apply
+gstd                   # git stash drop
+gstl                   # git stash list
+```
+
+**Cherry-pick, Remote & Tags**
+```bash
+gcp                    # git cherry-pick
+gcpa                   # git cherry-pick --abort
+gcpc                   # git cherry-pick --continue
+gr                     # git remote
+grv                    # git remote --verbose
+gt                     # git tag
 lg                     # lazygit — full terminal UI for git
 ```
 
