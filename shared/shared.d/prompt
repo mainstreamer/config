@@ -8,7 +8,7 @@ fi
 
 # Switch between starship prompt themes
 # Themes are stored as shared/starship-<name>.toml in the dotfiles repo
-starship-theme() {
+themes() {
     # Resolve dotfiles location from ~/.shared.d symlink (works for both local and remote installs)
     local theme_dir
     if [ -L "$HOME/.shared.d" ]; then
@@ -49,7 +49,7 @@ starship-theme() {
         done
 
         echo ""
-        echo "Usage: starship-theme <name>"
+        echo "Usage: themes <name>"
         return 0
     fi
 
@@ -65,7 +65,7 @@ starship-theme() {
 
     if [ ! -f "$theme_file" ]; then
         echo "Theme '$name' not found."
-        echo "Run 'starship-theme' to see available themes."
+        echo "Run 'themes' to see available themes."
         return 1
     fi
 

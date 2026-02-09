@@ -6,8 +6,12 @@ install_deps() {
 
     case "$DISTRO" in
         fedora|debian|macos)
-            install_homebrew
-            install_brew_packages
+            if install_homebrew; then
+                install_brew_packages
+            else
+                warn "Homebrew unavailable, falling back to apt + GitHub releases"
+                install_ubuntu_packages
+            fi
             ;;
         ubuntu|popos)
             install_ubuntu_packages
@@ -43,6 +47,12 @@ install_homebrew() {
     if command -v brew &>/dev/null; then
         ok "Homebrew already installed"
         return
+    fi
+
+    # Homebrew refuses to run as root
+    if [ "$(id -u)" -eq 0 ]; then
+        warn "Homebrew cannot be installed as root, skipping"
+        return 1
     fi
 
     # Homebrew requires git + gcc

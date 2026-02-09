@@ -27,23 +27,23 @@ $time\
 [ ](fg:color_bg1)\
 $line_break$character"""
 
-palette = 'pastel'
+palette = 'everforest'
 
-[palettes.pastel]
-color_fg0 = '#f0e6d3'
-color_bg1 = '#2d2a2e'
-color_bg3 = '#534b52'
-color_blue = '#7eb8da'
-color_aqua = '#8ec89a'
-color_green = '#b5d99c'
-color_orange = '#e8a87c'
-color_purple = '#c3a6d8'
-color_red = '#e8878e'
-color_yellow = '#f0cf8e'
+[palettes.everforest]
+color_fg0 = '#d3c6aa'
+color_bg1 = '#2e383c'
+color_bg3 = '#374145'
+color_blue = '#7fbbb3'
+color_aqua = '#83c092'
+color_green = '#a7c080'
+color_orange = '#e69875'
+color_purple = '#d699b6'
+color_red = '#e67e80'
+color_yellow = '#dbbc7f'
 
 [os]
 disabled = false
-style = "bg:color_orange fg:color_bg1"
+style = "bg:color_orange fg:color_fg0"
 
 [os.symbols]
 Windows = "󰍲"
@@ -68,15 +68,14 @@ Redhat = "󱄛"
 RedHatEnterprise = "󱄛"
 Pop = ""
 
-
 [username]
 show_always = true
-style_user = "bg:color_orange fg:color_bg1"
-style_root = "bg:color_orange fg:color_bg1"
+style_user = "bg:color_orange fg:color_fg0"
+style_root = "bg:color_orange fg:color_fg0"
 format = '[ $user ]($style)'
 
 [directory]
-style = "fg:color_bg1 bg:color_yellow"
+style = "fg:color_fg0 bg:color_yellow"
 format = "[ $path ]($style)"
 truncation_length = 10
 truncation_symbol = "…/"
@@ -89,75 +88,74 @@ truncate_to_repo = false
 "Pictures" = " "
 "Developer" = "󰲋 "
 
-
 [git_branch]
 symbol = ""
 style = "bg:color_aqua"
-format = '[[ $symbol $branch ](fg:color_bg1 bg:color_aqua)]($style)'
+format = '[[ $symbol $branch ](fg:color_fg0 bg:color_aqua)]($style)'
 
 [git_status]
 style = "bg:color_aqua"
-format = '[[($all_status$ahead_behind )](fg:color_bg1 bg:color_aqua)]($style)'
+format = '[[($all_status$ahead_behind )](fg:color_fg0 bg:color_aqua)]($style)'
 
 [nodejs]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [c]
 symbol = " "
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [rust]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [golang]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [php]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [java]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [kotlin]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [haskell]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [python]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_bg1 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [docker_context]
 symbol = ""
 style = "bg:color_bg3"
-format = '[[ $symbol( $context) ](fg:color_bg1 bg:color_bg3)]($style)'
+format = '[[ $symbol( $context) ](fg:color_aqua bg:color_bg3)]($style)'
 
 [conda]
 style = "bg:color_bg3"
-format = '[[ $symbol( $environment) ](fg:color_bg1 bg:color_bg3)]($style)'
+format = '[[ $symbol( $environment) ](fg:color_aqua bg:color_bg3)]($style)'
 
 [time]
 disabled = false
 time_format = "%R"
 style = "bg:color_bg1"
-format = '[[   $time ](fg:color_bg3 bg:color_bg1)]($style)'
+format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
 
 [line_break]
 disabled = false

@@ -1,0 +1,9 @@
+#!/bin/sh
+# URL decode a string
+# Usage: dec "hello%20world%21" -> hello world!
+#        echo "%2Fpath%2Fto" | dec
+
+dec() {
+    local input="${1:-$(cat)}"
+    printf '%b\n' "$(echo "$input" | sed 's/+/ /g; s/%\([0-9a-fA-F][0-9a-fA-F]\)/\\x\1/g')"
+}
