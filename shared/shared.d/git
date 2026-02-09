@@ -1,0 +1,21 @@
+#!/bin/sh
+# Git enhancements: delta (fancy diffs), lazygit
+
+# delta: syntax-highlighted side-by-side diffs for all git commands
+if command -v delta &>/dev/null; then
+    export GIT_PAGER="delta"
+    export DELTA_FEATURES="side-by-side line-numbers decorations"
+    export DELTA_NAVIGATE="true"
+
+    # gitdiff: compare any two files with delta (not just git-tracked)
+    gitdiff() {
+        if [ $# -lt 2 ]; then
+            echo "Usage: gitdiff <file1> <file2>"
+            return 1
+        fi
+        delta "$1" "$2"
+    }
+fi
+
+# lazygit shortcut
+command -v lazygit &>/dev/null && alias lg='lazygit'

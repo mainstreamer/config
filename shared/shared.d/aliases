@@ -83,8 +83,8 @@ if command -v fzf &>/dev/null; then
     }
     alias fj='fcd'
 
-    # gbr: interactive git branch picker with preview
-    gbr() {
+    # gitbr: interactive git branch picker with preview
+    gitbr() {
         local branch
         branch=$(git branch --all --sort=-committerdate --format='%(refname:short)' 2>/dev/null | \
             fzf --preview 'git log --oneline --graph --color=always -20 {}' \
@@ -97,8 +97,8 @@ if command -v fzf &>/dev/null; then
         fi
     }
 
-    # glog-fzf: interactive commit browser
-    gfzf() {
+    # gitlog: interactive commit browser with diff preview
+    gitlog() {
         git log --oneline --graph --color=always --all | \
             fzf --ansi --no-sort --reverse \
                 --preview 'echo {} | grep -o "[a-f0-9]\{7,\}" | head -1 | xargs git show --color=always' \
@@ -118,6 +118,9 @@ alias gd='git diff'
 alias gco='git checkout'
 alias gb='git branch'
 alias glog='git log --oneline --graph --decorate'
+
+# gitgraph: pretty branch graph with colors and dates
+alias gitgraph='git log --graph --all --decorate --oneline --color=always --format="%C(bold blue)%h%C(reset) %C(bold green)(%ar)%C(reset) %s %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"'
 
 # Config version (delegates to epicli CLI)
 alias version='epicli version'

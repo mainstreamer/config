@@ -137,27 +137,55 @@ ga                     # git add
 gc                     # git commit
 gp                     # git push
 gl                     # git pull
-gd                     # git diff
+gd                     # git diff (powered by delta — syntax-highlighted, side-by-side)
 gco                    # git checkout
 gb                     # git branch
 glog                   # git log --oneline --graph --decorate
+lg                     # lazygit — full terminal UI for git
+```
+
+### Fancy Diffs (delta)
+
+All `git diff`, `git show`, `git log -p` output is automatically rendered by
+**delta** with syntax highlighting, line numbers, and side-by-side view.
+No extra commands needed — just use `gd`, `git diff`, `git show` as usual.
+
+Navigate in delta output: `n` = next file, `N` = previous file.
+
+```bash
+gitdiff file1 file2    # Compare any two files with delta (not just git-tracked)
 ```
 
 ### Interactive Git with fzf
 
 ```bash
-gbr                    # Interactive branch picker — shows all branches sorted
-                       # by last commit, preview shows log, Enter = checkout
+gitbr                  # Interactive branch picker — all branches sorted by
+                       # last commit, preview shows log, Enter = checkout
 
-gfzf                   # Interactive commit browser — shows full log graph,
+gitlog                 # Interactive commit browser — full log graph,
                        # preview shows diff for selected commit
 ```
 
-`gbr` details:
+`gitbr` details:
 - Lists local + remote branches sorted by most recent commit
 - Preview pane shows last 20 commits on that branch
 - Press Enter to checkout the branch
 - Remote branches (origin/...) are auto-checked-out as local tracking branches
+
+### Branch Graph
+
+```bash
+gitgraph               # Pretty colored branch graph with dates and authors
+```
+
+Shows all branches as a compact colored graph:
+```
+* a1b2c3d (2 hours ago) feat: add themes - user  (HEAD -> master)
+* e4f5g6h (3 hours ago) fix: starship presets - user
+| * i7j8k9l (1 day ago) wip: experiment - user  (origin/feature)
+|/
+* m0n1o2p (2 days ago) refactor: modularize - user
+```
 
 ---
 
