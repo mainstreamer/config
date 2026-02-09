@@ -35,7 +35,20 @@ themes <name>          # Switch to a theme
 themes -l              # Same as no args — list themes
 ```
 
-Available themes: `gruvbox-rainbow` (default), `minimal`, `nord`, `catppuccin`, `p1`, `p2`, `p3`, `p4`
+Available themes:
+
+| Theme | Style |
+|-------|-------|
+| `gruvbox-rainbow` | Warm earth tones (default) |
+| `minimal` | Clean, no powerline arrows (tokyo-night) |
+| `nord` | Cool arctic blues and greens |
+| `catppuccin` | Pastel mocha purples and teals |
+| `p1` | Soft pastel peach/mint/blue |
+| `p2` | Rose Pine - dusty rose, pine, foam |
+| `p3` | Everforest - green-core, sage and teal |
+| `p4` | Kanagawa - Japanese ink violet/blue/green |
+| `p5` | Aurora - rainbow purple/indigo/cyan |
+| `p6` | Nord Ember - warm aurora twist on nordic |
 
 ```bash
 themes catppuccin      # Switched to starship theme: catppuccin

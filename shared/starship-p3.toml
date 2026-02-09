@@ -30,16 +30,17 @@ $line_break$character"""
 palette = 'everforest'
 
 [palettes.everforest]
-color_fg0 = '#d3c6aa'
-color_bg1 = '#2e383c'
-color_bg3 = '#374145'
-color_blue = '#7fbbb3'
+color_fg0 = '#1e2326'
+color_fg_dim = '#d3c6aa'
+color_bg1 = '#272e33'
+color_bg3 = '#343f44'
+color_blue = '#78b0a0'
 color_aqua = '#83c092'
 color_green = '#a7c080'
-color_orange = '#e69875'
+color_orange = '#7a9a7e'
 color_purple = '#d699b6'
 color_red = '#e67e80'
-color_yellow = '#dbbc7f'
+color_yellow = '#a7c080'
 
 [os]
 disabled = false
@@ -155,7 +156,7 @@ format = '[[ $symbol( $environment) ](fg:color_aqua bg:color_bg3)]($style)'
 disabled = false
 time_format = "%R"
 style = "bg:color_bg1"
-format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
+format = '[[  $time ](fg:color_fg_dim bg:color_bg1)]($style)'
 
 [line_break]
 disabled = false
