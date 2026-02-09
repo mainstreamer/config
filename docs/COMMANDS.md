@@ -54,10 +54,13 @@ Available themes:
 | `p9` | Slate — muted charcoal grey/brown/blue |
 | `p10` | Honeybee — black bg, gold/amber text |
 | `p11` | Nightshade — dark bg, violet/purple core |
+| `s1` | Daft Punk — hot magenta/gold/cyan ▓▒░ |
+| `s2` | Moderat — warm rust/amber/teal ▓▒░ |
+| `s3` | Neon Grid — pure red/green/blue ▓▒░ |
 
 ```bash
 themes catppuccin      # Switched to starship theme: catppuccin
-themes p8              # Switched to starship theme: p8
+themes s1              # Switched to starship theme: s1
 themes default         # Back to gruvbox-rainbow
 ```
 
