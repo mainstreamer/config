@@ -5,3 +5,66 @@
 if command -v starship &>/dev/null; then
     eval "$(starship init ${SHELL_TYPE:-bash})"
 fi
+
+# Switch between starship prompt themes
+# Themes are stored as shared/starship-<name>.toml in the dotfiles repo
+starship-theme() {
+    local dotfiles="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}"
+    local theme_dir="$dotfiles/shared"
+    local target="$HOME/.config/starship.toml"
+
+    # No args: list available themes
+    if [ -z "$1" ] || [ "$1" = "--list" ] || [ "$1" = "-l" ]; then
+        local current=""
+        if [ -L "$target" ]; then
+            current=$(readlink "$target" 2>/dev/null)
+        fi
+
+        echo "Available starship themes:"
+        echo ""
+
+        # Default (gruvbox rainbow)
+        if [ -f "$theme_dir/starship.toml" ]; then
+            if [ "$current" = "$theme_dir/starship.toml" ]; then
+                echo "  * gruvbox-rainbow (default) [active]"
+            else
+                echo "    gruvbox-rainbow (default)"
+            fi
+        fi
+
+        # Named themes
+        for f in "$theme_dir"/starship-*.toml; do
+            [ -f "$f" ] || continue
+            local name=$(basename "$f" | sed 's/^starship-//;s/\.toml$//')
+            if [ "$current" = "$f" ]; then
+                echo "  * $name [active]"
+            else
+                echo "    $name"
+            fi
+        done
+
+        echo ""
+        echo "Usage: starship-theme <name>"
+        return 0
+    fi
+
+    # Switch theme
+    local name="$1"
+    local theme_file
+
+    if [ "$name" = "default" ] || [ "$name" = "gruvbox-rainbow" ]; then
+        theme_file="$theme_dir/starship.toml"
+    else
+        theme_file="$theme_dir/starship-${name}.toml"
+    fi
+
+    if [ ! -f "$theme_file" ]; then
+        echo "Theme '$name' not found."
+        echo "Run 'starship-theme' to see available themes."
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    ln -sf "$theme_file" "$target"
+    echo "Switched to starship theme: $name"
+}

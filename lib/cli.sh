@@ -184,8 +184,27 @@ case "\${1:-status}" in
     uninstall)
         [ -f "\$DOTFILES/install.sh" ] && bash "\$DOTFILES/install.sh" uninstall || curl -fsSL "\$URL/i" | bash -s -- uninstall
         ;;
+    help)
+        echo "$PROJECT_NAME - dotfiles manager"
+        echo ""
+        echo "Commands:"
+        echo "  status         Show installed version and manifest"
+        echo "  check          Check for available updates"
+        echo "  update         Update to latest version"
+        echo "  force-update   Force reinstall (ignore version check)"
+        echo "  uninstall      Remove $PROJECT_NAME and all symlinks"
+        echo "  help           Show this help message"
+        echo ""
+        echo "Shell extras (loaded in interactive shells):"
+        echo "  starship-theme [name]   Switch starship prompt theme"
+        echo "  fo                      Fuzzy-open file in editor"
+        echo "  fcd                     Fuzzy-cd into directory"
+        echo ""
+        echo "Aliases: g/gs/ga/gc/gp/gl/gd/gco/gb/glog (git shortcuts)"
+        echo "         ll/la/lt/lta (eza listings)"
+        ;;
     *)
-        echo "Usage: $PROJECT_NAME [status|check|update|force-update|uninstall]"
+        echo "Usage: $PROJECT_NAME [status|check|update|force-update|uninstall|help]"
         ;;
 esac
 EOF
