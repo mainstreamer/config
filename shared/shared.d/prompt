@@ -14,7 +14,7 @@ starship-theme() {
     local target="$HOME/.config/starship.toml"
 
     # No args: list available themes
-    if [ -z "$1" ] || [ "$1" = "--list" ] || [ "$1" = "-l" ]; then
+    if [ -z "$1" ] || [ "$1" = "list" ] || [ "$1" = "--list" ] || [ "$1" = "-l" ]; then
         local current=""
         if [ -L "$target" ]; then
             current=$(readlink "$target" 2>/dev/null)

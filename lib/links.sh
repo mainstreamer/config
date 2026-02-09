@@ -142,10 +142,23 @@ link_nvim() {
 link_starship() {
     info "Linking Starship config..."
 
+    local target="$HOME/.config/starship.toml"
+    mkdir -p "$HOME/.config"
+
+    # Preserve existing theme choice if it points to a valid theme in our repo
+    if [ -L "$target" ]; then
+        local current
+        current=$(readlink "$target" 2>/dev/null)
+        if [ -f "$current" ] && echo "$current" | grep -q "$DOTFILES_DIR/shared/starship"; then
+            ok "Starship theme preserved: $(basename "$current" .toml | sed 's/^starship-//;s/^starship$/gruvbox-rainbow (default)/')"
+            return 0
+        fi
+    fi
+
+    # First install or broken link: set default theme
     if [ -f "$DOTFILES_DIR/shared/starship.toml" ]; then
-        mkdir -p "$HOME/.config"
-        rm -f "$HOME/.config/starship.toml" 2>/dev/null || true
-        ln -sf "$DOTFILES_DIR/shared/starship.toml" "$HOME/.config/starship.toml"
+        rm -f "$target" 2>/dev/null || true
+        ln -sf "$DOTFILES_DIR/shared/starship.toml" "$target"
     else
         warn "Starship config not found, skipping"
     fi
