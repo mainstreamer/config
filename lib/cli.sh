@@ -192,7 +192,7 @@ case "\${1:-status}" in
         [ -f "\$DOTFILES/install.sh" ] && bash "\$DOTFILES/install.sh" uninstall || curl -fsSL "\$URL/i" | bash -s -- uninstall
         ;;
     man)
-        local doc="\$DOTFILES/docs/COMMANDS.md"
+        doc="\$DOTFILES/docs/COMMANDS.md"
         if [ ! -f "\$doc" ]; then
             echo "Manual not found at \$doc"
             echo "Run '$PROJECT_NAME update' to install."
