@@ -25,40 +25,49 @@ export FZF_ALT_C_OPTS="--preview 'eza --tree --icons --level=1 {} 2>/dev/null ||
 # Ctrl+R preview: show full command
 export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window=up:3:wrap"
 
-# Source key-bindings and completion for the current shell
-_fzf_source() {
-    local f="$1"
-    [ -f "$f" ] && . "$f"
-}
-
-# Detect shell type
+# Source key-bindings and completion
+# fzf 0.48+ supports --bash/--zsh (single clean integration), older needs manual sourcing
 case "${SHELL_TYPE:-${SHELL##*/}}" in
     bash)
-        # Linuxbrew
-        _fzf_source "/home/linuxbrew/.linuxbrew/opt/fzf/shell/key-bindings.bash"
-        _fzf_source "/home/linuxbrew/.linuxbrew/opt/fzf/shell/completion.bash"
-        # Homebrew (macOS)
-        _fzf_source "/opt/homebrew/opt/fzf/shell/key-bindings.bash"
-        _fzf_source "/opt/homebrew/opt/fzf/shell/completion.bash"
-        # System package (Fedora, Arch, etc.)
-        _fzf_source "/usr/share/fzf/shell/key-bindings.bash"
-        _fzf_source "/usr/share/fzf/key-bindings.bash"
-        # Debian/Ubuntu
-        _fzf_source "/usr/share/doc/fzf/examples/key-bindings.bash"
-        _fzf_source "/usr/share/bash-completion/completions/fzf"
+        if fzf --bash &>/dev/null; then
+            eval "$(fzf --bash)"
+        else
+            _fzf_try() { [ -f "$1" ] && . "$1"; }
+            # Try paths in priority order, stop after first hit for each type
+            for f in /home/linuxbrew/.linuxbrew/opt/fzf/shell/key-bindings.bash \
+                     /opt/homebrew/opt/fzf/shell/key-bindings.bash \
+                     /usr/share/fzf/shell/key-bindings.bash \
+                     /usr/share/fzf/key-bindings.bash \
+                     /usr/share/doc/fzf/examples/key-bindings.bash; do
+                [ -f "$f" ] && . "$f" && break
+            done
+            for f in /home/linuxbrew/.linuxbrew/opt/fzf/shell/completion.bash \
+                     /opt/homebrew/opt/fzf/shell/completion.bash \
+                     /usr/share/bash-completion/completions/fzf; do
+                [ -f "$f" ] && . "$f" && break
+            done
+            unset f _fzf_try
+        fi
         ;;
     zsh)
-        _fzf_source "/home/linuxbrew/.linuxbrew/opt/fzf/shell/key-bindings.zsh"
-        _fzf_source "/home/linuxbrew/.linuxbrew/opt/fzf/shell/completion.zsh"
-        _fzf_source "/opt/homebrew/opt/fzf/shell/key-bindings.zsh"
-        _fzf_source "/opt/homebrew/opt/fzf/shell/completion.zsh"
-        _fzf_source "/usr/share/fzf/shell/key-bindings.zsh"
-        _fzf_source "/usr/share/fzf/key-bindings.zsh"
-        _fzf_source "/usr/share/doc/fzf/examples/key-bindings.zsh"
+        if fzf --zsh &>/dev/null; then
+            eval "$(fzf --zsh)"
+        else
+            for f in /home/linuxbrew/.linuxbrew/opt/fzf/shell/key-bindings.zsh \
+                     /opt/homebrew/opt/fzf/shell/key-bindings.zsh \
+                     /usr/share/fzf/shell/key-bindings.zsh \
+                     /usr/share/fzf/key-bindings.zsh \
+                     /usr/share/doc/fzf/examples/key-bindings.zsh; do
+                [ -f "$f" ] && . "$f" && break
+            done
+            for f in /home/linuxbrew/.linuxbrew/opt/fzf/shell/completion.zsh \
+                     /opt/homebrew/opt/fzf/shell/completion.zsh; do
+                [ -f "$f" ] && . "$f" && break
+            done
+            unset f
+        fi
         ;;
 esac
-
-unset -f _fzf_source
 
 # macOS fix: Alt+C sends 'ç' instead of escape sequence.
 # Bind Esc+C as portable alternative (press Esc, then C).

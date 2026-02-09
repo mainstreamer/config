@@ -303,13 +303,13 @@ VERSION := $(shell grep '^VERSION=' install.sh | cut -d'"' -f2)
 version:
 	@echo "Current version: $(VERSION)"
 
-bump-patch:
+patch:
 	@./scripts/bump-version.sh patch
 
-bump-minor:
+minor:
 	@./scripts/bump-version.sh minor
 
-bump-major:
+major:
 	@./scripts/bump-version.sh major
 
 # Deploy to server
