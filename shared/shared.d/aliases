@@ -98,12 +98,28 @@ if command -v fzf &>/dev/null; then
     }
 
     # gitlog: interactive commit browser with diff preview
+    # Enter = show commit, Alt+Enter = paste hash to command line
     gitlog() {
-        git log --oneline --graph --color=always --all | \
+        local out key hash
+        out=$(git log --oneline --graph --color=always --all | \
             fzf --ansi --no-sort --reverse \
                 --preview 'echo {} | grep -o "[a-f0-9]\{7,\}" | head -1 | xargs git show --color=always' \
                 --preview-window=right:60% \
-                --header='Browse commits (Enter=show)'
+                --expect=alt-enter \
+                --header='Enter=show | Alt+Enter=copy hash')
+        key=$(echo "$out" | head -1)
+        hash=$(echo "$out" | tail -1 | grep -o '[a-f0-9]\{7,\}' | head -1)
+        [ -z "$hash" ] && return
+        if [ "$key" = "alt-enter" ]; then
+            # Paste hash into command line via readline
+            if [ -n "$BASH_VERSION" ]; then
+                bind '"\e[0n": "'"$hash"'"'; printf '\e[5n'
+            elif [ -n "$ZSH_VERSION" ]; then
+                print -z "$hash"
+            fi
+        else
+            git show "$hash"
+        fi
     }
 fi
 
@@ -125,7 +141,7 @@ alias gc='git commit --verbose'
 alias gc!='git commit --verbose --amend'
 alias gca='git commit --verbose --all'
 alias gca!='git commit --verbose --all --amend'
-alias gcam='git commit --all --message'
+alias gcam='git commit -a -m'
 alias gcmsg='git commit --message'
 alias gcn!='git commit --verbose --no-edit --amend'
 
