@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli"
 
 # Config
-VERSION="2.6.1"
+VERSION="2.6.2"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -84,6 +84,47 @@ print_install_hint() {
         warn "Install with: sudo pacman -S $packages"
     elif command -v apk &>/dev/null; then
         warn "Install with: sudo apk add $packages"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Migration: clean up artifacts from old project names
+# ------------------------------------------------------------------------------
+
+migrate_old_names() {
+    local old_names=("dotfiles" "epicli-conf")
+    local migrated=false
+
+    for old in "${old_names[@]}"; do
+        # Remove old install directory
+        if [ -d "$HOME/.$old" ]; then
+            info "Removing old install: ~/.$old"
+            rm -rf "$HOME/.$old"
+            migrated=true
+        fi
+
+        # Remove old version/manifest files
+        rm -f "$HOME/.${old}-version" 2>/dev/null
+        rm -f "$HOME/.${old}-manifest" 2>/dev/null
+
+        # Remove old CLI binary
+        if [ -f "$HOME/.local/bin/$old" ]; then
+            info "Removing old CLI: ~/.local/bin/$old"
+            rm -f "$HOME/.local/bin/$old"
+        fi
+
+        # Remove old backups
+        for d in "$HOME/.${old}-backup"*; do
+            if [ -d "$d" ]; then
+                info "Removing old backup: $d"
+                rm -rf "$d"
+            fi
+        done
+        rm -rf "$HOME/.${old}-backups" 2>/dev/null
+    done
+
+    if [ "$migrated" = true ]; then
+        ok "Migrated from old project name to $PROJECT_NAME"
     fi
 }
 
@@ -459,6 +500,7 @@ main() {
     echo ""
 
     parse_args "$@"
+    migrate_old_names
     setup_config_dir
     detect_os
 

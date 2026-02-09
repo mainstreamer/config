@@ -35,6 +35,13 @@ cmd_uninstall() {
     rm -f "$MANIFEST_FILE"
     rm -f "$HOME/.local/bin/$PROJECT_NAME"
 
+    # Clean up old project name artifacts
+    for old in dotfiles epicli-conf; do
+        rm -rf "$HOME/.$old" 2>/dev/null
+        rm -f "$HOME/.${old}-version" "$HOME/.${old}-manifest" 2>/dev/null
+        rm -f "$HOME/.local/bin/$old" 2>/dev/null
+    done
+
     info "Removing Homebrew..."
     if [ -d "/home/linuxbrew/.linuxbrew" ]; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)" -- --force

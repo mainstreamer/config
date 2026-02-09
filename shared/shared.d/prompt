@@ -9,8 +9,13 @@ fi
 # Switch between starship prompt themes
 # Themes are stored as shared/starship-<name>.toml in the dotfiles repo
 starship-theme() {
-    local dotfiles="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}"
-    local theme_dir="$dotfiles/shared"
+    # Resolve dotfiles location from ~/.shared.d symlink (works for both local and remote installs)
+    local theme_dir
+    if [ -L "$HOME/.shared.d" ]; then
+        theme_dir="$(cd -P "$HOME/.shared.d" 2>/dev/null && cd .. && pwd)"
+    else
+        theme_dir="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}/shared"
+    fi
     local target="$HOME/.config/starship.toml"
 
     # No args: list available themes
