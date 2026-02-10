@@ -1,0 +1,174 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# S5: Fog Machine — desaturated smoke/ash/steel muted tones, ▓▒░ retro separators
+
+format = """
+[](color_wine)\
+$os\
+$username\
+[▓▒░](fg:color_wine bg:color_olive)\
+$directory\
+[▓▒░](fg:color_olive bg:color_steel)\
+$git_branch\
+$git_status\
+[▓▒░](fg:color_steel bg:color_mauve)\
+$c\
+$rust\
+$golang\
+$nodejs\
+$php\
+$java\
+$kotlin\
+$haskell\
+$python\
+[▓▒░](fg:color_mauve bg:color_surface1)\
+$docker_context\
+$conda\
+[▓▒░](fg:color_surface1 bg:color_surface0)\
+$time\
+[▓▒░ ](fg:color_surface0)\
+$line_break$character"""
+
+palette = 'synthwave_fog'
+
+[palettes.synthwave_fog]
+color_text = '#b0a898'
+color_base = '#121015'
+color_surface0 = '#1c1a20'
+color_surface1 = '#28252e'
+color_wine = '#8a5a6a'
+color_olive = '#7a8a5a'
+color_steel = '#5a7a8a'
+color_mauve = '#7a6a8a'
+color_sand = '#a09070'
+color_ash = '#706a65'
+color_green = '#6a8a60'
+color_red = '#9a5a5a'
+
+[os]
+disabled = false
+style = "bg:color_wine fg:color_text"
+
+[os.symbols]
+Windows = "󰍲"
+Ubuntu = "󰕈"
+SUSE = ""
+Raspbian = "󰐿"
+Mint = "󰣭"
+Macos = "󰀵"
+Manjaro = ""
+Linux = "󰌽"
+Gentoo = "󰣨"
+Fedora = "󰣛"
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = "󰣇"
+Artix = "󰣇"
+EndeavourOS = ""
+CentOS = ""
+Debian = "󰣚"
+Redhat = "󱄛"
+RedHatEnterprise = "󱄛"
+Pop = ""
+
+[username]
+show_always = true
+style_user = "bg:color_wine fg:color_text"
+style_root = "bg:color_wine fg:color_sand"
+format = '[ $user ]($style)'
+
+[directory]
+style = "fg:color_base bg:color_olive"
+format = "[ $path ]($style)"
+truncation_length = 10
+truncation_symbol = "…/"
+truncate_to_repo = false
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Developer" = "󰲋 "
+
+[git_branch]
+symbol = ""
+style = "bg:color_steel"
+format = '[[ $symbol $branch ](fg:color_text bg:color_steel)]($style)'
+
+[git_status]
+style = "bg:color_steel"
+format = '[[($all_status$ahead_behind )](fg:color_text bg:color_steel)]($style)'
+
+[nodejs]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[c]
+symbol = " "
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[rust]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[php]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[java]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[kotlin]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[haskell]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[python]
+symbol = ""
+style = "bg:color_mauve"
+format = '[[ $symbol( $version) ](fg:color_text bg:color_mauve)]($style)'
+
+[docker_context]
+symbol = ""
+style = "bg:color_surface1"
+format = '[[ $symbol( $context) ](fg:color_ash bg:color_surface1)]($style)'
+
+[conda]
+style = "bg:color_surface1"
+format = '[[ $symbol( $environment) ](fg:color_ash bg:color_surface1)]($style)'
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:color_surface0"
+format = '[[   $time ](fg:color_sand bg:color_surface0)]($style)'
+
+[line_break]
+disabled = false
+
+[character]
+disabled = false
+success_symbol = '[└─⦿](bold fg:color_steel)'
+error_symbol = '[└─⦿](bold fg:color_red)'
+vimcmd_symbol = '[└─⦿](bold fg:color_green)'
+vimcmd_replace_one_symbol = '[└─⦿](bold fg:color_wine)'
+vimcmd_replace_symbol = '[└─⦿](bold fg:color_wine)'
+vimcmd_visual_symbol = '[└─⦿](bold fg:color_sand)'
