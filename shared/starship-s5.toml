@@ -3,7 +3,7 @@
 # S5: Fog Machine — desaturated smoke/ash/steel muted tones, ▓▒░ retro separators
 
 format = """
-[](color_wine)\
+[](fg:color_wine)\
 $os\
 $username\
 [▓▒░](fg:color_wine bg:color_olive)\
@@ -26,7 +26,7 @@ $docker_context\
 $conda\
 [▓▒░](fg:color_surface1 bg:color_surface0)\
 $time\
-[▓▒░](fg:color_surface0)[](fg:color_surface0)\
+[▓▒░](fg:color_surface0)[](fg:color_surface0)\
 $line_break$character"""
 
 palette = 'synthwave_fog'

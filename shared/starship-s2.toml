@@ -3,7 +3,7 @@
 # S2: Moderat — deep analog warmth, muted neon on dark, ▓▒░ retro separators
 
 format = """
-[](color_rust)\
+[](fg:color_rust)\
 $os\
 $username\
 [▓▒░](fg:color_rust bg:color_amber)\
@@ -26,7 +26,7 @@ $docker_context\
 $conda\
 [▓▒░](fg:color_surface1 bg:color_surface0)\
 $time\
-[▓▒░](fg:color_surface0)[](fg:color_surface0)\
+[▓▒░](fg:color_surface0)[](fg:color_surface0)\
 $line_break$character"""
 
 palette = 'synthwave_moderat'
