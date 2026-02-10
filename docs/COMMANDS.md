@@ -57,6 +57,8 @@ Available themes:
 | `s1` | Daft Punk — hot magenta/gold/cyan ▓▒░ |
 | `s2` | Moderat — warm rust/amber/teal ▓▒░ |
 | `s3` | Neon Grid — pure red/green/blue ▓▒░ |
+| `s4` | Pastel Grid — muted rose/mint/periwinkle ▓▒░ |
+| `s5` | Fog Machine — desaturated wine/olive/steel ▓▒░ |
 
 ```bash
 themes catppuccin      # Switched to starship theme: catppuccin
