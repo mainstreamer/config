@@ -220,6 +220,99 @@ alias gts='git tag --sign'
 # gitgraph: pretty branch graph with colors and dates
 alias gitgraph='git log --graph --all --decorate --oneline --color=always --format="%C(bold blue)%h%C(reset) %C(bold green)(%ar)%C(reset) %s %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"'
 
+# githelp: cheatsheet of all git shortcuts
+githelp() {
+    cat <<'GITHELP'
+ Git Shortcuts Cheatsheet
+─────────────────────────────────────────────────
+
+ STATUS / INFO
+  gs, gst     git status
+  gss         git status --short
+  glog        git log (graph + dates)
+  gloga       git log --oneline --graph --all
+  glg         git log --stat
+  gsh         git show
+  gitgraph    pretty branch graph
+
+ ADD / COMMIT
+  ga <file>   git add
+  gaa         git add --all
+  gapa        git add --patch
+  gc          git commit --verbose
+  gc!         git commit --amend
+  gca         git commit --all
+  gca!        git commit --all --amend
+  gcam <msg>  git commit -a -m
+  gcmsg <msg> git commit --message
+  gcn!        git commit --no-edit --amend
+
+ BRANCH / CHECKOUT
+  gb          git branch
+  gba         git branch --all
+  gbd <br>    git branch --delete
+  gbD <br>    git branch --delete --force
+  gco <br>    git checkout
+  gcb <br>    git checkout -b
+  gsw <br>    git switch
+  gswc <br>   git switch --create
+
+ PUSH / PULL / FETCH
+  gp          git push
+  gpf         git push --force-with-lease
+  gpf!        git push --force
+  gpsup       git push --set-upstream origin <current>
+  gl          git pull
+  gf          git fetch
+  gfo         git fetch origin
+
+ DIFF
+  gd          git diff
+  gds         git diff --staged
+  gdca        git diff --cached
+
+ MERGE / REBASE
+  gm          git merge
+  gma         git merge --abort
+  grb         git rebase
+  grbc        git rebase --continue
+  grba        git rebase --abort
+  grbs        git rebase --skip
+  gri [n]     git rebase -i HEAD~n (default: 2)
+
+ RESET / RESTORE
+  grh         git reset
+  grhh        git reset --hard
+  grs         git restore
+  grss        git restore --staged
+  gcl         git clean -fd
+
+ STASH
+  gsta        git stash push
+  gstp        git stash pop
+  gstaa       git stash apply
+  gstd        git stash drop
+  gstl        git stash list
+
+ CHERRY-PICK
+  gcp         git cherry-pick
+  gcpa        git cherry-pick --abort
+  gcpc        git cherry-pick --continue
+
+ REMOTE / TAGS
+  gr          git remote
+  grv         git remote --verbose
+  gt          git tag
+  gts         git tag --sign
+
+ INTERACTIVE (fzf)
+  gitbr       branch picker (fuzzy)
+  gitlog      commit browser (fuzzy)
+  gitdiff     compare two files with delta
+  lg          lazygit
+GITHELP
+}
+
 # Config version (delegates to epicli CLI)
 alias version='epicli version'
 
