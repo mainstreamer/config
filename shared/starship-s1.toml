@@ -26,7 +26,7 @@ $docker_context\
 $conda\
 [▓▒░](fg:color_surface1 bg:color_surface0)\
 $time\
-[▓▒░](fg:color_surface0)[](fg:color_surface0)\
+[▓▒░](fg:color_surface0)\
 $line_break$character"""
 
 palette = 'synthwave_daftpunk'
@@ -93,7 +93,7 @@ truncate_to_repo = false
 "Developer" = "󰲋 "
 
 [git_branch]
-symbol = ""
+symbol = ""
 style = "bg:color_cyan"
 format = '[[ $symbol $branch ](fg:color_base bg:color_cyan)]($style)'
 
@@ -102,52 +102,52 @@ style = "bg:color_cyan"
 format = '[[($all_status$ahead_behind )](fg:color_base bg:color_cyan)]($style)'
 
 [nodejs]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [c]
-symbol = " "
+symbol = " "
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [rust]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [golang]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [php]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [java]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [kotlin]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [haskell]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [python]
-symbol = ""
+symbol = ""
 style = "bg:color_violet"
 format = '[[ $symbol( $version) ](fg:color_text bg:color_violet)]($style)'
 
 [docker_context]
-symbol = ""
+symbol = ""
 style = "bg:color_surface1"
 format = '[[ $symbol( $context) ](fg:color_cyan bg:color_surface1)]($style)'
 
@@ -159,7 +159,7 @@ format = '[[ $symbol( $environment) ](fg:color_cyan bg:color_surface1)]($style)'
 disabled = false
 time_format = "%R"
 style = "bg:color_surface0"
-format = '[[   $time ](fg:color_magenta bg:color_surface0)]($style)'
+format = '[[   $time ](fg:color_magenta bg:color_surface0)]($style)'
 
 [line_break]
 disabled = false
