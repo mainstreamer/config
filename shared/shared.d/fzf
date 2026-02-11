@@ -1,6 +1,6 @@
 #!/bin/sh
 # fzf: key-bindings, completion, and custom helpers
-# Shortcuts: Ctrl+T (file search), Ctrl+R (history), Alt+C / Esc+C (cd into dir)
+# Shortcuts: Ctrl+T (file paste), Ctrl+R (history), Alt+C (cd), Alt+O (open file)
 
 command -v fzf &>/dev/null || return 0
 
@@ -69,27 +69,96 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
         ;;
 esac
 
-# Override Alt+C with bind -x to avoid __fzf_cd__ text flashing on command line
-# Also fixes macOS where Alt+C sends 'ç' (Esc+C works as fallback)
+# Custom keybindings: Alt+C (cd into dir), Alt+O (open file in editor/preview)
 case "${SHELL_TYPE:-${SHELL##*/}}" in
     bash)
+        # Helper: run PROMPT_COMMAND to refresh starship/dynamic prompts
+        # Handles both string and array forms (bash 5.1+ uses arrays)
+        __fzf_refresh_prompt__() {
+            if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
+                local _pc; for _pc in "${PROMPT_COMMAND[@]}"; do eval "$_pc"; done
+            else
+                eval "${PROMPT_COMMAND:-}"
+            fi
+        }
+
+        # Alt+C: fuzzy cd into directory (fixes text flashing + prompt refresh)
         __fzf_cd_clean__() {
             local cmd dir
             cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' \\) -prune -o -type d -print 2>/dev/null | command cut -b3-"}"
             dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)
             if [[ -n "$dir" ]]; then
                 builtin cd -- "$dir" || return
-                # Re-run PROMPT_COMMAND so starship/dynamic prompts refresh
-                eval "${PROMPT_COMMAND:-}" 2>/dev/null
+                __fzf_refresh_prompt__
             fi
         }
         bind -x '"\ec": __fzf_cd_clean__'
+
+        # Alt+O: fuzzy open file — Enter=edit in $EDITOR, Alt+Enter=preview
+        __fzf_open_file__() {
+            local cmd out key file
+            cmd="${FZF_DEFAULT_COMMAND:-"command find -L . -mindepth 1 -type f -not -path '*/\.*' 2>/dev/null"}"
+            out=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
+                --preview 'bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || xxd {} | head -300' \
+                --expect=alt-enter \
+                --header='Enter=edit | Alt+Enter=preview')
+            key=$(head -1 <<< "$out")
+            file=$(sed -n '2p' <<< "$out")
+            [[ -z "$file" ]] && return
+            if [[ "$key" == "alt-enter" ]]; then
+                if file --brief --mime-type "$file" 2>/dev/null | grep -q '^text/\|json\|xml\|javascript\|empty'; then
+                    bat --paging=always --style=numbers "$file" 2>/dev/null || less "$file"
+                else
+                    xxd "$file" | less
+                fi
+            else
+                ${EDITOR:-nvim} "$file"
+            fi
+        }
+        bind -x '"\eo": __fzf_open_file__'
         ;;
     zsh)
-        # zsh uses proper widgets — no fix needed on Linux
-        # macOS: Alt+C sends 'ç', rebind Esc+C
-        if [ "$(uname -s)" = "Darwin" ] && type fzf-cd-widget &>/dev/null; then
-            bindkey '\ec' fzf-cd-widget 2>/dev/null
-        fi
+        # Alt+C: fuzzy cd into directory with prompt refresh
+        fzf-cd-clean-widget() {
+            local cmd dir
+            cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' \\) -prune -o -type d -print 2>/dev/null | command cut -b3-"}"
+            dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)
+            if [[ -n "$dir" ]]; then
+                builtin cd -- "$dir"
+                # Re-run precmd hooks so starship regenerates PROMPT
+                local _fn; for _fn in $precmd_functions; do $_fn; done
+            fi
+            zle reset-prompt
+        }
+        zle -N fzf-cd-clean-widget
+        bindkey '\ec' fzf-cd-clean-widget
+        # macOS: Alt+C sends 'ç'
+        [[ "$(uname -s)" == "Darwin" ]] && bindkey 'ç' fzf-cd-clean-widget 2>/dev/null
+
+        # Alt+O: fuzzy open file — Enter=edit in $EDITOR, Alt+Enter=preview
+        fzf-open-file-widget() {
+            local cmd out key file
+            cmd="${FZF_DEFAULT_COMMAND:-"command find -L . -mindepth 1 -type f -not -path '*/\.*' 2>/dev/null"}"
+            out=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
+                --preview 'bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || xxd {} | head -300' \
+                --expect=alt-enter \
+                --header='Enter=edit | Alt+Enter=preview')
+            key=$(head -1 <<< "$out")
+            file=$(sed -n '2p' <<< "$out")
+            if [[ -n "$file" ]]; then
+                if [[ "$key" == "alt-enter" ]]; then
+                    if file --brief --mime-type "$file" 2>/dev/null | grep -q '^text/\|json\|xml\|javascript\|empty'; then
+                        bat --paging=always --style=numbers "$file" 2>/dev/null || less "$file"
+                    else
+                        xxd "$file" | less
+                    fi
+                else
+                    ${EDITOR:-nvim} "$file"
+                fi
+            fi
+            zle reset-prompt
+        }
+        zle -N fzf-open-file-widget
+        bindkey '\eo' fzf-open-file-widget
         ;;
 esac
