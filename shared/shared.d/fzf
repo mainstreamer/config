@@ -73,16 +73,17 @@ esac
 # Also fixes macOS where Alt+C sends 'ç' (Esc+C works as fallback)
 case "${SHELL_TYPE:-${SHELL##*/}}" in
     bash)
-        if type __fzf_cd__ &>/dev/null; then
-            __fzf_cd_clean__() {
-                local dir
-                dir=$(__fzf_cd__ 2>/dev/null)
-                if [ -n "$dir" ]; then
-                    eval "$dir"
-                fi
-            }
-            bind -x '"\ec": __fzf_cd_clean__'
-        fi
+        __fzf_cd_clean__() {
+            local cmd dir
+            cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' \\) -prune -o -type d -print 2>/dev/null | command cut -b3-"}"
+            dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)
+            if [[ -n "$dir" ]]; then
+                builtin cd -- "$dir" || return
+                # Re-run PROMPT_COMMAND so starship/dynamic prompts refresh
+                eval "${PROMPT_COMMAND:-}" 2>/dev/null
+            fi
+        }
+        bind -x '"\ec": __fzf_cd_clean__'
         ;;
     zsh)
         # zsh uses proper widgets — no fix needed on Linux
