@@ -72,24 +72,14 @@ esac
 # Custom keybindings: Alt+C (cd into dir), Alt+O (open file in editor/preview)
 case "${SHELL_TYPE:-${SHELL##*/}}" in
     bash)
-        # Helper: run PROMPT_COMMAND to refresh starship/dynamic prompts
-        # Handles both string and array forms (bash 5.1+ uses arrays)
-        __fzf_refresh_prompt__() {
-            if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
-                local _pc; for _pc in "${PROMPT_COMMAND[@]}"; do eval "$_pc"; done
-            else
-                eval "${PROMPT_COMMAND:-}"
-            fi
-        }
-
-        # Alt+C: fuzzy cd into directory (fixes text flashing + prompt refresh)
+        # Alt+C: fuzzy cd — places "cd <dir>" on command line, Enter to execute
         __fzf_cd_clean__() {
             local cmd dir
             cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' \\) -prune -o -type d -print 2>/dev/null | command cut -b3-"}"
             dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)
             if [[ -n "$dir" ]]; then
-                builtin cd -- "$dir" || return
-                __fzf_refresh_prompt__
+                READLINE_LINE="cd -- ${dir@Q}"
+                READLINE_POINT=${#READLINE_LINE}
             fi
         }
         bind -x '"\ec": __fzf_cd_clean__'
@@ -112,21 +102,20 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
                     xxd "$file" | less
                 fi
             else
-                ${EDITOR:-nvim} "$file"
+                nvim "$file"
             fi
         }
         bind -x '"\eo": __fzf_open_file__'
         ;;
     zsh)
-        # Alt+C: fuzzy cd into directory with prompt refresh
+        # Alt+C: fuzzy cd — places "cd <dir>" on command line, Enter to execute
         fzf-cd-clean-widget() {
             local cmd dir
             cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' \\) -prune -o -type d -print 2>/dev/null | command cut -b3-"}"
             dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)
             if [[ -n "$dir" ]]; then
-                builtin cd -- "$dir"
-                # Re-run precmd hooks so starship regenerates PROMPT
-                local _fn; for _fn in $precmd_functions; do $_fn; done
+                BUFFER="cd -- ${(q)dir}"
+                CURSOR=${#BUFFER}
             fi
             zle reset-prompt
         }
@@ -153,7 +142,7 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
                         xxd "$file" | less
                     fi
                 else
-                    ${EDITOR:-nvim} "$file"
+                    nvim "$file"
                 fi
             fi
             zle reset-prompt
