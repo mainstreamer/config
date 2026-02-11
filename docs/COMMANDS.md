@@ -154,7 +154,7 @@ gc                     # git commit --verbose
 gc!                    # git commit --amend
 gca                    # git commit --all --verbose
 gca!                   # git commit --all --amend
-gcam                   # git commit --all --message
+gcam                   # git add -A && git commit -m (stages all including untracked)
 gcmsg                  # git commit --message
 gcn!                   # git commit --amend --no-edit
 ```
@@ -174,8 +174,8 @@ gswc                   # git switch --create
 **Push, Pull & Fetch**
 ```bash
 gp                     # git push
-gpf                    # git push --force-with-lease (safe force push)
-gpf!                   # git push --force
+gpf                    # git push --force-with-lease origin <current-branch>
+gpf!                   # git push --force origin <current-branch>
 gpsup                  # git push --set-upstream origin <current-branch>
 gl                     # git pull
 gf                     # git fetch

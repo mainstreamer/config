@@ -62,3 +62,16 @@ else
         unset rc
     fi
 fi
+
+# Local profile extras (installed with --local)
+if [ -d ~/.local.d ]; then
+    for rc in ~/.local.d/*; do
+        [ -f "$rc" ] && [[ "$rc" != *.archived ]] && [[ "$rc" != *.lst ]] && . "$rc"
+    done
+    unset rc
+fi
+
+# Starship prompt
+if command -v starship &>/dev/null; then
+    eval "$(starship init zsh)"
+fi

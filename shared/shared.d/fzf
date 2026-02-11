@@ -1,6 +1,7 @@
 #!/bin/sh
 # fzf: key-bindings, completion, and custom helpers
 # Shortcuts: Ctrl+T (file paste), Ctrl+R (history), Alt+C (cd), Alt+O (open file)
+# macOS: Option+C/O work too (sends ç/ø); Esc+c / Esc+o as universal fallback
 
 command -v fzf &>/dev/null || return 0
 
@@ -83,6 +84,8 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
             fi
         }
         bind -x '"\ec": __fzf_cd_clean__'
+        # macOS: Option+C sends 'ç' instead of \ec
+        [[ "$(uname -s)" == "Darwin" ]] && bind -x '"ç": __fzf_cd_clean__'
 
         # Alt+O: fuzzy open file — Enter=edit in $EDITOR, Alt+Enter=preview
         __fzf_open_file__() {
@@ -106,6 +109,8 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
             fi
         }
         bind -x '"\eo": __fzf_open_file__'
+        # macOS: Option+O sends 'ø' instead of \eo
+        [[ "$(uname -s)" == "Darwin" ]] && bind -x '"ø": __fzf_open_file__'
         ;;
     zsh)
         # Alt+C: fuzzy cd — places "cd <dir>" on command line, Enter to execute
@@ -149,5 +154,7 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
         }
         zle -N fzf-open-file-widget
         bindkey '\eo' fzf-open-file-widget
+        # macOS: Option+O sends 'ø'
+        [[ "$(uname -s)" == "Darwin" ]] && bindkey 'ø' fzf-open-file-widget 2>/dev/null
         ;;
 esac

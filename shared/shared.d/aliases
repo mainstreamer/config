@@ -141,7 +141,7 @@ alias gc='git commit --verbose'
 alias gc!='git commit --verbose --amend'
 alias gca='git commit --verbose --all'
 alias gca!='git commit --verbose --all --amend'
-alias gcam='git commit -a -m'
+gcam() { git add -A && git commit -m "$*"; }
 alias gcmsg='git commit --message'
 alias gcn!='git commit --verbose --no-edit --amend'
 
@@ -159,8 +159,8 @@ alias gswc='git switch --create'
 
 # Push / Pull / Fetch
 alias gp='git push'
-alias gpf='git push --force-with-lease'
-alias gpf!='git push --force'
+alias gpf='git push --force-with-lease origin $(git branch --show-current)'
+alias gpf!='git push --force origin $(git branch --show-current)'
 alias gpsup='git push --set-upstream origin $(git branch --show-current)'
 alias gl='git pull'
 alias gf='git fetch'
@@ -243,7 +243,7 @@ githelp() {
   gc!         git commit --amend
   gca         git commit --all
   gca!        git commit --all --amend
-  gcam <msg>  git commit -a -m
+  gcam <msg>  git add -A && git commit -m
   gcmsg <msg> git commit --message
   gcn!        git commit --no-edit --amend
 
@@ -259,8 +259,8 @@ githelp() {
 
  PUSH / PULL / FETCH
   gp          git push
-  gpf         git push --force-with-lease
-  gpf!        git push --force
+  gpf         git push --force-with-lease origin <current>
+  gpf!        git push --force origin <current>
   gpsup       git push --set-upstream origin <current>
   gl          git pull
   gf          git fetch

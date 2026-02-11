@@ -18,6 +18,8 @@ fi
 # Source global definitions
 [ -f /etc/bashrc ] && . /etc/bashrc
 
+expot PATH="$HOME/.npm-global/bin:$PATH"i
+
 # Environment
 export SHELL_TYPE="bash"
 # Ensure .local/bin is in PATH (critical for CLI tools)
@@ -83,4 +85,17 @@ else
         done
         unset rc
     fi
+fi
+
+# Local profile extras (installed with --local)
+if [ -d ~/.local.d ]; then
+    for rc in ~/.local.d/*; do
+        [ -f "$rc" ] && [[ "$rc" != *.archived ]] && [[ "$rc" != *.lst ]] && . "$rc"
+    done
+    unset rc
+fi
+
+# Starship prompt
+if command -v starship &>/dev/null; then
+    eval "$(starship init bash)"
 fi

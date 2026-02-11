@@ -1,20 +1,14 @@
 #!/bin/sh
-# Starship prompt initialization (cross-platform)
-# Config: ~/.config/starship.toml
-
-if command -v starship &>/dev/null; then
-    eval "$(starship init ${SHELL_TYPE:-bash})"
-fi
-
 # Switch between starship prompt themes
-# Themes are stored as shared/starship-<name>.toml in the dotfiles repo
+# Themes are stored as shared/themes/starship-<name>.toml in the dotfiles repo
+
 themes() {
     # Resolve dotfiles location from ~/.shared.d symlink (works for both local and remote installs)
     local theme_dir
     if [ -L "$HOME/.shared.d" ]; then
-        theme_dir="$(cd -P "$HOME/.shared.d" 2>/dev/null && cd .. && pwd)"
+        theme_dir="$(cd -P "$HOME/.shared.d" 2>/dev/null && cd ../themes && pwd)"
     else
-        theme_dir="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}/shared"
+        theme_dir="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}/shared/themes"
     fi
     local target="$HOME/.config/starship.toml"
 

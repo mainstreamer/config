@@ -19,12 +19,14 @@ save_version() {
 }
 
 generate_manifest() {
-    local mode="standard"
-    [ "$DEV_MODE" = true ] && mode="dev"
+    # Build profile string from flags
+    local profile="standard"
+    [ "$LOCAL_MODE" = true ] && profile="standard+local"
+    [ "$DEV_MODE" = true ] && profile="${profile}+dev"
 
     cat > "$MANIFEST_FILE" << MEOF
 # $PROJECT_NAME manifest - generated $(date +%Y-%m-%d)
-mode=$mode
+profile=$profile
 version=$VERSION
 platform=${DISTRO:-unknown}
 MEOF
@@ -88,31 +90,51 @@ MEOF
     echo "" >> "$MANIFEST_FILE"
     echo "[configs]" >> "$MANIFEST_FILE"
     [ -L "$HOME/.bashrc" ] && printf "%-12s %s\n" "shell" "bashrc, zshrc, shared.d" >> "$MANIFEST_FILE"
-    [ -L "$HOME/.config/nvim" ] && printf "%-12s %s\n" "nvim" "Neovim ($mode mode)" >> "$MANIFEST_FILE"
+    [ -L "$HOME/.config/nvim" ] && printf "%-12s %s\n" "nvim" "Neovim ($profile profile)" >> "$MANIFEST_FILE"
     [ -L "$HOME/.config/starship.toml" ] && printf "%-12s %s\n" "starship" "Starship prompt" >> "$MANIFEST_FILE"
 
-    # Shell utilities section
+    # Shell utilities section (core shared.d scripts)
     echo "" >> "$MANIFEST_FILE"
     echo "[utilities]" >> "$MANIFEST_FILE"
     local utils=(
         "aliases:Shell aliases & git shortcuts"
-        "prompt:Starship prompt init"
+        "themes:Starship theme switcher"
         "docker:Docker helpers (dc, dsh, dclean)"
-        "cleanup:Media file organizer"
         "depcheck:Dependency checker"
-        "enc:File encryption"
-        "key:USB key management"
-        "rec:Screen recording (ffmpeg)"
+        "crypto:Hashing, signatures, certs, passwords"
+        "dec:URL decoder"
         "where:IP geolocation"
-        "hidevpn:VPN toggle"
+        "broot:File manager"
         "atuin:Shell history (opt-in)"
-        "unglitch:Terminal reset"
+        "fzf:Fuzzy finder keybindings"
+        "git:Git aliases"
     )
     if [ -d "$DOTFILES_DIR/shared/shared.d" ]; then
         for entry in "${utils[@]}"; do
             local name="${entry%%:*}"
             local desc="${entry#*:}"
             if [ -f "$DOTFILES_DIR/shared/shared.d/$name" ]; then
+                printf "%-12s %s\n" "$name" "$desc" >> "$MANIFEST_FILE"
+            fi
+        done
+    fi
+
+    # Local utilities section (personal machine scripts)
+    if [ "$LOCAL_MODE" = true ] && [ -d "$DOTFILES_DIR/shared/local.d" ]; then
+        echo "" >> "$MANIFEST_FILE"
+        echo "[local-utils]" >> "$MANIFEST_FILE"
+        local local_utils=(
+            "rec:Screen recording (ffmpeg)"
+            "hidevpn:VPN toggle"
+            "enc:File encryption"
+            "key:USB key management"
+            "unglitch:Terminal reset"
+            "cleanup:Media file organizer"
+        )
+        for entry in "${local_utils[@]}"; do
+            local name="${entry%%:*}"
+            local desc="${entry#*:}"
+            if [ -f "$DOTFILES_DIR/shared/local.d/$name" ]; then
                 printf "%-12s %s\n" "$name" "$desc" >> "$MANIFEST_FILE"
             fi
         done

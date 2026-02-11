@@ -18,7 +18,7 @@ set -e
 PROJECT_NAME="epicli"
 
 # Config
-VERSION="2.16.1"
+VERSION="2.19.1"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -28,6 +28,7 @@ MANIFEST_FILE="$HOME/.${PROJECT_NAME}-manifest"
 
 OS="$(uname -s)"
 DEV_MODE=false
+LOCAL_MODE=false
 
 # Colors
 RED='\033[0;31m'
@@ -211,7 +212,7 @@ setup_config_dir() {
         "$TEMP_EXTRACT/shared/.profile"
         "$TEMP_EXTRACT/shared/.zshrc"
         "$TEMP_EXTRACT/shared/shared.d/aliases"
-        "$TEMP_EXTRACT/shared/starship.toml"
+        "$TEMP_EXTRACT/shared/themes/starship.toml"
     )
 
     for file in "${critical_files[@]}"; do
@@ -326,7 +327,8 @@ detect_os() {
     esac
 
     local mode_str="standard"
-    [ "$DEV_MODE" = true ] && mode_str="dev"
+    [ "$LOCAL_MODE" = true ] && mode_str="standard+local"
+    [ "$DEV_MODE" = true ] && mode_str="${mode_str}+dev"
     info "Detected: $PLATFORM ($DISTRO) [$mode_str]"
 }
 
@@ -342,6 +344,15 @@ parse_args() {
         case "$1" in
             --dev)
                 DEV_MODE=true
+                shift
+                ;;
+            --local)
+                LOCAL_MODE=true
+                shift
+                ;;
+            --standard)
+                LOCAL_MODE=false
+                DEV_MODE=false
                 shift
                 ;;
             --deps-only)
@@ -371,24 +382,33 @@ $PROJECT_NAME Bootstrap Script
 
 QUICK INSTALL:
     curl -fsSL https://tldr.icu/i | bash
-    curl -fsSL https://tldr.icu/i | bash -s -- --dev
+    curl -fsSL https://tldr.icu/i | bash -s -- --local
+    curl -fsSL https://tldr.icu/i | bash -s -- --local --dev
 
 COMMANDS:
-    ./install.sh              Install (standard mode, no sudo required)
-    ./install.sh --dev        Full developer environment (requires sudo)
-    ./install.sh version      Show installed version
-    ./install.sh check        Check for updates
-    ./install.sh update       Update to latest version
-    ./install.sh force-update Force fresh installation (bypass version check)
-    ./install.sh uninstall    Remove everything
+    ./install.sh                    Install (standard mode, no sudo required)
+    ./install.sh --local            Standard + personal machine tools
+    ./install.sh --dev              Full developer environment (requires sudo)
+    ./install.sh --local --dev      All profiles combined
+    ./install.sh version            Show installed version
+    ./install.sh check              Check for updates
+    ./install.sh update             Update to latest version
+    ./install.sh force-update       Force fresh installation (bypass version check)
+    ./install.sh uninstall          Remove everything
 
     # After install, use the '$PROJECT_NAME' CLI:
-    $PROJECT_NAME status      Show installed version
-    $PROJECT_NAME check       Check for updates
-    $PROJECT_NAME update      Update to latest version
-    $PROJECT_NAME force-update Force fresh installation
+    $PROJECT_NAME status            Show installed version and profile
+    $PROJECT_NAME check             Check for updates
+    $PROJECT_NAME update            Update to latest version (preserves profile)
+    $PROJECT_NAME update --local    Upgrade to local profile
+    $PROJECT_NAME update --standard Downgrade to standard only
+    $PROJECT_NAME force-update      Force fresh installation
 
 OPTIONS:
+  --local       Personal machine extras (no sudo required)
+                - Everything in standard mode PLUS:
+                - rec, hidevpn, enc, key, unglitch, cleanup
+
   --dev         Full developer environment (requires sudo)
                 - Everything in standard mode PLUS:
                 - Language runtimes: Go, Rust, PHP, Node, Python
@@ -396,19 +416,26 @@ OPTIONS:
                 - Nvim dev config: autocompletion, LSP, formatters
                 - GUI tools: guake, feh, Nerd Fonts
 
+  --standard    Explicitly set standard profile only (strips local+dev)
+
   --deps-only   Install packages only, skip symlink creation
 
   --stow-only   Create symlinks only, skip package installation
 
   --help, -h    Show this help message
 
-MODES:
+PROFILES:
   Standard (default):
     - No sudo required
     - CLI tools: nvim, fzf, rg, fd, bat, eza, zoxide, starship,
                  lazygit, delta, gh, htop, btop, atuin, tree
-    - Shell aliases, prompt, docker helpers
+    - Shell aliases, prompt themes, docker helpers
     - Nvim with basic editing plugins (no LSP)
+
+  Local (--local):
+    - No sudo required
+    - Everything in standard PLUS personal machine tools
+    - rec, hidevpn, enc, key, unglitch, cleanup
 
   Dev (--dev):
     - Requires sudo
@@ -478,12 +505,14 @@ main() {
             ;;
         update)
             source_libs
-            cmd_update
+            shift
+            cmd_update "$@"
             exit $?
             ;;
         force-update|--force)
             source_libs
-            cmd_force_update
+            shift
+            cmd_force_update "$@"
             exit $?
             ;;
         uninstall)

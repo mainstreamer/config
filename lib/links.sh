@@ -73,9 +73,15 @@ link_shell() {
     rm -rf "$HOME/.zshrc.d" 2>/dev/null || true
     rm -rf "$HOME/.shellrc.d" 2>/dev/null || true
     rm -rf "$HOME/.shared.d" 2>/dev/null || true
+    rm -rf "$HOME/.local.d" 2>/dev/null || true
 
     if [ -d "$DOTFILES_DIR/shared" ]; then
         ln -sf "$DOTFILES_DIR/shared/shared.d" "$HOME/.shared.d"
+
+        # Local profile: link personal machine scripts
+        if [ "$LOCAL_MODE" = true ] && [ -d "$DOTFILES_DIR/shared/local.d" ]; then
+            ln -sf "$DOTFILES_DIR/shared/local.d" "$HOME/.local.d"
+        fi
 
         if [ "$PLATFORM" = "linux" ]; then
             ln -sf "$DOTFILES_DIR/shared/.bashrc" "$HOME/.bashrc"
@@ -104,6 +110,7 @@ link_shell() {
         "$HOME/.bash_profile"
         "$HOME/.profile"
     )
+    [ "$LOCAL_MODE" = true ] && symlinks_to_check+=("$HOME/.local.d")
 
     for symlink in "${symlinks_to_check[@]}"; do
         if [ -L "$symlink" ]; then
@@ -149,16 +156,16 @@ link_starship() {
     if [ -L "$target" ]; then
         local current
         current=$(readlink "$target" 2>/dev/null)
-        if [ -f "$current" ] && echo "$current" | grep -q "$DOTFILES_DIR/shared/starship"; then
+        if [ -f "$current" ] && echo "$current" | grep -q "$DOTFILES_DIR/shared/themes/starship"; then
             ok "Starship theme preserved: $(basename "$current" .toml | sed 's/^starship-//;s/^starship$/gruvbox-rainbow (default)/')"
             return 0
         fi
     fi
 
     # First install or broken link: set default theme
-    if [ -f "$DOTFILES_DIR/shared/starship.toml" ]; then
+    if [ -f "$DOTFILES_DIR/shared/themes/starship.toml" ]; then
         rm -f "$target" 2>/dev/null || true
-        ln -sf "$DOTFILES_DIR/shared/starship.toml" "$target"
+        ln -sf "$DOTFILES_DIR/shared/themes/starship.toml" "$target"
     else
         warn "Starship config not found, skipping"
     fi
