@@ -40,9 +40,6 @@ print_summary() {
     echo -e "${GREEN}  Installation complete! (v${VERSION})${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
-    echo -e "${YELLOW}→ Restart your terminal to activate configuration${NC}"
-    echo "  Or reload now: source ~/.bashrc"
-    echo ""
     echo "Available commands:"
     echo "  $PROJECT_NAME status|check|update|uninstall"
     echo ""
@@ -66,17 +63,26 @@ print_summary() {
     fi
 
     # Try to activate configuration in current session
+    local config_loaded=false
     if [ -f "$HOME/.bashrc" ]; then
         if source "$HOME/.bashrc" 2>/dev/null; then
+            config_loaded=true
             echo -e "${GREEN}✓ Configuration loaded for this session${NC}"
         fi
+    fi
 
-        # Special handling for Debian systems
-        if [ "$DISTRO" = "debian" ] && [ "$(readlink /bin/sh)" = "dash" ]; then
-            echo ""
-            echo -e "${YELLOW}⚠ Debian dash detected - some features may not work${NC}"
-            echo "  Fix: sudo dpkg-reconfigure dash (select 'No')"
-            echo "  Then: exec bash -l (to reload shell)"
-        fi
+    # Only show restart message if config failed to load
+    if [ "$config_loaded" = false ]; then
+        echo ""
+        echo -e "${YELLOW}→ Restart your terminal to activate configuration${NC}"
+        echo "  Or reload now: source ~/.bashrc"
+    fi
+
+    # Special handling for Debian systems
+    if [ "$DISTRO" = "debian" ] && [ "$(readlink /bin/sh)" = "dash" ]; then
+        echo ""
+        echo -e "${YELLOW}⚠ Debian dash detected - some features may not work${NC}"
+        echo "  Fix: sudo dpkg-reconfigure dash (select 'No')"
+        echo "  Then: exec bash -l (to reload shell)"
     fi
 }
