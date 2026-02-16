@@ -101,7 +101,7 @@ install_brew_packages() {
     # Standard packages (always)
     brew bundle --file=deps/Brewfile 2>/dev/null || {
         # Fallback: install core packages individually
-        brew install curl wget jq fzf ripgrep fd bat eza zoxide broot tree \
+        brew install curl wget jq fzf ripgrep fd bat eza zoxide mc tree \
             neovim tmux starship lazygit delta gh htop btop atuin 2>/dev/null || true
     }
 
@@ -194,7 +194,7 @@ install_arch_packages() {
     info "Checking installed packages..."
 
     # Standard packages
-    local packages="git curl wget jq fzf ripgrep fd bat eza zoxide broot tree \
+    local packages="git curl wget jq fzf ripgrep fd bat eza zoxide mc tree \
         neovim starship lazygit git-delta github-cli htop btop atuin"
 
     if [ "$DEV_MODE" = true ]; then
@@ -269,7 +269,7 @@ install_alpine_packages() {
     # Install tools via cargo
     if command -v cargo &>/dev/null; then
         info "Installing Rust-based tools via cargo..."
-        cargo install eza zoxide atuin git-delta broot 2>/dev/null || warn "Some cargo installs failed"
+        cargo install eza zoxide atuin git-delta 2>/dev/null || warn "Some cargo installs failed"
     fi
 
     # Install lazygit from binary

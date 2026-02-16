@@ -47,6 +47,9 @@ link_configs() {
     # Link starship config
     link_starship
 
+    # Link midnight commander config
+    link_mc
+
     # Install custom apps (dev mode only, needs sudo)
     if [ "$DEV_MODE" = true ]; then
         install_custom_apps
@@ -176,6 +179,20 @@ link_starship() {
         ln -sf "$DOTFILES_DIR/shared/themes/starship.toml" "$target"
     else
         warn "Starship config not found, skipping"
+    fi
+}
+
+link_mc() {
+    info "Linking Midnight Commander config..."
+
+    local mc_config_dir="$HOME/.config/mc"
+    mkdir -p "$mc_config_dir"
+
+    if [ -f "$DOTFILES_DIR/settings/mc/ini" ]; then
+        ln -sf "$DOTFILES_DIR/settings/mc/ini" "$mc_config_dir/ini"
+        ok "Midnight Commander config linked"
+    else
+        warn "Midnight Commander config not found, skipping"
     fi
 }
 
