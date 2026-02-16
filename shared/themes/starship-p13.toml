@@ -1,6 +1,6 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# S13: Executive Gradient — Smooth gradient from dark to vibrant purple
+# P13: Executive Gradient — Smooth gradient from dark to vibrant purple
 
 format = """
 [](color_gradient_dark)\

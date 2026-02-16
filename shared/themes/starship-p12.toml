@@ -1,6 +1,6 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# S12: Corporate Purple — Professional deep dark with vibrant purple
+# P12: Corporate Purple — Professional dark with vibrant purple
 
 format = """
 [](color_purple_main)\

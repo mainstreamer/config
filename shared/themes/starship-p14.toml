@@ -1,6 +1,6 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# S14: Finance Grade — High-contrast professional with teal monitoring accents
+# P14: Finance Grade — High-contrast professional with teal monitoring accents
 
 format = """
 [](color_base_dark)\
