@@ -1,17 +1,15 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# P13: Executive Gradient — Smooth gradient from dark to vibrant purple
-
 format = """
-[](color_gradient_dark)\
+[](color_frost_dark)\
 $os\
 $username\
-[](bg:color_gradient_step1 fg:color_gradient_dark)\
+[](bg:color_aurora_yellow fg:color_frost_dark)\
 $directory\
-[](fg:color_gradient_step1 bg:color_gradient_step2)\
+[](fg:color_aurora_yellow bg:color_aurora_green)\
 $git_branch\
 $git_status\
-[](fg:color_gradient_step2 bg:color_gradient_step3)\
+[](fg:color_aurora_green bg:color_frost_mid)\
 $c\
 $rust\
 $golang\
@@ -21,66 +19,69 @@ $java\
 $kotlin\
 $haskell\
 $python\
-[](fg:color_gradient_step3 bg:color_gradient_accent)\
+[](fg:color_frost_mid bg:color_polar3)\
 $docker_context\
 $conda\
-[](fg:color_gradient_accent bg:color_gradient_base)\
+[](fg:color_polar3 bg:color_polar2)\
 $time\
-[ ](fg:color_gradient_base)\
+[ ](fg:color_polar2)\
 $line_break$character"""
 
 palette = 'executive_gradient'
 
 [palettes.executive_gradient]
-color_white = '#f0f0f0'
-color_white_dim = '#d8d8d8'
-color_gradient_base = '#1a1a2e'
-color_gradient_accent = '#2d2150'
-color_gradient_step3 = '#3d2960'
-color_gradient_step2 = '#4a3a7d'
-color_gradient_step1 = '#622ae2'
-color_gradient_dark = '#6C2BFF'
-color_gold_accent = '#c9a961'
-color_teal_accent = '#16a69e'
-color_status_ok = '#10b981'
-color_status_error = '#dc2626'
+color_snow = '#f0f0f0'
+color_snow_dim = '#d8d8d8'
+color_polar1 = '#1a1a2e'
+color_polar2 = '#2d2150'
+color_polar3 = '#3d2960'
+color_polar4 = '#4a3a7d'
+color_frost_light = '#622ae2'
+color_frost_cyan = '#c9a961'
+color_frost_mid = '#3d2960'
+color_frost_dark = '#6C2BFF'
+color_aurora_red = '#dc2626'
+color_aurora_orange = '#dc2626'
+color_aurora_yellow = '#622ae2'
+color_aurora_green = '#4a3a7d'
+color_aurora_purple = '#c9a961'
 
 [os]
 disabled = false
-style = "bg:color_gradient_dark fg:color_white"
+style = "bg:color_frost_dark fg:color_snow"
 
 [os.symbols]
 Windows = "󰍲"
 Ubuntu = "󰕈"
-SUSE = ""
+SUSE = ""
 Raspbian = "󰐿"
 Mint = "󰣭"
 Macos = "󰀵"
-Manjaro = ""
+Manjaro = ""
 Linux = "󰌽"
 Gentoo = "󰣨"
 Fedora = "󰣛"
-Alpine = ""
-Amazon = ""
-Android = ""
+Alpine = ""
+Amazon = ""
+Android = ""
 Arch = "󰣇"
 Artix = "󰣇"
-EndeavourOS = ""
-CentOS = ""
+EndeavourOS = ""
+CentOS = ""
 Debian = "󰣚"
 Redhat = "󱄛"
 RedHatEnterprise = "󱄛"
-Pop = ""
+Pop = ""
 
 
 [username]
 show_always = true
-style_user = "bg:color_gradient_dark fg:color_white"
-style_root = "bg:color_gradient_dark fg:color_white"
+style_user = "bg:color_frost_dark fg:color_snow"
+style_root = "bg:color_frost_dark fg:color_snow"
 format = '[ $user ]($style)'
 
 [directory]
-style = "fg:color_gradient_base bg:color_gradient_step1"
+style = "fg:color_polar1 bg:color_aurora_yellow"
 format = "[ $path ]($style)"
 truncation_length = 10
 truncation_symbol = "…/"
@@ -88,89 +89,89 @@ truncate_to_repo = false
 
 [directory.substitutions]
 "Documents" = "󰈙 "
-"Downloads" = " "
+"Downloads" = " "
 "Music" = "󰝚 "
-"Pictures" = " "
+"Pictures" = " "
 "Developer" = "󰲋 "
 
 
 [git_branch]
-symbol = ""
-style = "bg:color_gradient_step2"
-format = '[[ $symbol $branch ](fg:color_white bg:color_gradient_step2)]($style)'
+symbol = ""
+style = "bg:color_aurora_green"
+format = '[[ $symbol $branch ](fg:color_polar1 bg:color_aurora_green)]($style)'
 
 [git_status]
-style = "bg:color_gradient_step2"
-format = '[[($all_status$ahead_behind )](fg:color_white bg:color_gradient_step2)]($style)'
+style = "bg:color_aurora_green"
+format = '[[($all_status$ahead_behind )](fg:color_polar1 bg:color_aurora_green)]($style)'
 
 [nodejs]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [c]
-symbol = " "
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = " "
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [rust]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [golang]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [php]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [java]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [kotlin]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [haskell]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [python]
-symbol = ""
-style = "bg:color_gradient_step3"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_gradient_step3)]($style)'
+symbol = ""
+style = "bg:color_frost_mid"
+format = '[[ $symbol( $version) ](fg:color_polar1 bg:color_frost_mid)]($style)'
 
 [docker_context]
-symbol = ""
-style = "bg:color_gradient_accent"
-format = '[[ $symbol( $context) ](fg:color_gold_accent bg:color_gradient_accent)]($style)'
+symbol = ""
+style = "bg:color_polar3"
+format = '[[ $symbol( $context) ](fg:color_frost_cyan bg:color_polar3)]($style)'
 
 [conda]
-style = "bg:color_gradient_accent"
-format = '[[ $symbol( $environment) ](fg:color_gold_accent bg:color_gradient_accent)]($style)'
+style = "bg:color_polar3"
+format = '[[ $symbol( $environment) ](fg:color_frost_cyan bg:color_polar3)]($style)'
 
 [time]
 disabled = false
 time_format = "%R"
-style = "bg:color_gradient_base"
-format = '[[   $time ](fg:color_gold_accent bg:color_gradient_base)]($style)'
+style = "bg:color_polar2"
+format = '[[   $time ](fg:color_snow bg:color_polar2)]($style)'
 
 [line_break]
 disabled = false
 
 [character]
 disabled = false
-success_symbol = '[](bold fg:color_status_ok)'
-error_symbol = '[](bold fg:color_status_error)'
-vimcmd_symbol = '[](bold fg:color_status_ok)'
-vimcmd_replace_one_symbol = '[](bold fg:color_gold_accent)'
-vimcmd_replace_symbol = '[](bold fg:color_gold_accent)'
-vimcmd_visual_symbol = '[](bold fg:color_gradient_step1)'
+success_symbol = '[](bold fg:color_aurora_green)'
+error_symbol = '[](bold fg:color_aurora_red)'
+vimcmd_symbol = '[](bold fg:color_aurora_green)'
+vimcmd_replace_one_symbol = '[](bold fg:color_aurora_purple)'
+vimcmd_replace_symbol = '[](bold fg:color_aurora_purple)'
+vimcmd_visual_symbol = '[](bold fg:color_aurora_yellow)'
