@@ -1,0 +1,65 @@
+# Alias for quicker typing
+
+
+sync() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: sync_deals id1 [id2 id3 ...]"
+        return 1
+    fi
+
+    # 1. Format IDs
+    local ids_json
+    ids_json=$(printf '"%s",' "$@")
+    ids_json=${ids_json%,}
+
+    # 2. Build the JSON for the QUEUE command (which supports the filter)
+    local filter="{\"id\": [$ids_json]}"
+
+    echo "Step 1: Queuing specific IDs..."
+    # We use the filter here because 'queue-unsynced' supports it
+    docker compose exec -it web bin/console search:synchronisation:queue-unsynced \
+        --entity-type=deal_person \
+        --query-filter="$filter"
+
+    echo "Step 2: Indexing queued IDs..."
+    # We DON'T use the filter here because the command doesn't support it
+    # It will pick up what Step 1 just put in the table.
+    docker compose exec -it web bin/console search:synchronisation:index-unsynced \
+       --entity-type=deal_person
+}
+
+alias sdls='sync_deals'
+
+
+
+dump() {
+    if [[ -z "$1" ]] || [[ -z "$2" ]]; then
+        echo "Usage: dump <entity_type> <id>"
+        echo "Example: dump deal_firm 186090"
+        return 1
+    fi
+
+    local entity_type=$1
+    local entity_id=$2
+
+    # Zsh Magic: Split by '_', Capitalize words, Join them back
+    # deal_person -> DealPerson
+# 1. (s:_:) splits by underscore
+# 2. (L) lowercases everything (to prevent DEAL_PERSON -> DEALPERSON)
+# 3. (C) Capitalizes each word
+# 4. (j::) joins them with absolutely nothing (removes the spaces (C) adds)
+    local folder_name="${(j::)${(C)${(s:_:)entity_type}}// /}"
+
+    local dump_folder="/app/tests/Unit/Service/Synchronisation/DocumentDataProvider/DataMapper/${folder_name}/__api_responses__"
+
+    mkdir -p $dump_folder
+    echo "Dumping $entity_type (ID: $entity_id) to $folder_name..."
+
+    docker compose exec -it web bin/console e:res:dump \
+        -t "$entity_type" \
+        -f "{\"id\":\"$entity_id\"}" \
+        --dump-folder="$dump_folder"
+}
+
+alias dmp='dump'
+
