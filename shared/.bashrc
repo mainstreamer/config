@@ -18,7 +18,7 @@ fi
 # Source global definitions
 [ -f /etc/bashrc ] && . /etc/bashrc
 
-expot PATH="$HOME/.npm-global/bin:$PATH"i
+export PATH="$HOME/.npm-global/bin:$PATH"
 
 # Environment
 export SHELL_TYPE="bash"
@@ -57,7 +57,7 @@ export HISTSIZE=100000
 export HISTFILESIZE=100000
 export HISTCONTROL=ignoreboth
 export HISTTIMEFORMAT="%F %T  "
-PROMPT_COMMAND="history -a;${PROMPT_COMMAND:-}"
+PROMPT_COMMAND="history -a${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 
 # Bash completion
 [ -f /etc/bash_completion ] && . /etc/bash_completion

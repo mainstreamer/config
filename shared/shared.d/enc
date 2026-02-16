@@ -1,0 +1,32 @@
+#!/bin/sh
+# Encoding utilities: base64 encode/decode
+
+# Base64 encode a string or stdin
+# Usage: b64 hello world        -> aGVsbG8gd29ybGQ=
+#        echo "hello" | b64     -> aGVsbG8K
+b64() {
+    local input
+    if [ $# -eq 0 ]; then
+        # Read from stdin
+        input=$(cat)
+    else
+        # Join all arguments with spaces
+        input="$*"
+    fi
+    echo -n "$input" | base64
+}
+
+# Base64 decode a string or stdin
+# Usage: b64d aGVsbG8gd29ybGQ=  -> hello world
+#        echo "aGVsbG8=" | b64d  -> hello
+b64d() {
+    local input
+    if [ $# -eq 0 ]; then
+        # Read from stdin
+        input=$(cat)
+    else
+        # Join all arguments (in case there are spaces in base64)
+        input="$*"
+    fi
+    echo "$input" | base64 -d
+}

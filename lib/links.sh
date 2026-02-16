@@ -132,6 +132,14 @@ link_shell() {
     fi
 
     ok "All symlinks verified"
+
+    # macOS: Suppress "Last login" message in new terminal tabs
+    if [ "$PLATFORM" != "linux" ]; then
+        if [ ! -f "$HOME/.hushlogin" ]; then
+            touch "$HOME/.hushlogin"
+            ok "Created ~/.hushlogin (suppresses 'Last login' message on macOS)"
+        fi
+    fi
 }
 
 link_nvim() {

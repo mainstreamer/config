@@ -121,6 +121,19 @@ if command -v fzf &>/dev/null; then
             git show "$hash"
         fi
     }
+
+    # gitdiff: interactive file diff picker showing changes against HEAD
+    # Pick any modified/staged file and see its delta diff
+    gitdiff() {
+        local file
+        file=$(git diff --name-only HEAD | \
+            fzf --preview 'git diff --color=always HEAD -- {} 2>/dev/null || echo "No changes"' \
+                --preview-window=right:70% \
+                --header='Select file to view diff against HEAD (Enter=view | Esc=exit)')
+        if [ -n "$file" ]; then
+            git diff HEAD -- "$file"
+        fi
+    }
 fi
 
 # Git shortcuts (oh-my-zsh compatible)
@@ -154,6 +167,7 @@ alias gbD='git branch --delete --force'
 # Checkout / Switch
 alias gco='git checkout'
 alias gcb='git checkout -b'
+alias go='git checkout origin/$(git rev-parse --abbrev-ref HEAD)'
 alias gsw='git switch'
 alias gswc='git switch --create'
 
@@ -168,6 +182,7 @@ alias gfo='git fetch origin'
 
 # Diff
 alias gd='git diff'
+alias gdh='git diff HEAD'
 alias gds='git diff --staged'
 alias gdca='git diff --cached'
 
@@ -254,6 +269,7 @@ githelp() {
   gbD <br>    git branch --delete --force
   gco <br>    git checkout
   gcb <br>    git checkout -b
+  go          git checkout origin/<current> (fetch latest from origin)
   gsw <br>    git switch
   gswc <br>   git switch --create
 
@@ -268,6 +284,7 @@ githelp() {
 
  DIFF
   gd          git diff
+  gdh         git diff HEAD (all unstaged changes vs last commit)
   gds         git diff --staged
   gdca        git diff --cached
 
@@ -308,7 +325,8 @@ githelp() {
  INTERACTIVE (fzf)
   gitbr       branch picker (fuzzy)
   gitlog      commit browser (fuzzy)
-  gitdiff     compare two files with delta
+  gitdiff     file diff picker - select file and view delta against HEAD
+  diff        compare two files with delta (delta <file1> <file2>)
   lg          lazygit
 GITHELP
 }
