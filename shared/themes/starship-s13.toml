@@ -1,0 +1,173 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# S13: Purple Essence — gradient from dark to vibrant purple, accent-heavy design
+
+format = """
+[](fg:color_dark_purple)\
+$os\
+$username\
+[▓▒░](fg:color_dark_purple bg:color_vibrant_purple)\
+$directory\
+[▓▒░](fg:color_vibrant_purple bg:color_bright_purple)\
+$git_branch\
+$git_status\
+[▓▒░](fg:color_bright_purple bg:color_deep_purple)\
+$c\
+$rust\
+$golang\
+$nodejs\
+$php\
+$java\
+$kotlin\
+$haskell\
+$python\
+[▓▒░](fg:color_deep_purple bg:color_muted_purple)\
+$docker_context\
+$conda\
+[▓▒░](fg:color_muted_purple bg:color_almost_black)\
+$time\
+[▓▒░](fg:color_almost_black)\
+$line_break$character"""
+
+palette = 'purple_essence'
+
+[palettes.purple_essence]
+color_almost_black = '#212121'
+color_dark_bg = '#1a1a1a'
+color_dark_purple = '#2d1a4d'
+color_muted_purple = '#3d2563'
+color_deep_purple = '#37256b'
+color_main_purple = '#6C2BFF'
+color_vibrant_purple = '#622ae2'
+color_bright_purple = '#7a3cff'
+color_light_accent = '#9d6fff'
+color_text_primary = '#f8f8f8'
+color_text_secondary = '#e8e8e8'
+
+[os]
+disabled = false
+style = "bg:color_dark_purple fg:color_vibrant_purple"
+
+[os.symbols]
+Windows = "󰍲"
+Ubuntu = "󰕈"
+SUSE = ""
+Raspbian = "󰐿"
+Mint = "󰣭"
+Macos = "󰀵"
+Manjaro = ""
+Linux = "󰌽"
+Gentoo = "󰣨"
+Fedora = "󰣛"
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = "󰣇"
+Artix = "󰣇"
+EndeavourOS = ""
+CentOS = ""
+Debian = "󰣚"
+Redhat = "󱄛"
+RedHatEnterprise = "󱄛"
+Pop = ""
+
+[username]
+show_always = true
+style_user = "bg:color_dark_purple fg:color_vibrant_purple"
+style_root = "bg:color_dark_purple fg:color_light_accent"
+format = '[ $user ]($style)'
+
+[directory]
+style = "fg:color_text_primary bg:color_vibrant_purple"
+format = "[ $path ]($style)"
+truncation_length = 10
+truncation_symbol = "…/"
+truncate_to_repo = false
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Developer" = "󰲋 "
+
+[git_branch]
+symbol = ""
+style = "bg:color_bright_purple"
+format = '[[ $symbol $branch ](fg:color_text_primary bg:color_bright_purple)]($style)'
+
+[git_status]
+style = "bg:color_bright_purple"
+format = '[[($all_status$ahead_behind )](fg:color_text_primary bg:color_bright_purple)]($style)'
+
+[nodejs]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[c]
+symbol = " "
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[rust]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[php]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[java]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[kotlin]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[haskell]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[python]
+symbol = ""
+style = "bg:color_deep_purple"
+format = '[[ $symbol( $version) ](fg:color_text_primary bg:color_deep_purple)]($style)'
+
+[docker_context]
+symbol = ""
+style = "bg:color_muted_purple"
+format = '[[ $symbol( $context) ](fg:color_light_accent bg:color_muted_purple)]($style)'
+
+[conda]
+style = "bg:color_muted_purple"
+format = '[[ $symbol( $environment) ](fg:color_light_accent bg:color_muted_purple)]($style)'
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:color_almost_black"
+format = '[[   $time ](fg:color_vibrant_purple bg:color_almost_black)]($style)'
+
+[line_break]
+disabled = false
+
+[character]
+disabled = false
+success_symbol = '[└─⦿](bold fg:color_vibrant_purple)'
+error_symbol = '[└─⦿](bold fg:color_light_accent)'
+vimcmd_symbol = '[└─⦿](bold fg:color_main_purple)'
+vimcmd_replace_one_symbol = '[└─⦿](bold fg:color_bright_purple)'
+vimcmd_replace_symbol = '[└─⦿](bold fg:color_bright_purple)'
+vimcmd_visual_symbol = '[└─⦿](bold fg:color_vibrant_purple)'

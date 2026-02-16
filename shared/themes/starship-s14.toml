@@ -1,0 +1,173 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# S14: Neon Abyss — cyberpunk-inspired dark void with neon purple and violet accents
+
+format = """
+[](fg:color_void)\
+$os\
+$username\
+[▓▒░](fg:color_void bg:color_neon_violet)\
+$directory\
+[▓▒░](fg:color_neon_violet bg:color_neon_pink)\
+$git_branch\
+$git_status\
+[▓▒░](fg:color_neon_pink bg:color_cyan_accent)\
+$c\
+$rust\
+$golang\
+$nodejs\
+$php\
+$java\
+$kotlin\
+$haskell\
+$python\
+[▓▒░](fg:color_cyan_accent bg:color_purple_dark)\
+$docker_context\
+$conda\
+[▓▒░](fg:color_purple_dark bg:color_void_deep)\
+$time\
+[▓▒░](fg:color_void_deep)\
+$line_break$character"""
+
+palette = 'neon_abyss'
+
+[palettes.neon_abyss]
+color_void = '#212121'
+color_void_deep = '#0d0d0d'
+color_purple_dark = '#1a0f2e'
+color_purple_darker = '#0f0820'
+color_neon_violet = '#7d3fff'
+color_neon_purple = '#6C2BFF'
+color_neon_pink = '#d946ef'
+color_cyan_accent = '#06b6d4'
+color_magenta_bright = '#ec4899'
+color_text_bright = '#f0f0f0'
+color_text_dim = '#b0b0b0'
+
+[os]
+disabled = false
+style = "bg:color_void fg:color_neon_violet"
+
+[os.symbols]
+Windows = "󰍲"
+Ubuntu = "󰕈"
+SUSE = ""
+Raspbian = "󰐿"
+Mint = "󰣭"
+Macos = "󰀵"
+Manjaro = ""
+Linux = "󰌽"
+Gentoo = "󰣨"
+Fedora = "󰣛"
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = "󰣇"
+Artix = "󰣇"
+EndeavourOS = ""
+CentOS = ""
+Debian = "󰣚"
+Redhat = "󱄛"
+RedHatEnterprise = "󱄛"
+Pop = ""
+
+[username]
+show_always = true
+style_user = "bg:color_void fg:color_neon_violet"
+style_root = "bg:color_void fg:color_magenta_bright"
+format = '[ $user ]($style)'
+
+[directory]
+style = "fg:color_text_bright bg:color_neon_violet"
+format = "[ $path ]($style)"
+truncation_length = 10
+truncation_symbol = "…/"
+truncate_to_repo = false
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Developer" = "󰲋 "
+
+[git_branch]
+symbol = ""
+style = "bg:color_neon_pink"
+format = '[[ $symbol $branch ](fg:color_text_bright bg:color_neon_pink)]($style)'
+
+[git_status]
+style = "bg:color_neon_pink"
+format = '[[($all_status$ahead_behind )](fg:color_text_bright bg:color_neon_pink)]($style)'
+
+[nodejs]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[c]
+symbol = " "
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[rust]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[php]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[java]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[kotlin]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[haskell]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[python]
+symbol = ""
+style = "bg:color_cyan_accent"
+format = '[[ $symbol( $version) ](fg:color_void bg:color_cyan_accent)]($style)'
+
+[docker_context]
+symbol = ""
+style = "bg:color_purple_dark"
+format = '[[ $symbol( $context) ](fg:color_neon_violet bg:color_purple_dark)]($style)'
+
+[conda]
+style = "bg:color_purple_dark"
+format = '[[ $symbol( $environment) ](fg:color_neon_violet bg:color_purple_dark)]($style)'
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:color_void_deep"
+format = '[[   $time ](fg:color_neon_violet bg:color_void_deep)]($style)'
+
+[line_break]
+disabled = false
+
+[character]
+disabled = false
+success_symbol = '[└─⦿](bold fg:color_neon_violet)'
+error_symbol = '[└─⦿](bold fg:color_magenta_bright)'
+vimcmd_symbol = '[└─⦿](bold fg:color_cyan_accent)'
+vimcmd_replace_one_symbol = '[└─⦿](bold fg:color_neon_pink)'
+vimcmd_replace_symbol = '[└─⦿](bold fg:color_neon_pink)'
+vimcmd_visual_symbol = '[└─⦿](bold fg:color_neon_violet)'
