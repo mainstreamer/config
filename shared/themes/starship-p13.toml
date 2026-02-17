@@ -27,24 +27,24 @@ $time\
 [ ](fg:color_polar2)\
 $line_break$character"""
 
-palette = 'executive_gradient'
+palette = 'executive_gold'
 
-[palettes.executive_gradient]
-color_snow = '#f0f0f0'
-color_snow_dim = '#d8d8d8'
-color_polar1 = '#1a1a2e'
-color_polar2 = '#2d2150'
-color_polar3 = '#3d2960'
-color_polar4 = '#4a3a7d'
+[palettes.executive_gold]
+color_snow = '#f0ece0'
+color_snow_dim = '#d8d0c0'
+color_polar1 = '#f0ece0'
+color_polar2 = '#1a1728'
+color_polar3 = '#252035'
+color_polar4 = '#302a45'
 color_frost_light = '#622ae2'
-color_frost_cyan = '#c9a961'
-color_frost_mid = '#3d2960'
+color_frost_cyan = '#c9a84e'
+color_frost_mid = '#332b52'
 color_frost_dark = '#6C2BFF'
-color_aurora_red = '#dc2626'
-color_aurora_orange = '#dc2626'
-color_aurora_yellow = '#622ae2'
-color_aurora_green = '#4a3a7d'
-color_aurora_purple = '#c9a961'
+color_aurora_red = '#cf4a4a'
+color_aurora_orange = '#c08050'
+color_aurora_yellow = '#5a28c0'
+color_aurora_green = '#42366a'
+color_aurora_purple = '#c9a84e'
 
 [os]
 disabled = false

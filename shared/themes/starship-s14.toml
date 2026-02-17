@@ -27,24 +27,24 @@ $time\
 [ ](fg:color_polar2)\
 $line_break$character"""
 
-palette = 'finance_grade'
+palette = 'carbon_emerald'
 
-[palettes.finance_grade]
-color_snow = '#ffffff'
-color_snow_dim = '#f0f0f0'
-color_polar1 = '#0f1419'
-color_polar2 = '#3a4452'
-color_polar3 = '#2d3139'
-color_polar4 = '#454d57'
-color_frost_light = '#2ac9bf'
-color_frost_cyan = '#13d5d0'
-color_frost_mid = '#454d57'
-color_frost_dark = '#212121'
-color_aurora_red = '#ef4444'
-color_aurora_orange = '#ef4444'
-color_aurora_yellow = '#1a9b8e'
-color_aurora_green = '#37256b'
-color_aurora_purple = '#6C2BFF'
+[palettes.carbon_emerald]
+color_snow = '#e8f0ec'
+color_snow_dim = '#c0d0c8'
+color_polar1 = '#e8f0ec'
+color_polar2 = '#161c1a'
+color_polar3 = '#1e2825'
+color_polar4 = '#283830'
+color_frost_light = '#40a890'
+color_frost_cyan = '#50b8a0'
+color_frost_mid = '#283830'
+color_frost_dark = '#1a2420'
+color_aurora_red = '#c85050'
+color_aurora_orange = '#a07050'
+color_aurora_yellow = '#287868'
+color_aurora_green = '#1e3530'
+color_aurora_purple = '#40a890'
 
 [os]
 disabled = false

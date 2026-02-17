@@ -27,24 +27,24 @@ $time\
 [ ](fg:color_polar2)\
 $line_break$character"""
 
-palette = 'executive_gradient'
+palette = 'obsidian_vault'
 
-[palettes.executive_gradient]
-color_snow = '#f0f0f0'
-color_snow_dim = '#d8d8d8'
-color_polar1 = '#1a1a2e'
-color_polar2 = '#2d2150'
-color_polar3 = '#3d2960'
-color_polar4 = '#4a3a7d'
-color_frost_light = '#622ae2'
-color_frost_cyan = '#c9a961'
-color_frost_mid = '#3d2960'
-color_frost_dark = '#6C2BFF'
-color_aurora_red = '#dc2626'
-color_aurora_orange = '#dc2626'
-color_aurora_yellow = '#622ae2'
-color_aurora_green = '#4a3a7d'
-color_aurora_purple = '#c9a961'
+[palettes.obsidian_vault]
+color_snow = '#e8e4f0'
+color_snow_dim = '#c0b8d0'
+color_polar1 = '#e8e4f0'
+color_polar2 = '#141218'
+color_polar3 = '#1e1a28'
+color_polar4 = '#28243a'
+color_frost_light = '#8070a0'
+color_frost_cyan = '#9088b0'
+color_frost_mid = '#28243a'
+color_frost_dark = '#504080'
+color_aurora_red = '#c04848'
+color_aurora_orange = '#a06848'
+color_aurora_yellow = '#3d3468'
+color_aurora_green = '#2e2850'
+color_aurora_purple = '#8070a0'
 
 [os]
 disabled = false

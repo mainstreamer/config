@@ -27,23 +27,23 @@ $time\
 [ ](fg:color_polar2)\
 $line_break$character"""
 
-palette = 'finance_grade'
+palette = 'trading_floor'
 
-[palettes.finance_grade]
-color_snow = '#ffffff'
-color_snow_dim = '#f0f0f0'
-color_polar1 = '#0f1419'
-color_polar2 = '#3a4452'
-color_polar3 = '#2d3139'
-color_polar4 = '#454d57'
+[palettes.trading_floor]
+color_snow = '#f0f4f4'
+color_snow_dim = '#d0d8d8'
+color_polar1 = '#f0f4f4'
+color_polar2 = '#1c2830'
+color_polar3 = '#253540'
+color_polar4 = '#2d4050'
 color_frost_light = '#2ac9bf'
-color_frost_cyan = '#13d5d0'
-color_frost_mid = '#454d57'
+color_frost_cyan = '#5ec4c0'
+color_frost_mid = '#37256b'
 color_frost_dark = '#212121'
-color_aurora_red = '#ef4444'
-color_aurora_orange = '#ef4444'
-color_aurora_yellow = '#1a9b8e'
-color_aurora_green = '#37256b'
+color_aurora_red = '#e05555'
+color_aurora_orange = '#d08770'
+color_aurora_yellow = '#1a8f85'
+color_aurora_green = '#2d1f5e'
 color_aurora_purple = '#6C2BFF'
 
 [os]
