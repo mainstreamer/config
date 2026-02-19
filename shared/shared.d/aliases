@@ -331,6 +331,181 @@ githelp() {
 GITHELP
 }
 
+# ports: show listening ports
+ports() {
+    if command -v ss &>/dev/null; then
+        ss -tlnp
+    elif command -v lsof &>/dev/null; then
+        lsof -i -P -n | grep LISTEN
+    else
+        netstat -tlnp 2>/dev/null
+    fi
+}
+
+# fkill: fuzzy process killer
+if command -v fzf &>/dev/null; then
+    fkill() {
+        local pid
+        pid=$(ps -ef | sed 1d | fzf --multi --header='Select process(es) to kill (Tab=multi-select)' \
+            --preview 'echo {}' --preview-window=up:1) || return
+        echo "$pid" | awk '{print $2}' | xargs kill "${1:--15}"
+    }
+fi
+
+# extract: universal archive extractor
+extract() {
+    if [ -z "$1" ]; then
+        echo "Usage: extract <archive> [archive2 ...]"
+        echo "Run 'extracthelp' for format guide and cheatsheet"
+        return 1
+    fi
+    for file in "$@"; do
+        if [ ! -f "$file" ]; then
+            echo "extract: '$file' is not a file"
+            continue
+        fi
+        case "$file" in
+            *.tar.bz2|*.tbz2) tar xjf "$file"    ;;
+            *.tar.gz|*.tgz)   tar xzf "$file"    ;;
+            *.tar.xz|*.txz)   tar xJf "$file"    ;;
+            *.tar.zst)        tar --zstd -xf "$file" ;;
+            *.tar)            tar xf "$file"     ;;
+            *.bz2)            bunzip2 "$file"    ;;
+            *.gz)             gunzip "$file"     ;;
+            *.xz)             unxz "$file"       ;;
+            *.zst)            unzstd "$file"     ;;
+            *.zip|*.jar)      unzip "$file"      ;;
+            *.rar)            unrar x "$file"    ;;
+            *.7z)             7z x "$file"       ;;
+            *.Z)              uncompress "$file" ;;
+            *.deb)            ar x "$file"       ;;
+            *.rpm)            rpm2cpio "$file" | cpio -idmv ;;
+            *)                echo "extract: unsupported format '$file'" ;;
+        esac
+    done
+}
+
+# compress: universal archive creator
+# Usage: compress <format> <output> <input...>
+compress() {
+    if [ $# -lt 3 ]; then
+        cat <<'USAGE'
+Usage: compress <format> <output-name> <file/dir...>
+
+Formats: tar.gz tar.bz2 tar.xz tar.zst zip 7z
+
+Examples:
+  compress tar.gz  backup   mydir/
+  compress tar.xz  release  src/ README.md
+  compress zip     photos   *.jpg
+  compress 7z      archive  project/
+
+Output name is without extension (added automatically).
+Run 'extracthelp' for full format comparison.
+USAGE
+        return 1
+    fi
+    local fmt="$1" out="$2"
+    shift 2
+    case "$fmt" in
+        tar.gz|tgz)    tar czf "${out}.tar.gz" "$@"  ;;
+        tar.bz2|tbz2)  tar cjf "${out}.tar.bz2" "$@" ;;
+        tar.xz|txz)    tar cJf "${out}.tar.xz" "$@"  ;;
+        tar.zst)        tar --zstd -cf "${out}.tar.zst" "$@" ;;
+        tar)            tar cf "${out}.tar" "$@"      ;;
+        zip)            zip -r "${out}.zip" "$@"      ;;
+        7z)             7z a "${out}.7z" "$@"         ;;
+        *)              echo "compress: unsupported format '$fmt'"
+                        echo "Supported: tar.gz tar.bz2 tar.xz tar.zst zip 7z"
+                        return 1 ;;
+    esac
+}
+
+# extracthelp: archive format cheatsheet
+extracthelp() {
+    cat <<'EXTRACTHELP'
+ Archive & Compression Cheatsheet
+─────────────────────────────────────────────────
+
+ QUICK REFERENCE
+  extract <file>        auto-detect and extract any archive
+  tar czf out.tar.gz DIR     create .tar.gz
+  tar cjf out.tar.bz2 DIR   create .tar.bz2
+  tar cJf out.tar.xz DIR    create .tar.xz
+  zip -r out.zip DIR         create .zip
+
+ COMPRESSION ONLY (single file)
+  Format    Compress           Decompress        Notes
+  ──────    ────────           ──────────        ─────
+  gzip      gzip file          gunzip file.gz    fast, good ratio, universal
+  bzip2     bzip2 file         bunzip2 file.bz2  slower, ~10-20% smaller than gz
+  xz        xz file            unxz file.xz      slowest, best ratio
+  zstd      zstd file          unzstd file.zst   fast as gz, ratio near xz
+
+  These compress a single file in-place (original is replaced).
+  Use flags like gzip -k to keep the original.
+
+ ARCHIVING + COMPRESSION (tar = bundle files, then compress)
+  .tar.gz   Most common. Fast, works everywhere.
+            tar czf archive.tar.gz dir/
+            tar xzf archive.tar.gz
+
+  .tar.bz2  Better compression, 3-5x slower than gz.
+            tar cjf archive.tar.bz2 dir/
+            tar xjf archive.tar.bz2
+
+  .tar.xz   Best compression, slowest. Great for releases/backups.
+            tar cJf archive.tar.xz dir/
+            tar xJf archive.tar.xz
+
+  .tar.zst  Modern. Fast as gz, compresses like xz. Needs zstd installed.
+            tar --zstd -cf archive.tar.zst dir/
+            tar --zstd -xf archive.tar.zst
+
+ OTHER FORMATS
+  .zip      Cross-platform (Windows-friendly). No tar needed.
+            zip -r archive.zip dir/
+            unzip archive.zip
+
+  .7z       Best compression overall, but slow. Needs p7zip.
+            7z a archive.7z dir/
+            7z x archive.7z
+
+  .rar      Proprietary. Can extract with unrar, but prefer other formats.
+
+ TAR FLAGS EXPLAINED
+  c = create    x = extract    t = list contents
+  z = gzip      j = bzip2      J = xz
+  f = file      v = verbose
+
+  Tip: tar xf auto-detects compression on extract, so
+  "tar xf archive.tar.gz" works without the z flag.
+
+ WHEN TO USE WHAT
+  Sharing with anyone      → .tar.gz or .zip (universal)
+  Sending to Windows       → .zip (native support)
+  Backups / releases       → .tar.xz (smallest size)
+  Fast local archiving     → .tar.zst (speed + ratio)
+  Maximum compression      → .7z (if recipient has 7zip)
+
+ SIZE COMPARISON (typical ~100MB source code)
+  .tar        100 MB   (no compression)
+  .tar.gz      25 MB   ██████░░░░
+  .tar.bz2     22 MB   █████░░░░░
+  .tar.xz      18 MB   ████░░░░░░
+  .tar.zst     23 MB   █████░░░░░  (default level)
+  .7z          17 MB   ████░░░░░░
+
+ SPEED COMPARISON (compress ~100MB)
+  gzip        ~2s    ██░░░░░░░░  fastest
+  zstd        ~2s    ██░░░░░░░░  fast + better ratio
+  bzip2       ~8s    ██████░░░░
+  xz         ~30s    █████████░  slowest
+  7z         ~35s    ██████████
+
+EXTRACTHELP
+}
+
 # Config version (delegates to epicli CLI)
 alias version='epicli version'
 
