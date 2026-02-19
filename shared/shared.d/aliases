@@ -342,6 +342,131 @@ ports() {
     fi
 }
 
+# conns: all established TCP connections with process info
+conns() {
+    if command -v ss &>/dev/null; then
+        ss -tnp state established
+    elif command -v lsof &>/dev/null; then
+        lsof -i -P -n | grep ESTABLISHED
+    else
+        netstat -tnp 2>/dev/null | grep ESTABLISHED
+    fi
+}
+
+# lsport: show which process is using a specific port
+lsport() {
+    if [ -z "$1" ]; then
+        echo "Usage: lsport <port>"
+        return 1
+    fi
+    if command -v ss &>/dev/null; then
+        ss -tlnp "sport = :$1" 2>/dev/null
+        ss -tlnp "dport = :$1" 2>/dev/null
+    fi
+    if command -v lsof &>/dev/null; then
+        lsof -i ":$1" -P -n
+    fi
+}
+
+# netwatch: live view of established connections (auto-refresh every 2s)
+netwatch() {
+    local interval="${1:-2}"
+    watch -n "$interval" 'ss -tnp state established 2>/dev/null'
+}
+
+# traffic: per-process bandwidth usage (requires nethogs or iftop)
+traffic() {
+    if command -v nethogs &>/dev/null; then
+        sudo nethogs
+    elif command -v iftop &>/dev/null; then
+        sudo iftop
+    else
+        echo "No traffic monitor found. Install one:"
+        echo "  sudo dnf install nethogs    # per-process bandwidth"
+        echo "  sudo dnf install iftop      # per-connection bandwidth"
+    fi
+}
+
+# localip: show local network interfaces and their IPs
+localip() {
+    if command -v ip &>/dev/null; then
+        ip -br a
+    else
+        ifconfig 2>/dev/null
+    fi
+}
+
+# myip: show public IP address
+myip() {
+    curl -s --max-time 5 https://api.ipify.org && echo
+}
+
+# where: show geolocation info for your public IP
+where() {
+    local data
+    data=$(curl -s --max-time 8 "https://ipinfo.io") || { echo "where: request failed"; return 1; }
+    if command -v jq &>/dev/null; then
+        local ip city region country org tz
+        ip=$(echo "$data"      | jq -r '.ip       // "unknown"')
+        city=$(echo "$data"    | jq -r '.city     // "unknown"')
+        region=$(echo "$data"  | jq -r '.region   // "unknown"')
+        country=$(echo "$data" | jq -r '.country  // "unknown"')
+        org=$(echo "$data"     | jq -r '.org      // "unknown"')
+        tz=$(echo "$data"      | jq -r '.timezone // "unknown"')
+        printf "\n Location\n"
+        printf "──────────────────────────────────\n"
+        printf "  %-10s %s\n" "IP"       "$ip"
+        printf "  %-10s %s\n" "City"     "$city"
+        printf "  %-10s %s\n" "Region"   "$region"
+        printf "  %-10s %s\n" "Country"  "$country"
+        printf "  %-10s %s\n" "Org"      "$org"
+        printf "  %-10s %s\n" "Timezone" "$tz"
+        printf "\n"
+    else
+        echo "$data"
+    fi
+}
+
+# nethelp: networking shortcuts cheatsheet
+nethelp() {
+    cat <<'NETHELP'
+ Networking Shortcuts Cheatsheet
+─────────────────────────────────────────────────
+
+ PORTS & CONNECTIONS
+  ports             listening ports (TCP) with process info
+  conns             established TCP connections with process info
+  lsport <port>     who is using a specific port
+  netwatch [sec]    live-refresh established connections (default: 2s)
+
+ BANDWIDTH / TRAFFIC
+  traffic           per-process live bandwidth (nethogs → iftop fallback)
+                    requires: sudo dnf install nethogs
+
+ IP / INTERFACES
+  localip           local interfaces and their IP addresses
+  myip              public (external) IP address
+  where             geolocation for your public IP (city, country, ISP, timezone)
+
+ QUICK REFERENCE (manual)
+  ss -tlnp          listening TCP ports + process
+  ss -tnp           all TCP sockets + process
+  ss -s             socket statistics summary
+  ss -tnp state established   only active connections
+  ip route          routing table
+  ip -br a          brief interface + IP list
+  nmap -sV host     service version scan (needs nmap)
+  curl -I url       check HTTP headers / response
+
+ PROCESS SENDING TRAFFIC?
+  traffic           live per-process bandwidth with nethogs
+  netwatch          watch connections appear/disappear in real time
+  conns             snapshot of who is currently connected
+  lsof -i -P -n     all open network files with ports
+
+NETHELP
+}
+
 # fkill: fuzzy process killer
 if command -v fzf &>/dev/null; then
     fkill() {
