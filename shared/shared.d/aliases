@@ -579,7 +579,9 @@ extracthelp() {
 ─────────────────────────────────────────────────
 
  QUICK REFERENCE
-  extract <file>        auto-detect and extract any archive
+  extract <file>                    auto-detect and extract any archive
+  compress <fmt> <name> <src...>    create archive (fmt: tar.gz tar.xz zip 7z …)
+
   tar czf out.tar.gz DIR     create .tar.gz
   tar cjf out.tar.bz2 DIR   create .tar.bz2
   tar cJf out.tar.xz DIR    create .tar.xz
@@ -657,6 +659,50 @@ extracthelp() {
 EXTRACTHELP
 }
 
+# shellhelp: everyday shell aliases cheatsheet
+shellhelp() {
+    cat <<'SHELLHELP'
+ Shell Aliases Cheatsheet
+─────────────────────────────────────────────────
+
+ LISTING (eza)
+  ls              list with icons, dirs first
+  l               list (long, no header)
+  ll              list long + git status + header
+  la              list long + hidden files + git
+  lt              tree view (2 levels)
+  lta             tree view (3 levels, hidden)
+  tree            full tree view
+
+ DIRECTORY
+  ..              cd ..
+  ...             cd ../..
+  ....            cd ../../..
+  fcd / fj        fuzzy cd into any directory (fzf)
+  z <query>       jump to frecent directory (zoxide)
+  zi              interactive zoxide picker
+
+ COMMON
+  grep            grep --color=auto
+  mkdir           mkdir -pv (create parents, verbose)
+  df              df -h (human-readable disk usage)
+  du              du -h (human-readable dir sizes)
+  cat             bat --paging=never (if bat installed)
+
+ PROCESS
+  fkill           fuzzy process killer (Tab=multi-select)
+
+ SAFETY NETS
+  rm              rm -i (prompts before delete)
+  cp              cp -i (prompts before overwrite)
+  mv              mv -i (prompts before overwrite)
+
+ SYSTEM
+  version         show epicli version
+
+SHELLHELP
+}
+
 # utilshelp: list of installed CLI utilities with descriptions
 utilshelp() {
     _u() {
@@ -711,27 +757,39 @@ HDR
 }
 
 # info: interactive cheatsheet navigator (requires fzf)
+#   info            open navigator
+#   info --rebuild  regenerate all cheatsheet files
 info() {
+    local helpdir="${XDG_DATA_HOME:-$HOME/.local/share}/epicli/help"
+
+    _info_build() {
+        mkdir -p "$helpdir"
+        extracthelp > "$helpdir/archive"
+        githelp     > "$helpdir/git"
+        navhelp     > "$helpdir/navigation"
+        nethelp     > "$helpdir/networking"
+        shellhelp   > "$helpdir/shell"
+        utilshelp   > "$helpdir/utilities"
+        echo "info: cheatsheets written to $helpdir"
+    }
+
+    if [ "$1" = "--rebuild" ]; then
+        _info_build
+        return 0
+    fi
+
     if ! command -v fzf &>/dev/null; then
-        echo "cheat: fzf is required"
+        echo "info: fzf is required"
         return 1
     fi
 
-    local tmpdir
-    tmpdir=$(mktemp -d) || return 1
-    trap 'rm -rf "$tmpdir"' RETURN
-
-    # Generate cheatsheet files — filenames become the topic list (sorted alphabetically)
-    extracthelp > "$tmpdir/archive"
-    githelp     > "$tmpdir/git"
-    navhelp     > "$tmpdir/navigation"
-    nethelp     > "$tmpdir/networking"
-    utilshelp   > "$tmpdir/utilities"
+    # Build on first use
+    [ -d "$helpdir" ] || _info_build
 
     local selected
-    selected=$(ls "$tmpdir" | sort | \
+    selected=$(ls "$helpdir" | sort | \
         fzf --prompt='  Topic: ' \
-            --preview="cat $tmpdir/{}" \
+            --preview="cat $helpdir/{}" \
             --preview-window='right:65%:wrap' \
             --border=rounded \
             --info=hidden \
@@ -741,9 +799,9 @@ info() {
     [ -z "$selected" ] && return 0
 
     if command -v bat &>/dev/null; then
-        bat --paging=always --style=plain --color=always "$tmpdir/$selected" | less -R
+        bat --paging=always --style=plain --color=always "$helpdir/$selected" | less -R
     else
-        less "$tmpdir/$selected"
+        less "$helpdir/$selected"
     fi
 }
 

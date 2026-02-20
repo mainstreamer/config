@@ -31,6 +31,16 @@ post_install() {
         warn "nvim not found, skipping plugin sync"
     fi
 
+    # Rebuild info cheatsheet pages
+    local aliases_src="$DOTFILES_TARGET/shared/shared.d/aliases"
+    if [ -f "$aliases_src" ]; then
+        if ( source "$aliases_src" 2>/dev/null && info --rebuild > /dev/null 2>&1 ); then
+            ok "Info pages rebuilt"
+        else
+            warn "Could not rebuild info pages — run 'info --rebuild' after shell restart"
+        fi
+    fi
+
     ok "Post-install complete"
 }
 
