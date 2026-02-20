@@ -136,6 +136,32 @@ if command -v fzf &>/dev/null; then
     }
 fi
 
+# navhelp: navigation & fuzzy search cheatsheet
+navhelp() {
+    cat <<'NAVHELP'
+ Navigation & Search Cheatsheet
+─────────────────────────────────────────────────
+
+ FUZZY FINDER (fzf)
+  fo              open any file in $EDITOR (bat preview)
+  fcd / fj        cd into any directory (tree preview)
+  fkill           kill process(es) interactively (Tab=multi-select)
+
+ GIT INTERACTIVE (fzf)
+  gitbr           branch picker → checkout on Enter
+  gitlog          commit browser (Enter=show | Alt+Enter=copy hash)
+  gitdiff         pick modified file → view delta diff vs HEAD
+
+ DIRECTORY JUMPING (zoxide)
+  z <query>       jump to a frecent directory
+  zi              interactive zoxide picker (fzf)
+
+ BROOT
+  br              broot file manager / tree navigator
+
+NAVHELP
+}
+
 # Git shortcuts (oh-my-zsh compatible)
 alias g='git'
 
@@ -629,6 +655,42 @@ extracthelp() {
   7z         ~35s    ██████████
 
 EXTRACTHELP
+}
+
+# info: interactive cheatsheet navigator (requires fzf)
+info() {
+    if ! command -v fzf &>/dev/null; then
+        echo "cheat: fzf is required"
+        return 1
+    fi
+
+    local tmpdir
+    tmpdir=$(mktemp -d) || return 1
+    trap 'rm -rf "$tmpdir"' RETURN
+
+    # Generate cheatsheet files — filenames become the topic list (sorted alphabetically)
+    extracthelp > "$tmpdir/archive"
+    githelp     > "$tmpdir/git"
+    navhelp     > "$tmpdir/navigation"
+    nethelp     > "$tmpdir/networking"
+
+    local selected
+    selected=$(ls "$tmpdir" | sort | \
+        fzf --prompt='  Topic: ' \
+            --preview="cat \"$tmpdir/{}\"" \
+            --preview-window='right:65%:wrap' \
+            --border=rounded \
+            --info=hidden \
+            --header=$'\n  Cheatsheets — Enter to open, Esc to quit\n' \
+            --height=100%)
+
+    [ -z "$selected" ] && return 0
+
+    if command -v bat &>/dev/null; then
+        bat --paging=always --style=plain "$tmpdir/$selected"
+    else
+        less "$tmpdir/$selected"
+    fi
 }
 
 # Config version (delegates to epicli CLI)
