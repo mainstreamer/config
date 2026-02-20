@@ -657,6 +657,59 @@ extracthelp() {
 EXTRACTHELP
 }
 
+# utilshelp: list of installed CLI utilities with descriptions
+utilshelp() {
+    _u() {
+        local cmd="$1" name="$2" desc="$3"
+        if command -v "$cmd" &>/dev/null; then
+            printf "  %-16s %s\n" "$name" "$desc"
+        else
+            printf "  %-16s %s\n" "$name" "$desc  [not installed]"
+        fi
+    }
+
+    cat <<'HDR'
+ CLI Utilities
+─────────────────────────────────────────────────
+
+ CORE
+HDR
+    _u bat      "bat"      "cat with syntax highlighting and line numbers"
+    _u eza      "eza"      "modern ls — icons, git status, colors"
+    _u fd       "fd"       "fast and friendly find alternative"
+    _u fzf      "fzf"      "fuzzy finder — interactive filter for anything"
+    _u rg       "rg"       "ripgrep — blazing fast recursive grep"
+    _u jq       "jq"       "JSON processor and pretty-printer"
+    _u zoxide   "zoxide"   "smarter cd — jumps to frecent directories (z, zi)"
+    _u mc       "mc"       "Midnight Commander — visual file manager"
+    _u tree     "tree"     "directory tree viewer"
+    echo ""
+    echo " SHELL"
+    _u starship "starship" "cross-shell prompt with git/language context"
+    _u atuin    "atuin"    "shell history sync across machines (Ctrl+R)"
+    _u tmux     "tmux"     "terminal multiplexer — panes, windows, sessions"
+    echo ""
+    echo " GIT"
+    _u lazygit  "lg"       "full git TUI — branches, diffs, stash, rebase"
+    _u delta    "delta"    "better diff viewer — syntax highlighting, side-by-side"
+    _u gh       "gh"       "GitHub CLI — PRs, issues, releases from terminal"
+    echo ""
+    echo " MONITORING"
+    _u htop     "htop"     "interactive process viewer"
+    _u btop     "btop"     "modern resource monitor — CPU, mem, net, disk"
+    _u nethogs  "nethogs"  "per-process network bandwidth (sudo)"
+    _u iftop    "iftop"    "per-connection network bandwidth (sudo)"
+    echo ""
+    echo " EDITORS"
+    _u nvim     "nvim"     "Neovim — extensible modal editor"
+    echo ""
+    echo " MEDIA & OTHER"
+    _u ffmpeg   "ffmpeg"   "media converter and stream processor"
+    _u curl     "curl"     "HTTP client — requests, downloads, API calls"
+    _u wget     "wget"     "HTTP/FTP downloader"
+    echo ""
+}
+
 # info: interactive cheatsheet navigator (requires fzf)
 info() {
     if ! command -v fzf &>/dev/null; then
@@ -673,6 +726,7 @@ info() {
     githelp     > "$tmpdir/git"
     navhelp     > "$tmpdir/navigation"
     nethelp     > "$tmpdir/networking"
+    utilshelp   > "$tmpdir/utilities"
 
     local selected
     selected=$(ls "$tmpdir" | sort | \
