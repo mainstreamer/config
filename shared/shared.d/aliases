@@ -703,6 +703,102 @@ shellhelp() {
 SHELLHELP
 }
 
+# btophelp: btop keyboard shortcuts and features
+btophelp() {
+    cat <<'BTOPHELP'
+ btop Cheatsheet
+─────────────────────────────────────────────────
+
+ NAVIGATION
+  Arrow keys / hjkl   move around
+  Tab                 next panel
+  Enter               select / expand process tree
+  Esc                 back / cancel
+  q / Ctrl+C          quit
+
+ VIEWS
+  1                   CPU view (detailed per-core breakdown)
+  2                   memory + swap view
+  3                   network view (per-interface traffic)
+  4                   disk I/O view
+  m                   toggle mini mode (compact overview)
+  p                   toggle process list on/off
+
+ PROCESSES
+  /  or  f            filter processes by name
+  Delete              clear filter
+  e                   toggle process tree (parent/child view)
+  r                   reverse sort order
+  +  /  -             expand / collapse tree branch
+  k                   kill process (choose signal interactively)
+  t                   terminate process (SIGTERM)
+  s                   select sort column
+  n                   next sort column
+
+ CPU
+  c                   toggle per-core vs aggregate graph
+  g                   cycle graph type (braille / block / tty)
+
+ DISPLAY
+  F2  or  o           open options / settings
+  b                   toggle battery widget (if available)
+  Mouse               fully supported — click panels, scroll lists
+
+ TIPS
+  Run btop inside tmux for persistent monitoring in a side pane.
+  Options are saved to ~/.config/btop/btop.conf — edit themes there.
+  Theme files live in ~/.config/btop/themes/ (or /usr/share/btop/themes/).
+
+BTOPHELP
+}
+
+# atuinhelp: atuin shell history cheatsheet
+atuinhelp() {
+    cat <<'ATUINHELP'
+ Atuin Cheatsheet
+─────────────────────────────────────────────────
+ Atuin replaces Ctrl+R with a searchable, syncable shell history database.
+
+ IN THE SHELL
+  Ctrl+R              open interactive history search
+  Up arrow            also opens atuin search (if configured)
+
+ INTERACTIVE SEARCH
+  Type                filter history in real time
+  Enter               execute selected command
+  Tab                 paste to command line (edit before running)
+  Ctrl+D / Delete     remove entry from history
+  Alt+1 … Alt+9       jump to entry by position
+  Esc                 cancel
+
+ SEARCH FILTERS (prefix your query)
+  exit:0              only successful commands
+  exit:1              only failed commands
+  host:machine        commands from a specific machine
+  cwd:/path           commands run in a specific directory
+  before:2025-01-01   commands before a date
+  after:2024-06-01    commands after a date
+
+  Example: exit:0 git push       successful git pushes only
+
+ CLI COMMANDS
+  atuin stats                   most used commands + frequency
+  atuin history list            raw history dump
+  atuin search <query>          non-interactive search
+  atuin import auto             import existing shell history
+  atuin sync                    sync history with server
+
+ SETUP (cloud sync — optional)
+  atuin register -u <user> -e <email> -p <pass>   create account
+  atuin login    -u <user> -p <pass>              login on another machine
+  atuin sync                                       pull history from server
+
+  Config file: ~/.config/atuin/config.toml
+  Enable:      touch ~/.config/atuin/.enabled
+
+ATUINHELP
+}
+
 # utilshelp: list of installed CLI utilities with descriptions
 utilshelp() {
     _u() {
@@ -729,6 +825,7 @@ HDR
     _u zoxide   "zoxide"   "smarter cd — jumps to frecent directories (z, zi)"
     _u mc       "mc"       "Midnight Commander — visual file manager"
     _u tree     "tree"     "directory tree viewer"
+    _u tldr     "tldr"     "practical examples for any command (tldr tar, tldr git)"
     echo ""
     echo " SHELL"
     _u starship "starship" "cross-shell prompt with git/language context"
@@ -764,7 +861,9 @@ info() {
 
     _info_build() {
         mkdir -p "$helpdir"
+        atuinhelp   > "$helpdir/atuin"
         extracthelp > "$helpdir/archive"
+        btophelp    > "$helpdir/btop"
         githelp     > "$helpdir/git"
         navhelp     > "$helpdir/navigation"
         nethelp     > "$helpdir/networking"

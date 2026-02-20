@@ -17,6 +17,7 @@ brew "eza"          # modern ls (successor to exa)
 brew "zoxide"       # smarter cd
 brew "mc"           # midnight commander - file manager & navigator
 brew "tree"
+brew "tldr"          # practical command examples (community-maintained)
 
 # ------------------------------------------------------------------------------
 # Editors & tools
