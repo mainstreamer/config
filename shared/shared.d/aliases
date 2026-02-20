@@ -677,7 +677,7 @@ info() {
     local selected
     selected=$(ls "$tmpdir" | sort | \
         fzf --prompt='  Topic: ' \
-            --preview="cat \"$tmpdir/{}\"" \
+            --preview="cat $tmpdir/{}" \
             --preview-window='right:65%:wrap' \
             --border=rounded \
             --info=hidden \
@@ -687,7 +687,7 @@ info() {
     [ -z "$selected" ] && return 0
 
     if command -v bat &>/dev/null; then
-        bat --paging=always --style=plain "$tmpdir/$selected"
+        bat --paging=always --style=plain --color=always "$tmpdir/$selected" | less -R
     else
         less "$tmpdir/$selected"
     fi
