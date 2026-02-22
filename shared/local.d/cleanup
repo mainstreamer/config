@@ -19,15 +19,7 @@ cleanup() {
 
     mkdir -p "$cleanup_dir"
 
-    find "$base_dir" -maxdepth 5 -type f \( \
-        -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.avi' \
-        -o -iname '*.mov' -o -iname '*.webm' \
-        -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \
-        -o -iname '*.gif' -o -iname '*.bmp' -o -iname '*.webp' \
-    \) -size +512k -mtime -"$days" \
-        ! -path "$cleanup_dir/*" \
-        ! -path "*/.*" \
-        -print0 2>/dev/null | while IFS= read -r -d '' file; do
+    while IFS= read -r -d '' file; do
 
         # Get file date: try birth time first, fall back to mtime
         local date_dir=""
@@ -56,9 +48,32 @@ cleanup() {
 
         local target="$cleanup_dir/$date_dir"
         mkdir -p "$target"
-        mv "$file" "$target/" && echo "  $(basename "$file") -> $target/"
+
+        # Resolve filename conflicts by appending a counter
+        local basename dest
+        basename=$(basename "$file")
+        dest="$target/$basename"
+        if [ -e "$dest" ]; then
+            local name="${basename%.*}" ext="${basename##*.}"
+            local n=1
+            while [ -e "$target/${name}($n).$ext" ]; do
+                n=$((n + 1))
+            done
+            dest="$target/${name}($n).$ext"
+        fi
+
+        \mv "$file" "$dest" && echo "  $basename -> $dest"
         count=$((count + 1))
-    done
+
+    done < <(find "$base_dir" -maxdepth 5 -type f \( \
+        -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.avi' \
+        -o -iname '*.mov' -o -iname '*.webm' \
+        -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \
+        -o -iname '*.gif' -o -iname '*.bmp' -o -iname '*.webp' \
+    \) -size +512k -mtime -"$days" \
+        ! -path "$cleanup_dir/*" \
+        ! -path "*/.*" \
+        -print0 2>/dev/null)
 
     echo "Cleanup complete. $count file(s) moved."
 }
