@@ -941,6 +941,45 @@ atuinhelp() {
 ATUINHELP
 }
 
+# shortcutshelp: custom keybindings added by this setup (shell-level only)
+shortcutshelp() {
+    cat <<'SHORTCUTSHELP'
+ Custom Keybindings (added by this setup)
+─────────────────────────────────────────────────
+
+ FZF — file & directory navigation
+  Ctrl+T          fuzzy file search → inserts path at cursor
+  Alt+C           fuzzy cd          → places "cd <dir>" on command line
+  Alt+O           fuzzy open file   → Enter=edit in nvim, Alt+Enter=bat preview
+  Alt+F           fuzzy files+dirs  → files open in nvim, dirs cd into
+
+  macOS: Option key acts as Alt. Requires iTerm2: Left Option Key = Esc+
+         Alt+C → ç   Alt+O → ø   Alt+F → ƒ
+
+ FZF — history & process
+  Ctrl+R          fuzzy shell history search (atuin if enabled, fzf otherwise)
+
+ BROOT — file tree
+  br              launch broot (interactive tree, cd-on-exit enabled)
+  Alt+Enter       cd into selected dir and exit
+  :e              open file in $EDITOR
+  /               search within tree
+  Ctrl+Left/Right collapse / expand directory
+
+ GIT — fzf-powered commands
+  gb              branch picker         → Enter=checkout
+  gbd             branch delete picker  → Tab=multi, merged-only (safe)
+  gbD             branch force-delete   → Tab=multi, unmerged allowed
+  gitlog          commit browser        → Enter=show, Alt+Enter=copy hash
+  gitdiff         modified-file picker  → Enter=delta diff vs HEAD
+  gdc             commit diff picker    → fzf, Enter=full diff
+  gdcf            commit diff picker    → fzf, Enter=file+lines summary
+
+ NOTE: run 'keyshelp' for the full keyboard reference (tmux, neovim, shell builtins)
+
+SHORTCUTSHELP
+}
+
 # keyshelp: all keyboard shortcuts cheatsheet
 keyshelp() {
     cat <<'KEYSHELP'
@@ -1073,17 +1112,20 @@ HDR
 info() {
     local helpdir="${XDG_DATA_HOME:-$HOME/.local/share}/epicli/help"
 
+    _info_topics=(atuin archive btop git keybindings navigation networking shell shortcuts utilities)
+
     _info_build() {
         mkdir -p "$helpdir"
-        atuinhelp   > "$helpdir/atuin"
-        extracthelp > "$helpdir/archive"
-        btophelp    > "$helpdir/btop"
-        githelp     > "$helpdir/git"
-        keyshelp    > "$helpdir/keybindings"
-        navhelp     > "$helpdir/navigation"
-        nethelp     > "$helpdir/networking"
-        shellhelp   > "$helpdir/shell"
-        utilshelp   > "$helpdir/utilities"
+        atuinhelp       > "$helpdir/atuin"
+        extracthelp     > "$helpdir/archive"
+        btophelp        > "$helpdir/btop"
+        githelp         > "$helpdir/git"
+        keyshelp        > "$helpdir/keybindings"
+        navhelp         > "$helpdir/navigation"
+        nethelp         > "$helpdir/networking"
+        shellhelp       > "$helpdir/shell"
+        shortcutshelp   > "$helpdir/shortcuts"
+        utilshelp       > "$helpdir/utilities"
         echo "info: cheatsheets written to $helpdir"
     }
 
@@ -1097,8 +1139,16 @@ info() {
         return 1
     fi
 
-    # Build on first use
-    [ -d "$helpdir" ] || _info_build
+    # Build on first use, or rebuild if any topic file is missing
+    local _topic _needs_build=0
+    if [ ! -d "$helpdir" ]; then
+        _needs_build=1
+    else
+        for _topic in "${_info_topics[@]}"; do
+            [ -f "$helpdir/$_topic" ] || { _needs_build=1; break; }
+        done
+    fi
+    [ "$_needs_build" = "1" ] && _info_build
 
     local selected
     selected=$(ls "$helpdir" | sort | \
