@@ -160,6 +160,18 @@ link_starship() {
     local saved_theme=""
     [ -f "$theme_record" ] && saved_theme=$(cat "$theme_record")
 
+    # If no record yet but a starship.toml exists, detect which theme it matches
+    if [ -z "$saved_theme" ] && [ -f "$target" ]; then
+        for f in "$DOTFILES_DIR/shared/themes"/starship*.toml; do
+            [ -f "$f" ] || continue
+            if diff -q "$f" "$target" &>/dev/null; then
+                saved_theme=$(basename "$f" .toml | sed 's/^starship-//;s/^starship$/default/')
+                echo "$saved_theme" > "$theme_record"
+                break
+            fi
+        done
+    fi
+
     if [ -n "$saved_theme" ]; then
         local theme_file
         if [ "$saved_theme" = "default" ] || [ "$saved_theme" = "gruvbox-rainbow" ]; then
@@ -168,15 +180,20 @@ link_starship() {
             theme_file="$DOTFILES_DIR/shared/themes/starship-${saved_theme}.toml"
         fi
         if [ -f "$theme_file" ]; then
+            rm -f "$target"
             cp "$theme_file" "$target"
             ok "Starship theme preserved: $saved_theme"
             return 0
         fi
     fi
 
-    # First install or unknown saved theme: copy default
+    # First install or unrecognised theme: keep existing file untouched if present
+    if [ -f "$target" ]; then
+        ok "Starship config untouched (custom theme)"
+        return 0
+    fi
+
     if [ -f "$DOTFILES_DIR/shared/themes/starship.toml" ]; then
-        rm -f "$target" 2>/dev/null || true
         cp "$DOTFILES_DIR/shared/themes/starship.toml" "$target"
         echo "default" > "$theme_record"
     else
@@ -191,6 +208,7 @@ link_mc() {
     mkdir -p "$mc_config_dir"
 
     if [ -f "$DOTFILES_DIR/settings/mc/ini" ]; then
+        rm -f "$mc_config_dir/ini"
         cp "$DOTFILES_DIR/settings/mc/ini" "$mc_config_dir/ini"
         ok "Midnight Commander config installed"
     else
