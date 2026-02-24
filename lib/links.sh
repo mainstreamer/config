@@ -172,6 +172,15 @@ link_starship() {
         done
     fi
 
+    # If target is still a symlink (old install), capture its content before it
+    # gets broken by archive replacement, then convert it to a real file
+    if [ -z "$saved_theme" ] && [ -L "$target" ]; then
+        local tmp="${target}.tmp.$$"
+        cp "$target" "$tmp" 2>/dev/null && mv "$tmp" "$target" 2>/dev/null || true
+        ok "Starship config: converted symlink to file (custom theme preserved)"
+        return 0
+    fi
+
     if [ -n "$saved_theme" ]; then
         local theme_file
         if [ "$saved_theme" = "default" ] || [ "$saved_theme" = "gruvbox-rainbow" ]; then
@@ -187,7 +196,7 @@ link_starship() {
         fi
     fi
 
-    # First install or unrecognised theme: keep existing file untouched if present
+    # First install or unrecognised theme: keep existing real file untouched
     if [ -f "$target" ]; then
         ok "Starship config untouched (custom theme)"
         return 0
