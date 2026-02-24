@@ -1,27 +1,30 @@
 #!/usr/bin/env bash
-# Symlink creation, backup, and custom app installation
+# Config file installation, backup, and custom app installation
 
 backup_existing() {
+    # Skip backup if epicli already manages these files (subsequent install/update)
+    [ -f "${VERSION_FILE:-$HOME/.epicli-version}" ] && return 0
+
     local backup_dir="$HOME/.${PROJECT_NAME}-backup-$(date +%Y%m%d-%H%M%S)"
     local needs_backup=false
 
-    [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ] && needs_backup=true
-    [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && needs_backup=true
-    [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && needs_backup=true
-    [ -f "$HOME/.profile" ] && [ ! -L "$HOME/.profile" ] && needs_backup=true
-    [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && needs_backup=true
+    [ -f "$HOME/.bashrc" ] && needs_backup=true
+    [ -f "$HOME/.zshrc" ] && needs_backup=true
+    [ -f "$HOME/.bash_profile" ] && needs_backup=true
+    [ -f "$HOME/.profile" ] && needs_backup=true
+    [ -d "$HOME/.config/nvim" ] && needs_backup=true
 
     if [ "$needs_backup" = true ]; then
         info "Backing up existing configs to $backup_dir"
         mkdir -p "$backup_dir"
 
-        [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ] && mv "$HOME/.bashrc" "$backup_dir/"
-        [ -d "$HOME/.bashrc.d" ] && [ ! -L "$HOME/.bashrc.d" ] && mv "$HOME/.bashrc.d" "$backup_dir/"
-        [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && mv "$HOME/.zshrc" "$backup_dir/"
-        [ -d "$HOME/.zshrc.d" ] && [ ! -L "$HOME/.zshrc.d" ] && mv "$HOME/.zshrc.d" "$backup_dir/"
-        [ -f "$HOME/.bash_profile" ] && [ ! -L "$HOME/.bash_profile" ] && mv "$HOME/.bash_profile" "$backup_dir/"
-        [ -f "$HOME/.profile" ] && [ ! -L "$HOME/.profile" ] && mv "$HOME/.profile" "$backup_dir/"
-        [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ] && mv "$HOME/.config/nvim" "$backup_dir/"
+        [ -f "$HOME/.bashrc" ]        && mv "$HOME/.bashrc" "$backup_dir/"
+        [ -d "$HOME/.bashrc.d" ]      && mv "$HOME/.bashrc.d" "$backup_dir/"
+        [ -f "$HOME/.zshrc" ]         && mv "$HOME/.zshrc" "$backup_dir/"
+        [ -d "$HOME/.zshrc.d" ]       && mv "$HOME/.zshrc.d" "$backup_dir/"
+        [ -f "$HOME/.bash_profile" ]  && mv "$HOME/.bash_profile" "$backup_dir/"
+        [ -f "$HOME/.profile" ]       && mv "$HOME/.profile" "$backup_dir/"
+        [ -d "$HOME/.config/nvim" ]   && mv "$HOME/.config/nvim" "$backup_dir/"
 
         ok "Backup created at $backup_dir"
     fi
@@ -30,7 +33,7 @@ backup_existing() {
 link_configs() {
     cd "$DOTFILES_DIR"
 
-    info "Creating symlinks..."
+    info "Installing config files..."
 
     # Backup existing configs
     backup_existing
@@ -63,13 +66,13 @@ link_configs() {
         rm -f "$HOME/.config/nvim/.standard"
     fi
 
-    ok "Symlinks created"
+    ok "Configs installed"
 }
 
 link_shell() {
-    info "Linking shell config..."
+    info "Installing shell config..."
 
-    # Clean up old symlinks (both old and new naming)
+    # Remove old symlinks or stale dirs from previous installs
     rm -f "$HOME/.bashrc" 2>/dev/null || true
     rm -f "$HOME/.zshrc" 2>/dev/null || true
     rm -rf "$HOME/.bashrc.d" 2>/dev/null || true
@@ -79,62 +82,51 @@ link_shell() {
     rm -rf "$HOME/.local.d" 2>/dev/null || true
 
     if [ -d "$DOTFILES_DIR/shared" ]; then
-        ln -sf "$DOTFILES_DIR/shared/shared.d" "$HOME/.shared.d"
+        cp -r "$DOTFILES_DIR/shared/shared.d" "$HOME/.shared.d"
 
-        # Local profile: link personal machine scripts
+        # Local profile: copy personal machine scripts
         if [ "$LOCAL_MODE" = true ] && [ -d "$DOTFILES_DIR/shared/local.d" ]; then
-            ln -sf "$DOTFILES_DIR/shared/local.d" "$HOME/.local.d"
+            cp -r "$DOTFILES_DIR/shared/local.d" "$HOME/.local.d"
         fi
 
         if [ "$PLATFORM" = "linux" ]; then
-            ln -sf "$DOTFILES_DIR/shared/.bashrc" "$HOME/.bashrc"
-            # Also link .zshrc on Linux for users who might use Zsh
-            ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
-            # Link .bash_profile for SSH login shells
-            ln -sf "$DOTFILES_DIR/shared/.bash_profile" "$HOME/.bash_profile"
-            # Link .profile for non-bash shells and fallback
-            ln -sf "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
+            cp "$DOTFILES_DIR/shared/.bashrc" "$HOME/.bashrc"
+            cp "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
+            cp "$DOTFILES_DIR/shared/.bash_profile" "$HOME/.bash_profile"
+            cp "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
         else
-            ln -sf "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
-            # Link .profile on macOS too for compatibility
-            ln -sf "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
+            cp "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
+            cp "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
         fi
     else
         warn "Shell config not found, skipping"
     fi
 
-    # Verify all symlinks were created successfully
-    info "Verifying symlinks..."
-    local broken_symlinks=0
-    local symlinks_to_check=(
+    # Verify all config files were copied successfully
+    info "Verifying configs..."
+    local missing=0
+    local files_to_check=(
         "$HOME/.shared.d"
         "$HOME/.bashrc"
         "$HOME/.zshrc"
         "$HOME/.bash_profile"
         "$HOME/.profile"
     )
-    [ "$LOCAL_MODE" = true ] && symlinks_to_check+=("$HOME/.local.d")
+    [ "$LOCAL_MODE" = true ] && files_to_check+=("$HOME/.local.d")
 
-    for symlink in "${symlinks_to_check[@]}"; do
-        if [ -L "$symlink" ]; then
-            # Check if symlink target exists
-            if [ ! -e "$symlink" ]; then
-                error "Broken symlink: $symlink -> $(readlink $symlink)"
-                broken_symlinks=$((broken_symlinks + 1))
-            fi
-        else
-            # Symlink doesn't exist (only warn, not error)
-            warn "Symlink not created: $symlink"
+    for f in "${files_to_check[@]}"; do
+        if [ ! -e "$f" ]; then
+            warn "Config not installed: $f"
+            missing=$((missing + 1))
         fi
     done
 
-    if [ $broken_symlinks -gt 0 ]; then
-        error "$broken_symlinks broken symlinks found!"
-        error "Please check the installation and try again."
+    if [ $missing -gt 0 ]; then
+        error "$missing config files missing — check the installation."
         return 1
     fi
 
-    ok "All symlinks verified"
+    ok "All configs verified"
 
     # macOS: Suppress "Last login" message in new terminal tabs
     if [ "$PLATFORM" != "linux" ]; then
@@ -146,51 +138,61 @@ link_shell() {
 }
 
 link_nvim() {
-    info "Linking Neovim config..."
+    info "Installing Neovim config..."
 
     rm -rf "$HOME/.config/nvim" 2>/dev/null || true
 
     if [ -d "$DOTFILES_DIR/nvim" ]; then
-        ln -sf "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
+        cp -r "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
     else
         warn "Neovim config not found, skipping"
     fi
 }
 
 link_starship() {
-    info "Linking Starship config..."
+    info "Installing Starship config..."
 
     local target="$HOME/.config/starship.toml"
+    local theme_record="$HOME/.config/starship-theme"
     mkdir -p "$HOME/.config"
 
-    # Preserve existing theme choice if it points to a valid theme in our repo
-    if [ -L "$target" ]; then
-        local current
-        current=$(readlink "$target" 2>/dev/null)
-        if [ -f "$current" ] && echo "$current" | grep -q "$DOTFILES_DIR/shared/themes/starship"; then
-            ok "Starship theme preserved: $(basename "$current" .toml | sed 's/^starship-//;s/^starship$/gruvbox-rainbow (default)/')"
+    # Preserve theme chosen by user (stored in ~/.config/starship-theme)
+    local saved_theme=""
+    [ -f "$theme_record" ] && saved_theme=$(cat "$theme_record")
+
+    if [ -n "$saved_theme" ]; then
+        local theme_file
+        if [ "$saved_theme" = "default" ] || [ "$saved_theme" = "gruvbox-rainbow" ]; then
+            theme_file="$DOTFILES_DIR/shared/themes/starship.toml"
+        else
+            theme_file="$DOTFILES_DIR/shared/themes/starship-${saved_theme}.toml"
+        fi
+        if [ -f "$theme_file" ]; then
+            cp "$theme_file" "$target"
+            ok "Starship theme preserved: $saved_theme"
             return 0
         fi
     fi
 
-    # First install or broken link: set default theme
+    # First install or unknown saved theme: copy default
     if [ -f "$DOTFILES_DIR/shared/themes/starship.toml" ]; then
         rm -f "$target" 2>/dev/null || true
-        ln -sf "$DOTFILES_DIR/shared/themes/starship.toml" "$target"
+        cp "$DOTFILES_DIR/shared/themes/starship.toml" "$target"
+        echo "default" > "$theme_record"
     else
         warn "Starship config not found, skipping"
     fi
 }
 
 link_mc() {
-    info "Linking Midnight Commander config..."
+    info "Installing Midnight Commander config..."
 
     local mc_config_dir="$HOME/.config/mc"
     mkdir -p "$mc_config_dir"
 
     if [ -f "$DOTFILES_DIR/settings/mc/ini" ]; then
-        ln -sf "$DOTFILES_DIR/settings/mc/ini" "$mc_config_dir/ini"
-        ok "Midnight Commander config linked"
+        cp "$DOTFILES_DIR/settings/mc/ini" "$mc_config_dir/ini"
+        ok "Midnight Commander config installed"
     else
         warn "Midnight Commander config not found, skipping"
     fi

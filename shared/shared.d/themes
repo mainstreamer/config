@@ -3,28 +3,21 @@
 # Themes are stored as shared/themes/starship-<name>.toml in the dotfiles repo
 
 themes() {
-    # Resolve dotfiles location from ~/.shared.d symlink (works for both local and remote installs)
-    local theme_dir
-    if [ -L "$HOME/.shared.d" ]; then
-        theme_dir="$(cd -P "$HOME/.shared.d" 2>/dev/null && cd ../themes && pwd)"
-    else
-        theme_dir="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}/shared/themes"
-    fi
+    local theme_dir="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}/shared/themes"
     local target="$HOME/.config/starship.toml"
+    local theme_record="$HOME/.config/starship-theme"
 
     # No args: list available themes
     if [ -z "$1" ] || [ "$1" = "list" ] || [ "$1" = "--list" ] || [ "$1" = "-l" ]; then
         local current=""
-        if [ -L "$target" ]; then
-            current=$(readlink "$target" 2>/dev/null)
-        fi
+        [ -f "$theme_record" ] && current=$(cat "$theme_record")
 
         echo "Available starship themes:"
         echo ""
 
         # Default (gruvbox rainbow)
         if [ -f "$theme_dir/starship.toml" ]; then
-            if [ "$current" = "$theme_dir/starship.toml" ]; then
+            if [ "$current" = "default" ] || [ "$current" = "gruvbox-rainbow" ]; then
                 echo "  * gruvbox-rainbow (default) [active]"
             else
                 echo "    gruvbox-rainbow (default)"
@@ -35,7 +28,7 @@ themes() {
         for f in "$theme_dir"/starship-*.toml; do
             [ -f "$f" ] || continue
             local name=$(basename "$f" | sed 's/^starship-//;s/\.toml$//')
-            if [ "$current" = "$f" ]; then
+            if [ "$current" = "$name" ]; then
                 echo "  * $name [active]"
             else
                 echo "    $name"
@@ -53,6 +46,7 @@ themes() {
 
     if [ "$name" = "default" ] || [ "$name" = "gruvbox-rainbow" ]; then
         theme_file="$theme_dir/starship.toml"
+        name="default"
     else
         theme_file="$theme_dir/starship-${name}.toml"
     fi
@@ -64,6 +58,7 @@ themes() {
     fi
 
     mkdir -p "$(dirname "$target")"
-    ln -sf "$theme_file" "$target"
+    cp "$theme_file" "$target"
+    echo "$name" > "$theme_record"
     echo "Switched to starship theme: $name"
 }

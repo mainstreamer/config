@@ -12,13 +12,13 @@ cmd_uninstall() {
     echo "  - $VERSION_FILE"
     echo "  - $MANIFEST_FILE"
     echo "  - ~/.local/bin/$PROJECT_NAME"
-    echo "  - Symlinks (~/.bashrc, ~/.bash_profile, ~/.profile, ~/.config/nvim, etc.)"
+    echo "  - Config files (~/.bashrc, ~/.bash_profile, ~/.profile, ~/.config/nvim, etc.)"
     echo "  - Homebrew (/home/linuxbrew/.linuxbrew)"
     echo ""
     read -p "Are you sure? [y/N] " confirm
     [[ "$confirm" != [yY] ]] && echo "Aborted." && exit 0
 
-    info "Removing symlinks..."
+    info "Removing config files..."
     rm -f "$HOME/.bashrc" 2>/dev/null
     rm -f "$HOME/.zshrc" 2>/dev/null
     rm -f "$HOME/.bash_profile" 2>/dev/null
