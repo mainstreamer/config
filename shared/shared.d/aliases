@@ -222,21 +222,36 @@ alias gl='git pull'
 alias gf='git fetch'
 alias gfo='git fetch origin'
 
+# _git_diff_or_msg: run a git diff command, print a message if output is empty
+_git_diff_or_msg() {
+    local label="$1"; shift
+    local out
+    out=$(git diff "$@" 2>&1)
+    if [ -z "$out" ]; then
+        echo "  no changes ($label)"
+    else
+        echo "$out" | ${GIT_PAGER:-${PAGER:-less}}
+    fi
+}
+
 # Diff
-alias gd='git diff'
-alias gdh='git diff HEAD'
-alias gds='git diff --staged'
-alias gdca='git diff --cached'
+gd()    { _git_diff_or_msg "working tree" "$@"; }
+gdh()   { _git_diff_or_msg "vs HEAD" HEAD "$@"; }
+gds()   { _git_diff_or_msg "staged" --staged "$@"; }
+gdca()  { _git_diff_or_msg "cached" --cached "$@"; }
 
 # gdm: diff current branch vs main (or master)
 gdm() {
     local base
     base=$(git rev-parse --verify main 2>/dev/null && echo main || echo master)
-    git diff "$base"...HEAD
+    _git_diff_or_msg "vs $base" "$base"...HEAD
 }
 
 # gdl: diff vs last commit (HEAD~1) or HEAD~N
-gdl() { git diff "HEAD~${1:-1}"; }
+gdl() {
+    local n="${1:-1}"
+    _git_diff_or_msg "vs HEAD~$n" "HEAD~$n"
+}
 
 # gdc: diff vs a specific commit — fzf picker if no arg given
 gdc() {
@@ -251,7 +266,7 @@ gdc() {
             awk '{print $1}')
         [ -z "$commit" ] && return 0
     fi
-    git diff "$commit"
+    _git_diff_or_msg "vs $commit" "$commit"
 }
 
 # Merge
