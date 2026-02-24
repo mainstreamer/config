@@ -58,7 +58,7 @@ themes() {
     fi
 
     mkdir -p "$(dirname "$target")"
-    cp "$theme_file" "$target"
+    rm -f "$target" && \cp "$theme_file" "$target"
     echo "$name" > "$theme_record"
     echo "Switched to starship theme: $name"
 }
