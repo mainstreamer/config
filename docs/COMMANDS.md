@@ -164,7 +164,7 @@ gcn!                   # git commit --amend --no-edit
 
 **Branch & Checkout**
 ```bash
-gb                     # git branch
+gbr                    # git branch
 gba                    # git branch --all
 gbd                    # git branch --delete
 gbD                    # git branch --delete --force
@@ -188,9 +188,12 @@ gfo                    # git fetch origin
 **Diff** (powered by delta — syntax-highlighted, side-by-side)
 ```bash
 gd                     # git diff (working tree vs index)
+gdh                    # git diff HEAD (unstaged vs last commit)
+gdhf                   # git diff HEAD --stat (files + lines summary only)
 gds                    # git diff --staged
 gdca                   # git diff --cached
 gdm                    # diff current branch vs main/master (whole branch diff)
+gdmf                   # summary of branch diff vs main (files + lines only)
 gdl                    # diff vs last commit (HEAD~1)
 gdl 3                  # diff vs 3 commits ago (HEAD~3)
 gdc                    # fzf commit picker — select any commit to diff against
@@ -253,7 +256,7 @@ gitdiff file1 file2    # Compare any two files with delta (not just git-tracked)
 ### Interactive Git with fzf
 
 ```bash
-gitbr                  # Interactive branch picker — all branches sorted by
+gb                     # Interactive branch picker — all branches sorted by
                        # last commit, preview shows log, Enter = checkout
 
 gitlog                 # Interactive commit browser — full log graph,
@@ -263,7 +266,7 @@ gdc                    # Commit diff picker — fzf list of all commits,
                        # preview shows changed files, Enter = diff vs that commit
 ```
 
-`gitbr` details:
+`gb` details:
 - Lists local + remote branches sorted by most recent commit
 - Preview pane shows last 20 commits on that branch
 - Press Enter to checkout the branch

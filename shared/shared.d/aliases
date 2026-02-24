@@ -83,8 +83,8 @@ if command -v fzf &>/dev/null; then
     }
     alias fj='fcd'
 
-    # gitbr: interactive git branch picker with preview
-    gitbr() {
+    # gb: interactive git branch picker with preview
+    gb() {
         local branch target
         branch=$(git branch --all --sort=-committerdate --format='%(refname:short)' 2>/dev/null | \
             grep -v 'HEAD' | \
@@ -153,7 +153,7 @@ navhelp() {
   fkill           kill process(es) interactively (Tab=multi-select)
 
  GIT INTERACTIVE (fzf)
-  gitbr           branch picker → checkout on Enter
+  gb              branch picker → checkout on Enter
   gitlog          commit browser (Enter=show | Alt+Enter=copy hash)
   gitdiff         pick modified file → view delta diff vs HEAD
 
@@ -201,7 +201,7 @@ alias gcmsg='git commit --message'
 alias gcn!='git commit --verbose --no-edit --amend'
 
 # Branch
-alias gb='git branch'
+alias gbr='git branch'
 alias gba='git branch --all'
 alias gbd='git branch --delete'
 alias gbD='git branch --delete --force'
@@ -237,6 +237,7 @@ _git_diff_or_msg() {
 # Diff
 gd()    { _git_diff_or_msg "working tree" "$@"; }
 gdh()   { _git_diff_or_msg "vs HEAD" HEAD "$@"; }
+gdhf()  { _git_diff_or_msg "vs HEAD" --stat HEAD "$@"; }
 gds()   { _git_diff_or_msg "staged" --staged "$@"; }
 gdca()  { _git_diff_or_msg "cached" --cached "$@"; }
 
@@ -245,6 +246,13 @@ gdm() {
     local base
     base=$(git rev-parse --verify main 2>/dev/null && echo main || echo master)
     _git_diff_or_msg "vs $base" "$base"...HEAD
+}
+
+# gdmf: summary (files + lines changed) of current branch vs main
+gdmf() {
+    local base
+    base=$(git rev-parse --verify main 2>/dev/null && echo main || echo master)
+    _git_diff_or_msg "vs $base" --stat "$base"...HEAD
 }
 
 # gdl: diff vs last commit (HEAD~1) or HEAD~N
@@ -346,7 +354,7 @@ githelp() {
   gcn!        git commit --no-edit --amend
 
  BRANCH / CHECKOUT
-  gb          git branch
+  gbr         git branch
   gba         git branch --all
   gbd <br>    git branch --delete
   gbD <br>    git branch --delete --force
@@ -368,9 +376,11 @@ githelp() {
  DIFF
   gd          git diff
   gdh         git diff HEAD (all unstaged changes vs last commit)
+  gdhf        git diff HEAD --stat (files + lines summary only)
   gds         git diff --staged
   gdca        git diff --cached
   gdm         diff current branch vs main/master (branch diff)
+  gdmf        summary of branch diff vs main (files + lines only)
   gdl [n]     diff vs HEAD~n (default: 1 = last commit)
   gdc [hash]  diff vs commit; fzf picker if no hash given
 
@@ -409,7 +419,7 @@ githelp() {
   gts         git tag --sign
 
  INTERACTIVE (fzf)
-  gitbr       branch picker (fuzzy)
+  gb          branch picker (fuzzy)
   gitlog      commit browser (fuzzy)
   gitdiff     file diff picker - select file and view delta against HEAD
   gdc         commit diff picker (fzf) — see above
