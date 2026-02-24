@@ -85,15 +85,20 @@ if command -v fzf &>/dev/null; then
 
     # gitbr: interactive git branch picker with preview
     gitbr() {
-        local branch
+        local branch target
         branch=$(git branch --all --sort=-committerdate --format='%(refname:short)' 2>/dev/null | \
-            fzf --preview 'git log --oneline --graph --color=always -20 {}' \
+            grep -v 'HEAD' | \
+            fzf --preview 'git log --oneline --graph --color=always -20 {1}' \
                 --preview-window=right:50% \
                 --header='Select branch (Enter=checkout)')
-        if [ -n "$branch" ]; then
-            # Strip 'origin/' prefix for remote branches
-            branch="${branch#origin/}"
-            git checkout "$branch" 2>/dev/null || git checkout -b "$branch" "origin/$branch" 2>/dev/null
+        [ -z "$branch" ] && return 0
+        # Resolve remote refs: origin/foo -> foo (local), remotes/origin/foo -> foo
+        target="${branch#remotes/}"
+        target="${target#origin/}"
+        if git show-ref --verify --quiet "refs/heads/$target"; then
+            git checkout "$target"
+        else
+            git checkout -b "$target" "$branch"
         fi
     }
 
