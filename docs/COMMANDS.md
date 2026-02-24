@@ -186,19 +186,38 @@ gfo                    # git fetch origin
 ```
 
 **Diff** (powered by delta — syntax-highlighted, side-by-side)
+
+Full diff commands (open in pager):
 ```bash
-gd                     # git diff (working tree vs index)
-gdh                    # git diff HEAD (unstaged vs last commit)
-gdhf                   # git diff HEAD --stat (files + lines summary only)
-gds                    # git diff --staged
-gdca                   # git diff --cached
-gdm                    # diff current branch vs main/master (whole branch diff)
-gdmf                   # summary of branch diff vs main (files + lines only)
-gdl                    # diff vs last commit (HEAD~1)
-gdl 3                  # diff vs 3 commits ago (HEAD~3)
-gdc                    # fzf commit picker — select any commit to diff against
-gdc abc1234            # diff vs specific commit hash
+gd                     # working tree vs index (unstaged changes)
+gdh                    # all changes since last commit (staged + unstaged)
+gds                    # staged changes only
+gdca                   # cached/staged changes (same as gds)
+gdm                    # full diff of current branch vs main/master
+gdl                    # full diff vs last commit (HEAD~1)
+gdl 3                  # full diff vs 3 commits ago
+gdc                    # fzf commit picker → full diff vs selected commit
+gdc abc1234            # full diff vs specific commit hash
 ```
+
+File summary commands (`--stat`, colored +/- counts):
+```bash
+gdhf                   # files changed since last commit + colored +/- lines
+gdmf                   # files changed on branch vs main + colored +/- lines
+gdlf                   # files changed vs last commit (HEAD~1)
+gdlf 3                 # files changed vs 3 commits ago
+gdcf                   # fzf commit picker → file summary vs selected commit
+gdcf abc1234           # file summary vs specific commit hash
+```
+
+All `*f` summary commands show output like:
+```
+ src/auth.ts         | 14 +++++++++-----
+ src/user.ts         |  3 +--
+ tests/auth.test.ts  | 28 ++++++++++++++++++++++------
+ 3 files changed, 34 insertions(+), 13 deletions(-)
+```
+With `+` colored green, `-` colored red, counts highlighted.
 
 **Merge & Rebase**
 ```bash
@@ -271,6 +290,47 @@ gdc                    # Commit diff picker — fzf list of all commits,
 - Preview pane shows last 20 commits on that branch
 - Press Enter to checkout the branch
 - Remote branches (origin/...) are auto-checked-out as local tracking branches
+
+### Git Diff — When to Use What
+
+| Scenario | Command |
+|----------|---------|
+| What did I change right now (not staged)? | `gd` |
+| What will be in my next commit? | `gds` |
+| What changed since my last commit (everything)? | `gdh` |
+| Quick list of files I touched since last commit | `gdhf` |
+| What does my whole branch add vs main? | `gdm` |
+| Which files does my branch touch vs main? | `gdmf` |
+| Undo check — what did the last commit change? | `gdl` |
+| What changed 3 commits ago? | `gdl 3` |
+| File list: what did the last commit touch? | `gdlf` |
+| Diff vs some specific past commit? | `gdc` (fzf picker) |
+| Just see which files that commit touched? | `gdcf` (fzf picker) |
+
+**Examples in a feature branch workflow:**
+```bash
+# 1. While coding — see what's not yet staged
+gd
+
+# 2. Before committing — confirm what's staged
+gds
+
+# 3. After committing — review what you just did
+gdl
+
+# 4. Quick sanity check: which files did I touch?
+gdlf
+
+# 5. Before opening a PR — full branch diff vs main
+gdm
+
+# 6. PR summary — list of files changed on branch
+gdmf
+
+# 7. Investigate an old commit interactively
+gdcf          # fzf picker, then see file list
+gdc           # fzf picker, then see full diff
+```
 
 ### Branch Graph
 

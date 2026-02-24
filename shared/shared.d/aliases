@@ -203,8 +203,35 @@ alias gcn!='git commit --verbose --no-edit --amend'
 # Branch
 alias gbr='git branch'
 alias gba='git branch --all'
-alias gbd='git branch --delete'
-alias gbD='git branch --delete --force'
+# gbd: delete branch — fzf picker if no arg given (safe, merged only)
+gbd() {
+    if [ -n "$1" ]; then
+        git branch --delete "$@"
+        return
+    fi
+    local branches
+    branches=$(git branch --format='%(refname:short)' | grep -v "^$(git branch --show-current)$" | \
+        fzf --multi --preview 'git log --oneline --color=always -10 {}' \
+            --preview-window=right:50% \
+            --header='gbd: select branches to delete (Tab=multi) — safe, merged only')
+    [ -z "$branches" ] && return 0
+    echo "$branches" | xargs git branch --delete
+}
+
+# gbD: force-delete branch — fzf picker if no arg given
+gbD() {
+    if [ -n "$1" ]; then
+        git branch --delete --force "$@"
+        return
+    fi
+    local branches
+    branches=$(git branch --format='%(refname:short)' | grep -v "^$(git branch --show-current)$" | \
+        fzf --multi --preview 'git log --oneline --color=always -10 {}' \
+            --preview-window=right:50% \
+            --header='gbD: select branches to FORCE DELETE (Tab=multi) — unmerged allowed!')
+    [ -z "$branches" ] && return 0
+    echo "$branches" | xargs git branch --delete --force
+}
 
 # Checkout / Switch
 alias gco='git checkout'
@@ -222,7 +249,7 @@ alias gl='git pull'
 alias gf='git fetch'
 alias gfo='git fetch origin'
 
-# _git_diff_or_msg: run a git diff command, print a message if output is empty
+# _git_diff_or_msg: run git diff, show paged output or "no changes" message
 _git_diff_or_msg() {
     local label="$1"; shift
     local out
@@ -234,10 +261,45 @@ _git_diff_or_msg() {
     fi
 }
 
+# _git_stat_colored: run git diff --stat, colorise added/removed counts, page if long
+_git_stat_colored() {
+    local label="$1"; shift
+    local out
+    out=$(git diff --stat "$@" 2>&1)
+    if [ -z "$out" ]; then
+        echo "  no changes ($label)"
+        return
+    fi
+    # Highlight: +N green, -N red, summary line yellow
+    local colored
+    colored=$(echo "$out" | \
+        sed 's/\([0-9][0-9]*\) insertion/\x1b[32m\1 insertion\x1b[0m/g' | \
+        sed 's/\([0-9][0-9]*\) deletion/\x1b[31m\1 deletion\x1b[0m/g' | \
+        sed 's/+/\x1b[32m+\x1b[0m/g' | \
+        sed 's/-/\x1b[31m-\x1b[0m/g')
+    # Page only if more than half a screen
+    local lines
+    lines=$(echo "$out" | wc -l)
+    if [ "$lines" -gt 20 ]; then
+        echo "$colored" | less -R
+    else
+        echo "$colored"
+    fi
+}
+
+# _fzf_pick_commit: fzf commit picker, returns hash
+_fzf_pick_commit() {
+    git log --oneline --color=always | \
+        fzf --ansi --no-sort \
+            --preview 'git show --stat --color=always {1}' \
+            --header "${1:-Select commit}" | \
+        awk '{print $1}'
+}
+
 # Diff
 gd()    { _git_diff_or_msg "working tree" "$@"; }
 gdh()   { _git_diff_or_msg "vs HEAD" HEAD "$@"; }
-gdhf()  { _git_diff_or_msg "vs HEAD" --stat HEAD "$@"; }
+gdhf()  { _git_stat_colored "vs HEAD" HEAD "$@"; }
 gds()   { _git_diff_or_msg "staged" --staged "$@"; }
 gdca()  { _git_diff_or_msg "cached" --cached "$@"; }
 
@@ -248,11 +310,11 @@ gdm() {
     _git_diff_or_msg "vs $base" "$base"...HEAD
 }
 
-# gdmf: summary (files + lines changed) of current branch vs main
+# gdmf: colored file summary of current branch vs main
 gdmf() {
     local base
     base=$(git rev-parse --verify main 2>/dev/null && echo main || echo master)
-    _git_diff_or_msg "vs $base" --stat "$base"...HEAD
+    _git_stat_colored "vs $base" "$base"...HEAD
 }
 
 # gdl: diff vs last commit (HEAD~1) or HEAD~N
@@ -261,20 +323,24 @@ gdl() {
     _git_diff_or_msg "vs HEAD~$n" "HEAD~$n"
 }
 
+# gdlf: colored file summary vs last commit (HEAD~1) or HEAD~N
+gdlf() {
+    local n="${1:-1}"
+    _git_stat_colored "vs HEAD~$n" "HEAD~$n"
+}
+
 # gdc: diff vs a specific commit — fzf picker if no arg given
 gdc() {
-    local commit
-    if [ -n "$1" ]; then
-        commit="$1"
-    else
-        commit=$(git log --oneline --color=always | \
-            fzf --ansi --no-sort \
-                --preview 'git show --stat --color=always {1}' \
-                --header 'Select commit to diff against' | \
-            awk '{print $1}')
-        [ -z "$commit" ] && return 0
-    fi
+    local commit="${1:-$(_fzf_pick_commit 'Select commit to diff against')}"
+    [ -z "$commit" ] && return 0
     _git_diff_or_msg "vs $commit" "$commit"
+}
+
+# gdcf: colored file summary vs a specific commit — fzf picker if no arg given
+gdcf() {
+    local commit="${1:-$(_fzf_pick_commit 'Select commit for summary')}"
+    [ -z "$commit" ] && return 0
+    _git_stat_colored "vs $commit" "$commit"
 }
 
 # Merge
@@ -356,8 +422,8 @@ githelp() {
  BRANCH / CHECKOUT
   gbr         git branch
   gba         git branch --all
-  gbd <br>    git branch --delete
-  gbD <br>    git branch --delete --force
+  gbd [br]    delete branch; fzf picker if no arg (Tab=multi, safe/merged)
+  gbD [br]    force-delete branch; fzf picker if no arg (Tab=multi)
   gco <br>    git checkout
   gcb <br>    git checkout -b
   go          git checkout origin/<current> (fetch latest from origin)
@@ -374,15 +440,17 @@ githelp() {
   gfo         git fetch origin
 
  DIFF
-  gd          git diff
-  gdh         git diff HEAD (all unstaged changes vs last commit)
-  gdhf        git diff HEAD --stat (files + lines summary only)
+  gd          git diff (working tree)
+  gdh         git diff HEAD — unstaged vs last commit (full)
+  gdhf        git diff HEAD --stat — files + colored +/- summary
   gds         git diff --staged
   gdca        git diff --cached
-  gdm         diff current branch vs main/master (branch diff)
-  gdmf        summary of branch diff vs main (files + lines only)
-  gdl [n]     diff vs HEAD~n (default: 1 = last commit)
-  gdc [hash]  diff vs commit; fzf picker if no hash given
+  gdm         diff current branch vs main/master (full)
+  gdmf        branch vs main — files + colored +/- summary
+  gdl [n]     diff vs HEAD~n, default n=1 (full)
+  gdlf [n]    diff vs HEAD~n — files + colored +/- summary
+  gdc [hash]  diff vs commit; fzf picker if no hash (full)
+  gdcf [hash] diff vs commit — files + colored +/- summary
 
  MERGE / REBASE
   gm          git merge
@@ -419,11 +487,14 @@ githelp() {
   gts         git tag --sign
 
  INTERACTIVE (fzf)
-  gb          branch picker (fuzzy)
-  gitlog      commit browser (fuzzy)
-  gitdiff     file diff picker - select file and view delta against HEAD
-  gdc         commit diff picker (fzf) — see above
-  diff        compare two files with delta (delta <file1> <file2>)
+  gb          branch picker (fuzzy) — Enter=checkout
+  gbd [br]    branch delete picker — Tab=multi, safe
+  gbD [br]    branch force-delete picker — Tab=multi
+  gitlog      commit browser — Enter=show, Alt+Enter=copy hash
+  gitdiff     file diff picker — view delta diff vs HEAD
+  gdc [hash]  commit diff picker — full diff
+  gdcf [hash] commit diff picker — files+lines summary
+  diff        compare two files with delta
   lg          lazygit
 GITHELP
 }
@@ -870,6 +941,78 @@ atuinhelp() {
 ATUINHELP
 }
 
+# keyshelp: all keyboard shortcuts cheatsheet
+keyshelp() {
+    cat <<'KEYSHELP'
+ Keyboard Shortcuts Cheatsheet
+─────────────────────────────────────────────────
+
+ SHELL — fzf (fuzzy finder)
+  Ctrl+T          fuzzy file search — inserts selected path at cursor
+  Ctrl+R          fuzzy history search — browse and rerun past commands
+  Alt+C           fuzzy cd — pick a directory, puts "cd <dir>" on command line
+  Alt+O           fuzzy open file — Enter=edit in nvim, Alt+Enter=preview with bat
+  Alt+F           fuzzy files+folders combined — files open in nvim, dirs cd into
+
+  macOS: Alt sends Option key. Requires iTerm2: Left Option Key = Esc+
+         Alt+C → ç   Alt+O → ø   Alt+F → ƒ
+
+ SHELL — broot
+  br              launch broot (interactive file tree)
+  Alt+Enter       cd into dir and exit broot
+  Ctrl+Left       collapse directory
+  Ctrl+Right      expand directory
+  /               search in tree
+  :e              open file in $EDITOR
+
+ SHELL — general
+  Ctrl+A          move cursor to beginning of line
+  Ctrl+E          move cursor to end of line
+  Ctrl+W          delete word before cursor
+  Alt+Backspace   delete word before cursor (zsh)
+  Ctrl+U          clear line before cursor
+  Ctrl+K          clear line after cursor
+  Ctrl+L          clear screen
+  Ctrl+Z          suspend process (fg to resume)
+  Ctrl+D          exit shell / EOF
+  Ctrl+C          cancel current command
+
+ GIT — interactive (fzf)
+  gb              branch picker — all branches, preview=log, Enter=checkout
+  gitlog          commit browser — preview=diff, Enter=show, Alt+Enter=copy hash
+  gitdiff         file diff picker — modified files, Enter=view delta diff
+  gdc             commit diff picker — fzf commits, Enter=full diff
+  gdcf            commit diff picker — fzf commits, Enter=file summary
+  gbd             branch delete picker — Tab=multi-select, safe (merged only)
+  gbD             branch force-delete picker — Tab=multi-select
+
+ TMUX (prefix = Ctrl+B)
+  prefix + c      new window
+  prefix + n/p    next/previous window
+  prefix + ,      rename window
+  prefix + %      split vertical
+  prefix + "      split horizontal
+  prefix + arrow  move between panes
+  prefix + z      zoom/unzoom pane
+  prefix + d      detach session
+  prefix + [      scroll mode (q to exit)
+  prefix + ?      list all keybindings
+
+ NEOVIM (leader = Space)
+  <leader>ff      find files (telescope)
+  <leader>fg      live grep
+  <C-n>           toggle file tree
+  ttt             open terminal
+  gd              go to definition
+  gr              go to references
+  K               hover documentation
+  <leader>tg      open lazygit
+  <leader>e       show diagnostics
+  [d / ]d         previous/next diagnostic
+
+KEYSHELP
+}
+
 # utilshelp: list of installed CLI utilities with descriptions
 utilshelp() {
     _u() {
@@ -936,6 +1079,7 @@ info() {
         extracthelp > "$helpdir/archive"
         btophelp    > "$helpdir/btop"
         githelp     > "$helpdir/git"
+        keyshelp    > "$helpdir/keybindings"
         navhelp     > "$helpdir/navigation"
         nethelp     > "$helpdir/networking"
         shellhelp   > "$helpdir/shell"
