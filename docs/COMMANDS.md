@@ -79,11 +79,13 @@ These work in any interactive shell once fzf is loaded:
 | `Ctrl+T` | Fuzzy file search — inserts selected path at cursor |
 | `Ctrl+R` | Fuzzy history search — browse and rerun past commands |
 | `Alt+C` | Fuzzy cd — pick a directory and cd into it |
-| `Esc, C` | Same as Alt+C (portable, works on macOS) |
+| `Alt+O` | Fuzzy open file in editor (Enter=nvim, Alt+Enter=preview) |
+| `Alt+F` | Fuzzy files **and** folders — files open in editor, dirs cd into |
+| `Esc, C` | Same as Alt+C (portable fallback) |
 
-**macOS note**: Alt+C requires iTerm2 configured with Left Option = Esc+
+**macOS note**: Alt keys require iTerm2 with Left Option = Esc+
 (Profiles > Keys > General > Left Option Key > Esc+).
-Alternative: press Esc then C (two keystrokes, works everywhere).
+macOS sends: Alt+C → `ç`, Alt+O → `ø`, Alt+F → `ƒ`.
 
 ### Commands
 
@@ -154,7 +156,8 @@ gc                     # git commit --verbose
 gc!                    # git commit --amend
 gca                    # git commit --all --verbose
 gca!                   # git commit --all --amend
-gcam                   # git add -A && git commit -m (stages all including untracked)
+gcam "fix login bug"   # git add -A && commit; auto-prefixes ticket if branch=ABC-123
+                       # e.g. on branch PROJ-42: commits as "PROJ-42: fix login bug"
 gcmsg                  # git commit --message
 gcn!                   # git commit --amend --no-edit
 ```
@@ -173,7 +176,7 @@ gswc                   # git switch --create
 
 **Push, Pull & Fetch**
 ```bash
-gp                     # git push
+gp                     # git push origin <current-branch> (auto branch name)
 gpf                    # git push --force-with-lease origin <current-branch>
 gpf!                   # git push --force origin <current-branch>
 gpsup                  # git push --set-upstream origin <current-branch>
@@ -184,9 +187,14 @@ gfo                    # git fetch origin
 
 **Diff** (powered by delta — syntax-highlighted, side-by-side)
 ```bash
-gd                     # git diff
+gd                     # git diff (working tree vs index)
 gds                    # git diff --staged
 gdca                   # git diff --cached
+gdm                    # diff current branch vs main/master (whole branch diff)
+gdl                    # diff vs last commit (HEAD~1)
+gdl 3                  # diff vs 3 commits ago (HEAD~3)
+gdc                    # fzf commit picker — select any commit to diff against
+gdc abc1234            # diff vs specific commit hash
 ```
 
 **Merge & Rebase**
@@ -250,6 +258,9 @@ gitbr                  # Interactive branch picker — all branches sorted by
 
 gitlog                 # Interactive commit browser — full log graph,
                        # preview shows diff for selected commit
+
+gdc                    # Commit diff picker — fzf list of all commits,
+                       # preview shows changed files, Enter = diff vs that commit
 ```
 
 `gitbr` details:

@@ -180,7 +180,18 @@ alias gc='git commit --verbose'
 alias gc!='git commit --verbose --amend'
 alias gca='git commit --verbose --all'
 alias gca!='git commit --verbose --all --amend'
-gcam() { git add -A && git commit -m "$*"; }
+gcam() {
+    local branch ticket msg
+    branch=$(git branch --show-current 2>/dev/null)
+    # Auto-prefix ticket if branch is named like ABC-123 or ABC-123-description
+    if [[ "$branch" =~ ^([A-Z]+-[0-9]+) ]]; then
+        ticket="${BASH_REMATCH[1]}"
+        msg="${ticket}: $*"
+    else
+        msg="$*"
+    fi
+    git add -A && git commit -m "$msg"
+}
 alias gcmsg='git commit --message'
 alias gcn!='git commit --verbose --no-edit --amend'
 
@@ -198,7 +209,7 @@ alias gsw='git switch'
 alias gswc='git switch --create'
 
 # Push / Pull / Fetch
-alias gp='git push'
+alias gp='git push origin $(git branch --show-current)'
 alias gpf='git push --force-with-lease origin $(git branch --show-current)'
 alias gpf!='git push --force origin $(git branch --show-current)'
 alias gpsup='git push --set-upstream origin $(git branch --show-current)'
@@ -211,6 +222,32 @@ alias gd='git diff'
 alias gdh='git diff HEAD'
 alias gds='git diff --staged'
 alias gdca='git diff --cached'
+
+# gdm: diff current branch vs main (or master)
+gdm() {
+    local base
+    base=$(git rev-parse --verify main 2>/dev/null && echo main || echo master)
+    git diff "$base"...HEAD
+}
+
+# gdl: diff vs last commit (HEAD~1) or HEAD~N
+gdl() { git diff "HEAD~${1:-1}"; }
+
+# gdc: diff vs a specific commit — fzf picker if no arg given
+gdc() {
+    local commit
+    if [ -n "$1" ]; then
+        commit="$1"
+    else
+        commit=$(git log --oneline --color=always | \
+            fzf --ansi --no-sort \
+                --preview 'git show --stat --color=always {1}' \
+                --header 'Select commit to diff against' | \
+            awk '{print $1}')
+        [ -z "$commit" ] && return 0
+    fi
+    git diff "$commit"
+}
 
 # Merge
 alias gm='git merge'
@@ -284,7 +321,7 @@ githelp() {
   gc!         git commit --amend
   gca         git commit --all
   gca!        git commit --all --amend
-  gcam <msg>  git add -A && git commit -m
+  gcam <msg>  git add -A && commit (auto-prefixes ticket if branch=ABC-123)
   gcmsg <msg> git commit --message
   gcn!        git commit --no-edit --amend
 
@@ -300,7 +337,7 @@ githelp() {
   gswc <br>   git switch --create
 
  PUSH / PULL / FETCH
-  gp          git push
+  gp          git push origin <current> (auto branch name)
   gpf         git push --force-with-lease origin <current>
   gpf!        git push --force origin <current>
   gpsup       git push --set-upstream origin <current>
@@ -313,6 +350,9 @@ githelp() {
   gdh         git diff HEAD (all unstaged changes vs last commit)
   gds         git diff --staged
   gdca        git diff --cached
+  gdm         diff current branch vs main/master (branch diff)
+  gdl [n]     diff vs HEAD~n (default: 1 = last commit)
+  gdc [hash]  diff vs commit; fzf picker if no hash given
 
  MERGE / REBASE
   gm          git merge
@@ -352,6 +392,7 @@ githelp() {
   gitbr       branch picker (fuzzy)
   gitlog      commit browser (fuzzy)
   gitdiff     file diff picker - select file and view delta against HEAD
+  gdc         commit diff picker (fzf) — see above
   diff        compare two files with delta (delta <file1> <file2>)
   lg          lazygit
 GITHELP

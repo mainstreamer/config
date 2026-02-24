@@ -1,6 +1,6 @@
 #!/bin/sh
 # fzf: key-bindings, completion, and custom helpers
-# Shortcuts: Ctrl+T (file paste), Ctrl+R (history), Alt+C (cd), Alt+O (open file)
+# Shortcuts: Ctrl+T (file paste), Ctrl+R (history), Alt+C (cd), Alt+O (open file), Alt+F (files+folders)
 # macOS: Option+C/O work too (sends ç/ø); Esc+c / Esc+o as universal fallback
 
 command -v fzf &>/dev/null || return 0
@@ -111,6 +111,34 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
         bind -x '"\eo": __fzf_open_file__'
         # macOS: Option+O sends 'ø' instead of \eo
         [[ "$(uname -s)" == "Darwin" ]] && bind -x '"ø": __fzf_open_file__'
+
+        # Alt+F: fuzzy files+folders combined — files open in editor, dirs cd into
+        __fzf_find_all__() {
+            local fd_cmd find_cmd entry type
+            if command -v fd &>/dev/null; then
+                fd_cmd='fd --hidden --follow --exclude .git'
+            else
+                fd_cmd='command find -L . -mindepth 1 -not -path "*/\.*" 2>/dev/null | cut -b3-'
+            fi
+            entry=$(eval "$fd_cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
+                --preview '
+                    if [ -d {} ]; then
+                        eza --tree --icons --level=2 {} 2>/dev/null || ls {}
+                    else
+                        bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || head -300 {}
+                    fi' \
+                --header='Alt+F: files+folders | Enter=open/cd')
+            [[ -z "$entry" ]] && return
+            if [[ -d "$entry" ]]; then
+                READLINE_LINE="cd -- ${entry@Q}"
+                READLINE_POINT=${#READLINE_LINE}
+            else
+                nvim "$entry"
+            fi
+        }
+        bind -x '"\ef": __fzf_find_all__'
+        # macOS: Option+F sends 'ƒ'
+        [[ "$(uname -s)" == "Darwin" ]] && bind -x '"ƒ": __fzf_find_all__'
         ;;
     zsh)
         # Alt+C: fuzzy cd — places "cd <dir>" on command line, Enter to execute
@@ -156,5 +184,38 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
         bindkey '\eo' fzf-open-file-widget
         # macOS: Option+O sends 'ø'
         [[ "$(uname -s)" == "Darwin" ]] && bindkey 'ø' fzf-open-file-widget 2>/dev/null
+
+        # Alt+F: fuzzy files+folders combined — files open in editor, dirs cd into
+        fzf-find-all-widget() {
+            local fd_cmd entry
+            if command -v fd &>/dev/null; then
+                fd_cmd='fd --hidden --follow --exclude .git'
+            else
+                fd_cmd='command find -L . -mindepth 1 -not -path "*/\.*" 2>/dev/null | cut -b3-'
+            fi
+            entry=$(eval "$fd_cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
+                --preview '
+                    if [ -d {} ]; then
+                        eza --tree --icons --level=2 {} 2>/dev/null || ls {}
+                    else
+                        bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || head -300 {}
+                    fi' \
+                --header='Alt+F: files+folders | Enter=open/cd')
+            if [[ -n "$entry" ]]; then
+                if [[ -d "$entry" ]]; then
+                    BUFFER="cd -- ${(q)entry}"
+                    CURSOR=${#BUFFER}
+                else
+                    zle reset-prompt
+                    nvim "$entry"
+                    return
+                fi
+            fi
+            zle reset-prompt
+        }
+        zle -N fzf-find-all-widget
+        bindkey '\ef' fzf-find-all-widget
+        # macOS: Option+F sends 'ƒ'
+        [[ "$(uname -s)" == "Darwin" ]] && bindkey 'ƒ' fzf-find-all-widget 2>/dev/null
         ;;
 esac
