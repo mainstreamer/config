@@ -2,6 +2,125 @@
 # Switch between starship prompt themes
 # Themes are stored as shared/themes/starship-<name>.toml in the dotfiles repo
 
+# Write the theme preview python script to a given path.
+_themes_preview_write_script() {
+    cat > "$1" << 'PYEOF'
+import sys, re
+
+R = '\033[0m'
+
+def rgb(h):
+    h = h.lstrip('#')
+    return int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+
+def fg(h):
+    try: r,g,b = rgb(h); return f'\033[38;2;{r};{g};{b}m'
+    except: return ''
+
+def bg(h):
+    try: r,g,b = rgb(h); return f'\033[48;2;{r};{g};{b}m'
+    except: return ''
+
+content = open(sys.argv[1]).read()
+
+# Parse palette
+colors = {}
+pal_m = re.search(r"^palette\s*=\s*'(\w+)'", content, re.MULTILINE)
+if pal_m:
+    ps = re.search(r'\[palettes\.' + re.escape(pal_m.group(1)) + r'\](.*?)(?=^\[|\Z)',
+                   content, re.DOTALL | re.MULTILINE)
+    if ps:
+        for m in re.finditer(r"(\w+)\s*=\s*'(#[0-9a-fA-F]{6})'", ps.group(1)):
+            colors[m.group(1)] = m.group(2)
+
+def resolve(c):
+    c = c.strip()
+    return c if c.startswith('#') else colors.get(c, '#666666')
+
+# Parse format string
+fmt_m = re.search(r'^format\s*=\s*"""\n?(.*?)"""', content, re.DOTALL | re.MULTILINE)
+if not fmt_m:
+    print("(no format found)"); sys.exit(0)
+fmt = fmt_m.group(1)
+
+# Section style: bg and fg from [section] style = "..."
+def section_colors(name):
+    m = re.search(r'\[' + re.escape(name) + r'\][^\[]*?style\s*=\s*"([^"]*)"', content, re.DOTALL)
+    if not m: return None, None
+    style = m.group(1)
+    bm = re.search(r'bg:(color_\w+|#[0-9a-fA-F]{6})', style)
+    fm = re.search(r'fg:(color_\w+|#[0-9a-fA-F]{6})', style)
+    return (resolve(bm.group(1)) if bm else None, resolve(fm.group(1)) if fm else None)
+
+# fg color from a section's format string (inner group)
+def format_fg(name):
+    m = re.search(r'\[' + re.escape(name) + r'\][^\[]*?^format\s*=\s*\'([^\']+)\'',
+                  content, re.DOTALL | re.MULTILINE)
+    if not m: return None
+    fm = re.search(r'fg:(color_\w+|#[0-9a-fA-F]{6})', m.group(1))
+    return resolve(fm.group(1)) if fm else None
+
+SEGMENT_MAP = [
+    (['$os', '$username'],                          'os',             ' 󰣛 user '),
+    (['$directory'],                                'directory',      ' ~/Projects/repo '),
+    (['$git_branch', '$git_status'],                'git_branch',     '  main ✓ '),
+    (['$nodejs','$rust','$golang','$python','$php'], 'nodejs',         '  v20 '),
+    (['$docker_context', '$conda'],                 'docker_context', '  app '),
+    (['$time'],                                     'time',           '  21:22 '),
+]
+
+segs = []
+for markers, section, label in SEGMENT_MAP:
+    if not any(m in fmt for m in markers): continue
+    sbg, sfg = section_colors(section)
+    if not sbg: continue
+    ifg = format_fg(section) or sfg or '#ffffff'
+    segs.append((label, sbg, ifg))
+
+if not segs:
+    print("(could not parse segments)"); sys.exit(0)
+
+# Detect separator: look at text inside first transition bracket []
+sep_text = ''
+trans_m = re.search(r'\]\(fg:(?:color_\w+|#[0-9a-fA-F]{6}) bg:(?:color_\w+|#[0-9a-fA-F]{6})\)', fmt)
+if trans_m:
+    pre = fmt[:trans_m.start()]
+    bm = re.search(r'\[([^\]]*)\]\s*$', pre)
+    sep_text = bm.group(1) if bm else ''
+
+powerline = sep_text in ('', '')
+block_sep = sep_text if not powerline else None
+
+# Render bar
+out = ''
+for i, (text, bg_c, fg_c) in enumerate(segs):
+    if i == 0:
+        if powerline: out += fg(bg_c) + '' + R
+    else:
+        prev_bg = segs[i-1][1]
+        if powerline: out += bg(bg_c) + fg(prev_bg) + '' + R
+        else:         out += bg(bg_c) + fg(prev_bg) + (block_sep or '|') + R
+    out += bg(bg_c) + fg(fg_c) + text + R
+
+if segs:
+    last_bg = segs[-1][1]
+    if powerline: out += fg(last_bg) + '' + R
+
+print()
+print('  ' + out)
+print()
+
+# Color palette swatches
+swatch = '  Palette: '
+for name, hex_val in colors.items():
+    if name.startswith('color_'):
+        r,g,b = rgb(hex_val)
+        swatch += f'\033[48;2;{r};{g};{b}m   {R}'
+print(swatch)
+print()
+PYEOF
+}
+
 themes() {
     local theme_dir="${DOTFILES_DIR:-${DOTFILES_TARGET:-$HOME/.epicli}}/shared/themes"
     local target="$HOME/.config/starship.toml"
@@ -36,6 +155,11 @@ themes() {
     [ -f "$theme_record" ] && current=$(cat "$theme_record")
 
     if command -v fzf &>/dev/null; then
+        # Write preview script to temp file so fzf subshell can access it
+        local _preview_py
+        _preview_py=$(mktemp /tmp/themes_preview_XXXXXX.py)
+        _themes_preview_write_script "$_preview_py"
+
         # Build list: default first, then named themes
         local names=()
         [ -f "$theme_dir/starship.toml" ] && names+=("gruvbox-rainbow (default)")
@@ -55,10 +179,13 @@ themes() {
                 else
                     f=\"$theme_dir/starship-\${name}.toml\"
                 fi
+                python3 \"$_preview_py\" \"\$f\"
+                echo '─────────────────────────────────────────'
                 bat --color=always --style=plain \"\$f\" 2>/dev/null || cat \"\$f\"
             " \
-            --preview-window=right:60%)
+            --preview-window=right:55%)
 
+        rm -f "$_preview_py"
         [ -z "$picked" ] && return 0
         local name
         name=$(echo "$picked" | sed 's/ (default)//')
