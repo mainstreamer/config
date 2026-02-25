@@ -22,7 +22,7 @@ $python\
 [](fg:color_blue bg:color_bg3)\
 $docker_context\
 $conda\
-[](fg:color_fg0 bg:color_bg1)\
+[](fg:color_bg3 bg:color_bg1)\
 $time\
 [ ](fg:color_bg1)\
 $line_break$character"""

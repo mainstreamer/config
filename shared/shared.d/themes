@@ -7,58 +7,74 @@ themes() {
     local target="$HOME/.config/starship.toml"
     local theme_record="$HOME/.config/starship-theme"
 
-    # No args: list available themes
-    if [ -z "$1" ] || [ "$1" = "list" ] || [ "$1" = "--list" ] || [ "$1" = "-l" ]; then
-        local current=""
-        [ -f "$theme_record" ] && current=$(cat "$theme_record")
-
-        echo "Available starship themes:"
-        echo ""
-
-        # Default (gruvbox rainbow)
-        if [ -f "$theme_dir/starship.toml" ]; then
-            if [ "$current" = "default" ] || [ "$current" = "gruvbox-rainbow" ]; then
-                echo "  * gruvbox-rainbow (default) [active]"
-            else
-                echo "    gruvbox-rainbow (default)"
-            fi
+    _themes_switch() {
+        local name="$1" theme_file
+        if [ "$name" = "default" ] || [ "$name" = "gruvbox-rainbow" ]; then
+            theme_file="$theme_dir/starship.toml"
+            name="default"
+        else
+            theme_file="$theme_dir/starship-${name}.toml"
         fi
+        if [ ! -f "$theme_file" ]; then
+            echo "Theme '$name' not found."
+            return 1
+        fi
+        mkdir -p "$(dirname "$target")"
+        rm -f "$target" && \cp "$theme_file" "$target"
+        echo "$name" > "$theme_record"
+        echo "Switched to starship theme: $name"
+    }
 
-        # Named themes
+    # With arg: switch directly
+    if [ -n "$1" ] && [ "$1" != "list" ] && [ "$1" != "--list" ] && [ "$1" != "-l" ]; then
+        _themes_switch "$1"
+        return
+    fi
+
+    # No args (or list): fuzzy picker if fzf available, plain list otherwise
+    local current=""
+    [ -f "$theme_record" ] && current=$(cat "$theme_record")
+
+    if command -v fzf &>/dev/null; then
+        # Build list: default first, then named themes
+        local names=()
+        [ -f "$theme_dir/starship.toml" ] && names+=("gruvbox-rainbow (default)")
+        for f in "$theme_dir"/starship-*.toml; do
+            [ -f "$f" ] || continue
+            names+=("$(basename "$f" | sed 's/^starship-//;s/\.toml$//')")
+        done
+
+        local picked
+        picked=$(printf '%s\n' "${names[@]}" | fzf \
+            --prompt="theme > " \
+            --header="current: ${current:-default}  |  Enter=apply  Esc=cancel" \
+            --preview="
+                name=\$(echo {} | sed 's/ (default)//')
+                if [ \"\$name\" = 'gruvbox-rainbow' ]; then
+                    f=\"$theme_dir/starship.toml\"
+                else
+                    f=\"$theme_dir/starship-\${name}.toml\"
+                fi
+                bat --color=always --style=plain \"\$f\" 2>/dev/null || cat \"\$f\"
+            " \
+            --preview-window=right:60%)
+
+        [ -z "$picked" ] && return 0
+        local name
+        name=$(echo "$picked" | sed 's/ (default)//')
+        _themes_switch "$name"
+    else
+        # Plain list fallback
+        echo "Available starship themes (install fzf for interactive picker):"
+        echo ""
+        [ -f "$theme_dir/starship.toml" ] && \
+            echo "  $([ "$current" = "default" ] && echo '*' || echo ' ') gruvbox-rainbow (default)"
         for f in "$theme_dir"/starship-*.toml; do
             [ -f "$f" ] || continue
             local name=$(basename "$f" | sed 's/^starship-//;s/\.toml$//')
-            if [ "$current" = "$name" ]; then
-                echo "  * $name [active]"
-            else
-                echo "    $name"
-            fi
+            echo "  $([ "$current" = "$name" ] && echo '*' || echo ' ') $name"
         done
-
         echo ""
         echo "Usage: themes <name>"
-        return 0
     fi
-
-    # Switch theme
-    local name="$1"
-    local theme_file
-
-    if [ "$name" = "default" ] || [ "$name" = "gruvbox-rainbow" ]; then
-        theme_file="$theme_dir/starship.toml"
-        name="default"
-    else
-        theme_file="$theme_dir/starship-${name}.toml"
-    fi
-
-    if [ ! -f "$theme_file" ]; then
-        echo "Theme '$name' not found."
-        echo "Run 'themes' to see available themes."
-        return 1
-    fi
-
-    mkdir -p "$(dirname "$target")"
-    rm -f "$target" && \cp "$theme_file" "$target"
-    echo "$name" > "$theme_record"
-    echo "Switched to starship theme: $name"
 }
