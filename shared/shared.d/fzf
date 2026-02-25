@@ -22,6 +22,19 @@ if command -v fd &>/dev/null; then
     export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 fi
 
+# When at a filesystem root (/ /etc /opt etc.), fd/find from '.' scans the entire
+# system and hangs. Return explicit useful search paths for shallow roots, '.' otherwise.
+_fzf_search_roots() {
+    case "$PWD" in
+        /|/bin|/boot|/dev|/etc|/lib*|/opt|/proc|/run|/srv|/sys|/tmp|/usr|/var)
+            echo "$HOME" /opt /etc /srv /var/www /root
+            ;;
+        *)
+            echo .
+            ;;
+    esac
+}
+
 # Preview: bat for files, eza/ls for directories
 export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || head -300 {}'"
 export FZF_ALT_C_OPTS="--preview 'eza --tree --icons --level=1 {} 2>/dev/null || ls {}'"
@@ -78,8 +91,13 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
     bash)
         # Alt+C: fuzzy cd — places "cd <dir>" on command line, Enter to execute
         __fzf_cd_clean__() {
-            local cmd dir
-            cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' \\) -prune -o -type d -print 2>/dev/null | command cut -b3-"}"
+            local cmd dir roots
+            roots=$(_fzf_search_roots)
+            if command -v fd &>/dev/null; then
+                cmd="fd --type d --hidden --follow --exclude .git --exclude proc --exclude sys . $roots"
+            else
+                cmd="command find -L $roots -mindepth 1 -type d -not -path '*/\.*' 2>/dev/null"
+            fi
             dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)
             if [[ -n "$dir" ]]; then
                 READLINE_LINE="cd -- ${dir@Q}"
@@ -92,8 +110,13 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
 
         # Alt+O: fuzzy open file — Enter=edit in $EDITOR, Alt+Enter=preview
         __fzf_open_file__() {
-            local cmd out key file
-            cmd="${FZF_DEFAULT_COMMAND:-"command find -L . -mindepth 1 -type f -not -path '*/\.*' 2>/dev/null"}"
+            local cmd out key file roots
+            roots=$(_fzf_search_roots)
+            if command -v fd &>/dev/null; then
+                cmd="fd --type f --hidden --follow --exclude .git --exclude proc --exclude sys . $roots"
+            else
+                cmd="command find -L $roots -mindepth 1 -type f -not -path '*/\.*' 2>/dev/null"
+            fi
             out=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
                 --preview 'bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || xxd {} | head -300' \
                 --expect=alt-enter \
@@ -117,11 +140,12 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
 
         # Alt+F: fuzzy files+folders combined — files open in editor, dirs cd into
         __fzf_find_all__() {
-            local fd_cmd find_cmd entry type
+            local fd_cmd entry roots
+            roots=$(_fzf_search_roots)
             if command -v fd &>/dev/null; then
-                fd_cmd='fd --hidden --follow --exclude .git'
+                fd_cmd="fd --hidden --follow --exclude .git --exclude proc --exclude sys . $roots"
             else
-                fd_cmd='command find -L . -mindepth 1 -not -path "*/\.*" 2>/dev/null | cut -b3-'
+                fd_cmd="command find -L $roots -mindepth 1 -not -path '*/\.*' 2>/dev/null"
             fi
             entry=$(eval "$fd_cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
                 --preview '
@@ -146,8 +170,13 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
     zsh)
         # Alt+C: fuzzy cd — places "cd <dir>" on command line, Enter to execute
         fzf-cd-clean-widget() {
-            local cmd dir
-            cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' \\) -prune -o -type d -print 2>/dev/null | command cut -b3-"}"
+            local cmd dir roots
+            roots=$(_fzf_search_roots)
+            if command -v fd &>/dev/null; then
+                cmd="fd --type d --hidden --follow --exclude .git --exclude proc --exclude sys . $roots"
+            else
+                cmd="command find -L $roots -mindepth 1 -type d -not -path '*/\.*' 2>/dev/null"
+            fi
             dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)
             if [[ -n "$dir" ]]; then
                 BUFFER="cd -- ${(q)dir}"
@@ -162,8 +191,13 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
 
         # Alt+O: fuzzy open file — Enter=edit in $EDITOR, Alt+Enter=preview
         fzf-open-file-widget() {
-            local cmd out key file
-            cmd="${FZF_DEFAULT_COMMAND:-"command find -L . -mindepth 1 -type f -not -path '*/\.*' 2>/dev/null"}"
+            local cmd out key file roots
+            roots=$(_fzf_search_roots)
+            if command -v fd &>/dev/null; then
+                cmd="fd --type f --hidden --follow --exclude .git --exclude proc --exclude sys . $roots"
+            else
+                cmd="command find -L $roots -mindepth 1 -type f -not -path '*/\.*' 2>/dev/null"
+            fi
             out=$(eval "$cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
                 --preview 'bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || xxd {} | head -300' \
                 --expect=alt-enter \
@@ -190,11 +224,12 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
 
         # Alt+F: fuzzy files+folders combined — files open in editor, dirs cd into
         fzf-find-all-widget() {
-            local fd_cmd entry
+            local fd_cmd entry roots
+            roots=$(_fzf_search_roots)
             if command -v fd &>/dev/null; then
-                fd_cmd='fd --hidden --follow --exclude .git'
+                fd_cmd="fd --hidden --follow --exclude .git --exclude proc --exclude sys . $roots"
             else
-                fd_cmd='command find -L . -mindepth 1 -not -path "*/\.*" 2>/dev/null | cut -b3-'
+                fd_cmd="command find -L $roots -mindepth 1 -not -path '*/\.*' 2>/dev/null"
             fi
             entry=$(eval "$fd_cmd" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" fzf \
                 --preview '

@@ -188,9 +188,10 @@ alias gca!='git commit --verbose --all --amend'
 gcam() {
     local branch ticket msg
     branch=$(git branch --show-current 2>/dev/null)
-    # Auto-prefix ticket if branch is named like ABC-123 or ABC-123-description
-    if [[ "$branch" =~ ^([A-Z]+-[0-9]+) ]]; then
-        ticket="${BASH_REMATCH[1]}"
+    # Auto-prefix ticket if branch is named like ABC-123 or ABC-123-description.
+    # Use sed instead of BASH_REMATCH — works in both bash and zsh.
+    ticket=$(echo "$branch" | sed -En 's/^([A-Z]+-[0-9]+).*/\1/p')
+    if [[ -n "$ticket" ]]; then
         msg="${ticket}: $*"
     else
         msg="$*"
