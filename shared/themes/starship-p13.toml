@@ -98,7 +98,7 @@ truncate_to_repo = false
 [git_branch]
 symbol = ""
 style = "bg:color_aurora_green"
-format = '[[ $symbol $branch ](fg:color_polar1 bg:color_aurora_green)]($style)'
+format = '[[ $symbol ](fg:#ffffff bg:color_aurora_green)[$branch ](fg:color_polar1 bg:color_aurora_green)]($style)'
 
 [git_status]
 style = "bg:color_aurora_green"

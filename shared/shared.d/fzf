@@ -156,12 +156,14 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
                     fi' \
                 --header='Alt+F: files+folders | Enter=open/cd')
             [[ -z "$entry" ]] && return
+            local target
             if [[ -d "$entry" ]]; then
-                READLINE_LINE="cd -- ${entry@Q}"
-                READLINE_POINT=${#READLINE_LINE}
+                target="$entry"
             else
-                nvim "$entry"
+                target="$(dirname "$entry")"
             fi
+            READLINE_LINE="cd -- ${target@Q}"
+            READLINE_POINT=${#READLINE_LINE}
         }
         bind -x '"\ef": __fzf_find_all__'
         # macOS: Option+F sends 'ƒ'
@@ -240,14 +242,14 @@ case "${SHELL_TYPE:-${SHELL##*/}}" in
                     fi' \
                 --header='Alt+F: files+folders | Enter=open/cd')
             if [[ -n "$entry" ]]; then
+                local target
                 if [[ -d "$entry" ]]; then
-                    BUFFER="cd -- ${(q)entry}"
-                    CURSOR=${#BUFFER}
+                    target="$entry"
                 else
-                    zle reset-prompt
-                    nvim "$entry"
-                    return
+                    target="$(dirname "$entry")"
                 fi
+                BUFFER="cd -- ${(q)target}"
+                CURSOR=${#BUFFER}
             fi
             zle reset-prompt
         }
