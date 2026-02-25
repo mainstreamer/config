@@ -28,7 +28,7 @@ MCowBQYDK2VwAyEA3bLWzARwyxqxk48f1bq+IJhfZfjPVEA+5l2BqupFwTU=
 -----END PUBLIC KEY-----"
 
 # Config
-VERSION="3.3.2"
+VERSION="3.3.4"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -39,6 +39,7 @@ MANIFEST_FILE="$HOME/.${PROJECT_NAME}-manifest"
 OS="$(uname -s)"
 DEV_MODE=false
 LOCAL_MODE=false
+FORCE_DOWNLOAD=false
 
 # Colors
 RED='\033[0;31m'
@@ -153,7 +154,8 @@ setup_config_dir() {
     fi
 
     # Check for unified structure (shared/ and nvim/ at root)
-    if [ -n "$script_dir" ] && [ -d "$script_dir/shared" ] && [ -d "$script_dir/nvim" ]; then
+    # Skip repo detection when --update is passed (epicli update must always download fresh)
+    if [ "$FORCE_DOWNLOAD" != "true" ] && [ -n "$script_dir" ] && [ -d "$script_dir/shared" ] && [ -d "$script_dir/nvim" ]; then
         DOTFILES_DIR="$script_dir"
         info "Running from repo: $DOTFILES_DIR"
         return
@@ -389,6 +391,10 @@ parse_args() {
                 ;;
             --stow-only)
                 STOW_ONLY=true
+                shift
+                ;;
+            --update)
+                FORCE_DOWNLOAD=true
                 shift
                 ;;
             --help|-h)

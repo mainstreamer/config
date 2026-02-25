@@ -163,13 +163,13 @@ cmd_update() {
     fi
 
     info "Updating $local_ver -> $remote_ver${flags:+ (profile:$flags)}"
-    curl -fsSL "$BASE_URL/i" | bash -s -- $flags
+    curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags
 }
 
 cmd_force_update() {
     local flags=$(_build_update_flags "$@")
     info "Forcing fresh installation${flags:+ (profile:$flags)}..."
-    curl -fsSL "$BASE_URL/i" | bash -s -- $flags
+    curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags
 }
 
 # Generate and install the standalone CLI helper to ~/.local/bin
@@ -260,12 +260,12 @@ case "${1:-status}" in
     update)
         shift
         flags=$(_build_flags "$@")
-        curl -fsSL "$URL/i" | bash -s -- $flags
+        curl -fsSL "$URL/i" | bash -s -- --update $flags
         ;;
     force-update|--force)
         shift
         flags=$(_build_flags "$@")
-        curl -fsSL "$URL/i" | bash -s -- $flags
+        curl -fsSL "$URL/i" | bash -s -- --update $flags
         ;;
     uninstall)
         [ -f "$DOTFILES/install.sh" ] && bash "$DOTFILES/install.sh" uninstall || curl -fsSL "$URL/i" | bash -s -- uninstall
