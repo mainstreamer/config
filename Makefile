@@ -355,4 +355,4 @@ archive:
 	@rsync -a --exclude='.git' --exclude='*.tar.gz' --exclude='.DS_Store' . /tmp/config-master/
 	@tar -czf $(ARCHIVE_NAME) -C /tmp config-master
 	@rm -rf /tmp/config-master
-	@echo "Created $(ARCHIVE_NAME) ($(shell du -h $(ARCHIVE_NAME) | cut -f1))"
+	@printf "Created $(ARCHIVE_NAME) (%s)\n" "$$(du -h $(ARCHIVE_NAME) | cut -f1)"

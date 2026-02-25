@@ -72,9 +72,11 @@ link_configs() {
 link_shell() {
     info "Installing shell config..."
 
-    # Remove old symlinks or stale dirs from previous installs
-    rm -f "$HOME/.bashrc" 2>/dev/null || true
-    rm -f "$HOME/.zshrc" 2>/dev/null || true
+    # Remove old symlinks or stale dirs from previous installs.
+    # All shell config targets are removed unconditionally — this handles legacy
+    # symlink-based setups (e.g. ~/.bash_profile -> ~/.epicli/shared/.bash_profile)
+    # where cp would fail with "source and destination are the same file".
+    rm -f "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile" 2>/dev/null || true
     rm -rf "$HOME/.bashrc.d" 2>/dev/null || true
     rm -rf "$HOME/.zshrc.d" 2>/dev/null || true
     rm -rf "$HOME/.shellrc.d" 2>/dev/null || true
