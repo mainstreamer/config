@@ -1,0 +1,69 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Tokyo structure — Kanagawa palette (p4)
+# C1=#957fb8  C2=#e6c384  C3=#98bb6c  C4=#7e9cd8  C5=#363646
+
+format = """
+[░▒▓](#957fb8)\
+[  ](bg:#957fb8 fg:#1f1f28)\
+[](bg:#e6c384 fg:#957fb8)\
+$directory\
+[](fg:#e6c384 bg:#98bb6c)\
+$git_branch\
+$git_status\
+[](fg:#98bb6c bg:#7e9cd8)\
+$nodejs\
+$rust\
+$golang\
+$php\
+[](fg:#7e9cd8 bg:#363646)\
+$time\
+[ ](fg:#363646)\
+\n$character"""
+
+[directory]
+style = "fg:#1f1f28 bg:#e6c384"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+[git_branch]
+symbol = ""
+style = "bg:#98bb6c"
+format = '[[ $symbol $branch ](fg:#e6c384 bg:#98bb6c)]($style)'
+
+[git_status]
+style = "bg:#98bb6c"
+format = '[[($all_status$ahead_behind )](fg:#e6c384 bg:#98bb6c)]($style)'
+
+[nodejs]
+symbol = ""
+style = "bg:#7e9cd8"
+format = '[[ $symbol ($version) ](fg:#e6c384 bg:#7e9cd8)]($style)'
+
+[rust]
+symbol = ""
+style = "bg:#7e9cd8"
+format = '[[ $symbol ($version) ](fg:#e6c384 bg:#7e9cd8)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:#7e9cd8"
+format = '[[ $symbol ($version) ](fg:#e6c384 bg:#7e9cd8)]($style)'
+
+[php]
+symbol = ""
+style = "bg:#7e9cd8"
+format = '[[ $symbol ($version) ](fg:#e6c384 bg:#7e9cd8)]($style)'
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#363646"
+format = '[[  $time ](fg:#c8c093 bg:#363646)]($style)'

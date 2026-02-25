@@ -1,0 +1,69 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Tokyo structure — Executive Gold palette (p13)
+# C1=#6C2BFF  C2=#5a28c0  C3=#42366a  C4=#332b52  C5=#252035
+
+format = """
+[░▒▓](#6C2BFF)\
+[  ](bg:#6C2BFF fg:#f0ece0)\
+[](bg:#5a28c0 fg:#6C2BFF)\
+$directory\
+[](fg:#5a28c0 bg:#42366a)\
+$git_branch\
+$git_status\
+[](fg:#42366a bg:#332b52)\
+$nodejs\
+$rust\
+$golang\
+$php\
+[](fg:#332b52 bg:#252035)\
+$time\
+[ ](fg:#252035)\
+\n$character"""
+
+[directory]
+style = "fg:#f0ece0 bg:#5a28c0"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+[git_branch]
+symbol = ""
+style = "bg:#42366a"
+format = '[[ $symbol $branch ](fg:#c9a84e bg:#42366a)]($style)'
+
+[git_status]
+style = "bg:#42366a"
+format = '[[($all_status$ahead_behind )](fg:#c9a84e bg:#42366a)]($style)'
+
+[nodejs]
+symbol = ""
+style = "bg:#332b52"
+format = '[[ $symbol ($version) ](fg:#c9a84e bg:#332b52)]($style)'
+
+[rust]
+symbol = ""
+style = "bg:#332b52"
+format = '[[ $symbol ($version) ](fg:#c9a84e bg:#332b52)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:#332b52"
+format = '[[ $symbol ($version) ](fg:#c9a84e bg:#332b52)]($style)'
+
+[php]
+symbol = ""
+style = "bg:#332b52"
+format = '[[ $symbol ($version) ](fg:#c9a84e bg:#332b52)]($style)'
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#252035"
+format = '[[  $time ](fg:#c9a84e bg:#252035)]($style)'
