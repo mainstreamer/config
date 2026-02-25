@@ -23,8 +23,7 @@ $time\
 [directory]
 style = "fg:#e8e0f8 bg:#8b6cc8"
 format = "[ $path ]($style)"
-truncation_length = 3
-truncation_symbol = "…/"
+truncation_length = 100
 
 [directory.substitutions]
 "Documents" = "󰈙 "
@@ -65,7 +64,7 @@ format = '[[ $symbol ($version) ](fg:#8b6cc8 bg:#9880d0)]($style)'
 disabled = false
 time_format = "%R"
 style = "bg:#272340"
-format = '[[   $time ](fg:#c8b8f0 bg:#272340)]($style)'
+format = '[[   $time](fg:#c8b8f0 bg:#272340)]($style)'
 
 [character]
 disabled = false
