@@ -28,7 +28,7 @@ MCowBQYDK2VwAyEA3bLWzARwyxqxk48f1bq+IJhfZfjPVEA+5l2BqupFwTU=
 -----END PUBLIC KEY-----"
 
 # Config
-VERSION="3.3.7"
+VERSION="3.3.8"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"

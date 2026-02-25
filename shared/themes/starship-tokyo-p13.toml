@@ -21,9 +21,10 @@ $time\
 \n$character"""
 
 [directory]
-style = "fg:#f0ece0 bg:#5a28c0"
+style = "fg:#ffffff bg:#5a28c0"
 format = "[ $path ]($style)"
 truncation_length = 100
+truncate_to_repo = false
 
 [directory.substitutions]
 "Documents" = "󰈙 "
@@ -34,31 +35,31 @@ truncation_length = 100
 [git_branch]
 symbol = ""
 style = "bg:#42366a"
-format = '[[ $symbol $branch ](fg:#5a28c0 bg:#42366a)]($style)'
+format = '[[ $symbol $branch ](fg:#ffffff bg:#42366a)]($style)'
 
 [git_status]
 style = "bg:#42366a"
-format = '[[($all_status$ahead_behind )](fg:#5a28c0 bg:#42366a)]($style)'
+format = '[[($all_status$ahead_behind )](fg:#ffffff bg:#42366a)]($style)'
 
 [nodejs]
 symbol = ""
 style = "bg:#332b52"
-format = '[[ $symbol ($version) ](fg:#5a28c0 bg:#332b52)]($style)'
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#332b52)]($style)'
 
 [rust]
 symbol = ""
 style = "bg:#332b52"
-format = '[[ $symbol ($version) ](fg:#5a28c0 bg:#332b52)]($style)'
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#332b52)]($style)'
 
 [golang]
 symbol = ""
 style = "bg:#332b52"
-format = '[[ $symbol ($version) ](fg:#5a28c0 bg:#332b52)]($style)'
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#332b52)]($style)'
 
 [php]
 symbol = ""
 style = "bg:#332b52"
-format = '[[ $symbol ($version) ](fg:#5a28c0 bg:#332b52)]($style)'
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#332b52)]($style)'
 
 [time]
 disabled = false
