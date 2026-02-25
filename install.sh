@@ -17,8 +17,18 @@ set -e
 # Project identity (change this to rename the project)
 PROJECT_NAME="epicli"
 
+# Signing public key — fallback copy embedded here for offline/airgap use.
+# Authoritative copy lives at SIGNING_KEY_URL (independent of this server).
+# Private key lives in ~/.epicli-signing.pem (never committed).
+# Regenerate: openssl genpkey -algorithm ed25519 -out ~/.epicli-signing.pem
+#             openssl pkey -in ~/.epicli-signing.pem -pubout
+SIGNING_KEY_URL="https://gist.githubusercontent.com/mainstreamer/8b98671fd71d048c0505fbe481f1d676/raw/07fb093e9bcdc114bdde06819aaf0ce2de72f66c/pub.pem"
+SIGNING_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA3bLWzARwyxqxk48f1bq+IJhfZfjPVEA+5l2BqupFwTU=
+-----END PUBLIC KEY-----"
+
 # Config
-VERSION="2.34.1"
+VERSION="3.0.1"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -186,16 +196,34 @@ setup_config_dir() {
 
     # Always extract to temporary directory first
     TEMP_EXTRACT=$(mktemp -d)
+    local archive_file
+    archive_file="$(mktemp --suffix=.tar.gz)"
 
-    # Download from primary source
-    if ! curl -fsSL "$ARCHIVE_URL_SELF" 2>/dev/null | tar -xz -C "$TEMP_EXTRACT" --strip-components=1 2>/dev/null; then
+    # Download archive to file (needed for signature verification)
+    local archive_from_self=true
+    if ! curl -fsSL --max-time 60 "$ARCHIVE_URL_SELF" -o "$archive_file" 2>/dev/null; then
         info "Falling back to GitHub..."
-        if ! curl -fsSL "$ARCHIVE_URL_GITHUB" | tar -xz -C "$TEMP_EXTRACT" --strip-components=1; then
+        archive_from_self=false
+        if ! curl -fsSL --max-time 60 "$ARCHIVE_URL_GITHUB" -o "$archive_file"; then
+            rm -f "$archive_file"
             error "Failed to download configuration archive from both sources!"
             error "Please check your internet connection and try again."
             return 1
         fi
     fi
+
+    # Verify archive signature (only when downloaded from our server)
+    if [ "$archive_from_self" = true ] && ! [ "$LOCAL_MODE" = true ]; then
+        _verify_archive_signature "$archive_file"
+    fi
+
+    # Extract
+    if ! tar -xz -C "$TEMP_EXTRACT" --strip-components=1 -f "$archive_file" 2>/dev/null; then
+        rm -f "$archive_file"
+        error "Failed to extract configuration archive!"
+        return 1
+    fi
+    rm -f "$archive_file"
 
     # Verify download was successful
     if [ ! -d "$TEMP_EXTRACT/shared" ] || [ ! -d "$TEMP_EXTRACT/nvim" ]; then
@@ -487,6 +515,104 @@ source_libs() {
 }
 
 # ------------------------------------------------------------------------------
+# Signature verification
+# Requires: openssl (available on all modern systems)
+# ------------------------------------------------------------------------------
+
+# Shared helper: resolve public key into a temp file (caller must rm it).
+_load_pubkey() {
+    local pubkey_file="$1"
+    local fetched_key
+    fetched_key=$(curl -fsSL --max-time 10 "$SIGNING_KEY_URL" 2>/dev/null)
+    if echo "$fetched_key" | grep -q "BEGIN PUBLIC KEY"; then
+        printf '%s\n' "$fetched_key" > "$pubkey_file"
+    else
+        warn "Could not fetch public key from Gist — using embedded key"
+        printf '%s\n' "$SIGNING_PUBLIC_KEY" > "$pubkey_file"
+    fi
+}
+
+# Verifies master.tar.gz against master.tar.gz.sig from the same base URL.
+_verify_archive_signature() {
+    local archive_file="$1"
+
+    command -v openssl &>/dev/null || { warn "openssl not found — skipping archive verification"; return 0; }
+
+    local sig_url="${BASE_URL}/master.tar.gz.sig"
+    local sig_file pubkey_file
+    sig_file="$(mktemp)"
+    pubkey_file="$(mktemp)"
+    trap 'rm -f "$sig_file" "$pubkey_file"' RETURN
+
+    if ! curl -fsSL --max-time 10 "$sig_url" -o "$sig_file" 2>/dev/null; then
+        warn "Could not fetch archive signature from $sig_url — skipping verification"
+        return 0
+    fi
+
+    _load_pubkey "$pubkey_file"
+
+    if openssl pkeyutl -verify -pubin -inkey "$pubkey_file" \
+            -sigfile "$sig_file" -rawin -in "$archive_file" &>/dev/null; then
+        ok "Archive signature verified"
+    else
+        error "Archive signature verification FAILED — master.tar.gz may have been tampered with.
+  Signature URL: $sig_url
+  Aborting."
+    fi
+}
+
+# Verifies this script against install.sh.sig fetched from the same base URL.
+verify_signature() {
+    # Skip verification in local/dev mode — only applies to remote installs
+    [ "$LOCAL_MODE" = true ] && return 0
+
+    # Skip if openssl is not available (rare; warn and continue)
+    if ! command -v openssl &>/dev/null; then
+        warn "openssl not found — skipping signature verification"
+        return 0
+    fi
+
+    local sig_url="${BASE_URL}/i.sig"
+    local script_path sig_file pubkey_file
+    sig_file="$(mktemp)"
+    pubkey_file="$(mktemp)"
+
+    # Clean up temp files on exit
+    trap 'rm -f "$sig_file" "$pubkey_file"' RETURN
+
+    # Resolve the path to this running script.
+    # When piped (curl | bash) BASH_SOURCE[0] is empty — reconstruct from /proc.
+    if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+        script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+    elif [[ -r /proc/self/fd/255 ]]; then
+        script_path="$(mktemp)"
+        cat /proc/self/fd/255 > "$script_path"
+        trap 'rm -f "$sig_file" "$pubkey_file" "$script_path"' RETURN
+    else
+        warn "Signature verification skipped (piped execution, /proc unavailable)"
+        return 0
+    fi
+
+    # Fetch signature file
+    if ! curl -fsSL --max-time 10 "$sig_url" -o "$sig_file" 2>/dev/null; then
+        warn "Could not fetch signature from $sig_url — skipping verification"
+        return 0
+    fi
+
+    _load_pubkey "$pubkey_file"
+
+    if openssl pkeyutl -verify -pubin -inkey "$pubkey_file" \
+            -sigfile "$sig_file" -rawin -in "$script_path" &>/dev/null; then
+        ok "Signature verified"
+    else
+        error "Signature verification FAILED — install.sh may have been tampered with.
+  Signature URL: $sig_url
+  Key URL:       $SIGNING_KEY_URL
+  Aborting."
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
 
@@ -529,6 +655,7 @@ main() {
     echo ""
 
     parse_args "$@"
+    verify_signature
     migrate_old_names
     setup_config_dir
     detect_os

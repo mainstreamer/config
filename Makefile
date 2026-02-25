@@ -21,7 +21,7 @@ endif
 .PHONY: help install install-remote install-remote-dev install-deps install-links install-apps \
         backup rollback list-backups test uninstall clean nvim \
         starship-preset fonts guake-config \
-        bump-patch bump-minor bump-major deploy archive
+        bump-patch bump-minor bump-major deploy archive sign
 
 # Colors
 CYAN := \033[1;36m
@@ -78,7 +78,8 @@ help:
 	@printf "  $(GREEN)make bump-minor$(RESET)              Bump minor (2.0.0 -> 2.1.0)\n"
 	@printf "  $(GREEN)make bump-major$(RESET)              Bump major (2.0.0 -> 3.0.0)\n"
 	@printf "  $(GREEN)make archive$(RESET)                 Create master.tar.gz\n"
-	@printf "  $(GREEN)make deploy$(RESET)                  Deploy to server (script + archive)\n"
+	@printf "  $(GREEN)make sign$(RESET)                    Sign install.sh → install.sh.sig\n"
+	@printf "  $(GREEN)make deploy$(RESET)                  Sign + deploy to server (script + sig + archive)\n"
 	@printf "  $(DIM)  SERVER=tldr.icu DEPLOY_PATH=/srv/dotfiles$(RESET)\n"
 	@printf "\n"
 
@@ -316,12 +317,37 @@ major:
 SERVER ?= tldr.icu
 DEPLOY_PATH ?= /srv/dotfiles
 ARCHIVE_NAME ?= master.tar.gz
+SIGNING_KEY ?= $(HOME)/.epicli-signing.pem
 
-deploy: archive
+# sign: sign install.sh and master.tar.gz with the local Ed25519 private key
+sign:
+	@if [ ! -f "$(SIGNING_KEY)" ]; then \
+		echo "ERROR: signing key not found at $(SIGNING_KEY)"; \
+		echo "Generate one with:"; \
+		echo "  openssl genpkey -algorithm ed25519 -out $(SIGNING_KEY)"; \
+		echo "  chmod 600 $(SIGNING_KEY)"; \
+		echo "  openssl pkey -in $(SIGNING_KEY) -pubout   # copy into install.sh SIGNING_PUBLIC_KEY"; \
+		exit 1; \
+	fi
+	@openssl pkeyutl -sign -inkey "$(SIGNING_KEY)" -out install.sh.sig -rawin -in install.sh
+	@openssl pkeyutl -sign -inkey "$(SIGNING_KEY)" -out $(ARCHIVE_NAME).sig -rawin -in $(ARCHIVE_NAME)
+	@printf "Signed: install.sh.sig (%s bytes)\n" "$$(wc -c < install.sh.sig)"
+	@printf "Signed: $(ARCHIVE_NAME).sig (%s bytes)\n" "$$(wc -c < $(ARCHIVE_NAME).sig)"
+	@openssl pkeyutl -verify -pubin \
+		-inkey <(openssl pkey -in "$(SIGNING_KEY)" -pubout 2>/dev/null) \
+		-sigfile install.sh.sig -rawin -in install.sh 2>/dev/null \
+		&& echo "Self-check install.sh: OK" || (echo "Self-check install.sh FAILED"; exit 1)
+	@openssl pkeyutl -verify -pubin \
+		-inkey <(openssl pkey -in "$(SIGNING_KEY)" -pubout 2>/dev/null) \
+		-sigfile $(ARCHIVE_NAME).sig -rawin -in $(ARCHIVE_NAME) 2>/dev/null \
+		&& echo "Self-check $(ARCHIVE_NAME): OK" || (echo "Self-check $(ARCHIVE_NAME) FAILED"; exit 1)
+
+deploy: archive sign
 	@echo "Deploying v$(VERSION) to $(SERVER):$(DEPLOY_PATH)..."
-	@scp install.sh latest $(ARCHIVE_NAME) root@do:$(DEPLOY_PATH)/
-	@rm -f $(ARCHIVE_NAME)
+	@scp install.sh install.sh.sig latest $(ARCHIVE_NAME) $(ARCHIVE_NAME).sig root@do:$(DEPLOY_PATH)/
+	@rm -f $(ARCHIVE_NAME) install.sh.sig $(ARCHIVE_NAME).sig
 	@echo "Done. Live at: https://$(SERVER)/i"
+	@echo "Signatures: https://$(SERVER)/i.sig  https://$(SERVER)/master.tar.gz.sig"
 
 archive:
 	@echo "Creating $(ARCHIVE_NAME)..."
