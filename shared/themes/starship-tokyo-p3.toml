@@ -1,74 +1,75 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# C1=#7a9a7e  C2=#a7c080  C3=#83c092  C4=#78b0a0  C5=#343f44
+# "Tokyo Bloom" — vibrant daylight palette with warm orange accent
+# C1=#ff9e64  C2=#7aa2f7  C3=#bb9af7  C4=#7dcfff  C5=#24283b
 
 format = """
-[░▒▓](#7a9a7e)\
-[  ](bg:#7a9a7e fg:#090c0c)\
-[](bg:#a7c080 fg:#7a9a7e)\
+[░▒▓](#ff9e64)\
+[  ](bg:#ff9e64 fg:#1a1b26)\
+[](bg:#7aa2f7 fg:#ff9e64)\
 $directory\
-[](fg:#a7c080 bg:#83c092)\
+[](fg:#7aa2f7 bg:#bb9af7)\
 $git_branch\
 $git_status\
-[](fg:#83c092 bg:#78b0a0)\
+[](fg:#bb9af7 bg:#7dcfff)\
 $nodejs\
 $rust\
 $golang\
 $php\
-[](fg:#78b0a0 bg:#343f44)\
+[](fg:#7dcfff bg:#24283b)\
 $time\
-[](fg:#343f44)\
+[](fg:#24283b)\
 \n$character"""
 
 [directory]
-style = "fg:#ffffff bg:#a7c080"
+style = "fg:#1a1b26 bg:#7aa2f7"
 format = "[ $path ]($style)"
 truncation_length = 100
 truncate_to_repo = false
 
 [directory.substitutions]
 "Documents" = "󰈙 "
-"Downloads" = " "
-"Music" = " "
-"Pictures" = " "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
 
 [git_branch]
-symbol = ""
-style = "bg:#83c092"
-format = '[[ $symbol $branch ](fg:#ffffff bg:#83c092)]($style)'
+symbol = ""
+style = "bg:#bb9af7"
+format = '[[ $symbol $branch ](fg:#1a1b26 bg:#bb9af7)]($style)'
 
 [git_status]
-style = "bg:#83c092"
-format = '[[($all_status$ahead_behind )](fg:#ffffff bg:#83c092)]($style)'
+style = "bg:#bb9af7"
+format = '[[($all_status$ahead_behind )](fg:#1a1b26 bg:#bb9af7)]($style)'
 
 [nodejs]
-symbol = ""
-style = "bg:#78b0a0"
-format = '[[ $symbol ($version) ](fg:#ffffff bg:#78b0a0)]($style)'
+symbol = ""
+style = "bg:#7dcfff"
+format = '[[ $symbol ($version) ](fg:#1a1b26 bg:#7dcfff)]($style)'
 
 [rust]
-symbol = ""
-style = "bg:#78b0a0"
-format = '[[ $symbol ($version) ](fg:#ffffff bg:#78b0a0)]($style)'
+symbol = ""
+style = "bg:#7dcfff"
+format = '[[ $symbol ($version) ](fg:#1a1b26 bg:#7dcfff)]($style)'
 
 [golang]
-symbol = ""
-style = "bg:#78b0a0"
-format = '[[ $symbol ($version) ](fg:#ffffff bg:#78b0a0)]($style)'
+symbol = ""
+style = "bg:#7dcfff"
+format = '[[ $symbol ($version) ](fg:#1a1b26 bg:#7dcfff)]($style)'
 
 [php]
-symbol = ""
-style = "bg:#78b0a0"
-format = '[[ $symbol ($version) ](fg:#ffffff bg:#78b0a0)]($style)'
+symbol = ""
+style = "bg:#7dcfff"
+format = '[[ $symbol ($version) ](fg:#1a1b26 bg:#7dcfff)]($style)'
 
 [time]
 disabled = false
 time_format = "%R"
-style = "bg:#343f44"
-format = '[[   $time](fg:#c5b89a bg:#343f44)]($style)'
+style = "bg:#24283b"
+format = '[[   $time](fg:#c0caf5 bg:#24283b)]($style)'
 
 [character]
 disabled = false
-success_symbol = '[❯](bold fg:#a7c080)'
+success_symbol = '[❯](bold fg:#ff9e64)'
 error_symbol = '[❯](bold red)'
-vimcmd_symbol = '[❮](bold fg:#a7c080)'
+vimcmd_symbol = '[❮](bold fg:#ff9e64)'
