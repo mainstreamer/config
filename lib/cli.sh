@@ -199,8 +199,55 @@ VER_FILE="\$HOME/.${PROJECT_NAME}-version"
 MANIFEST="\$HOME/.${PROJECT_NAME}-manifest"
 DOTFILES="\${DOTFILES_TARGET:-\$HOME/.$PROJECT_NAME}"
 NAME="$PROJECT_NAME"
+SIGNING_KEY_URL="$SIGNING_KEY_URL"
+SIGNING_PUBLIC_KEY="$SIGNING_PUBLIC_KEY"
 EOF
     cat >> "$cli_path" << 'CLIEOF'
+
+# Download install.sh to a temp file, verify its signature, then exec.
+# Falls back gracefully if openssl or the sig are unavailable.
+_verified_exec() {
+    local installer sig_file pubkey_file
+    installer=$(mktemp)
+    sig_file=$(mktemp)
+    pubkey_file=$(mktemp)
+    trap 'rm -f "$installer" "$sig_file" "$pubkey_file"' EXIT
+
+    if ! curl -fsSL --max-time 60 "$URL/i" -o "$installer" 2>/dev/null; then
+        echo "error: failed to download installer" >&2; exit 1
+    fi
+
+    if ! command -v openssl &>/dev/null; then
+        echo "warn: openssl not found — skipping signature verification" >&2
+        trap - EXIT; bash "$installer" "$@"; local rc=$?; rm -f "$installer"; return $rc
+    fi
+
+    if ! curl -fsSL --max-time 10 "$URL/i.sig" -o "$sig_file" 2>/dev/null; then
+        echo "warn: could not fetch installer signature — skipping verification" >&2
+        trap - EXIT; bash "$installer" "$@"; local rc=$?; rm -f "$installer"; return $rc
+    fi
+
+    local fetched_key
+    fetched_key=$(curl -fsSL --max-time 10 "$SIGNING_KEY_URL" 2>/dev/null)
+    if echo "$fetched_key" | grep -q "BEGIN PUBLIC KEY"; then
+        printf '%s\n' "$fetched_key" > "$pubkey_file"
+    else
+        printf '%s\n' "$SIGNING_PUBLIC_KEY" > "$pubkey_file"
+    fi
+
+    if openssl pkeyutl -verify -pubin -inkey "$pubkey_file" \
+            -sigfile "$sig_file" -rawin -in "$installer" &>/dev/null; then
+        echo "Installer signature verified"
+    else
+        echo "error: installer signature verification FAILED — aborting" >&2
+        exit 1
+    fi
+
+    trap - EXIT
+    rm -f "$sig_file" "$pubkey_file"
+    bash "$installer" "$@"
+    local rc=$?; rm -f "$installer"; return $rc
+}
 
 # Reconstruct install flags from manifest profile
 _profile_flags() {
@@ -281,15 +328,15 @@ case "${1:-status}" in
             esac
         done
         flags=$(_build_flags "${profile_args[@]}")
-        curl -fsSL "$URL/i" | bash -s -- --update $flags $ver_arg
+        _verified_exec --update $flags $ver_arg
         ;;
     force-update|--force)
         shift
         flags=$(_build_flags "$@")
-        curl -fsSL "$URL/i" | bash -s -- --update $flags
+        _verified_exec --update $flags
         ;;
     uninstall)
-        [ -f "$DOTFILES/install.sh" ] && bash "$DOTFILES/install.sh" uninstall || curl -fsSL "$URL/i" | bash -s -- uninstall
+        [ -f "$DOTFILES/install.sh" ] && bash "$DOTFILES/install.sh" uninstall || _verified_exec uninstall
         ;;
     man)
         doc="$DOTFILES/docs/COMMANDS.md"

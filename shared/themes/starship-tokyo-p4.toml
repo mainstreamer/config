@@ -1,28 +1,27 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# "Tokyo Midnight" — near-black depths with crimson accent and coloured text
-# C1=#f7768e  C2=#2a2d3e  C3=#1e1e2e  C4=#414868  C5=#16161e
+# C1=#f7768e  C2=#2a2d3e  C3=#1a1a2e  C4=#353b52  C5=#16161e
 
 format = """
 [░▒▓](#f7768e)\
-[  ](bg:#f7768e fg:#16161e)\
+[  ](bg:#f7768e fg:#090c0c)\
 [](bg:#2a2d3e fg:#f7768e)\
 $directory\
-[](fg:#2a2d3e bg:#1e1e2e)\
+[](fg:#2a2d3e bg:#1a1a2e)\
 $git_branch\
 $git_status\
-[](fg:#1e1e2e bg:#414868)\
+[](fg:#1a1a2e bg:#353b52)\
 $nodejs\
 $rust\
 $golang\
 $php\
-[](fg:#414868 bg:#16161e)\
+[](fg:#353b52 bg:#16161e)\
 $time\
 [](fg:#16161e)\
 \n$character"""
 
 [directory]
-style = "fg:#7dcfff bg:#2a2d3e"
+style = "fg:#ffffff bg:#2a2d3e"
 format = "[ $path ]($style)"
 truncation_length = 100
 truncate_to_repo = false
@@ -35,38 +34,38 @@ truncate_to_repo = false
 
 [git_branch]
 symbol = ""
-style = "bg:#1e1e2e"
-format = '[[ $symbol $branch ](fg:#c0caf5 bg:#1e1e2e)]($style)'
+style = "bg:#1a1a2e"
+format = '[[ $symbol $branch ](fg:#ffffff bg:#1a1a2e)]($style)'
 
 [git_status]
-style = "bg:#1e1e2e"
-format = '[[($all_status$ahead_behind )](fg:#c0caf5 bg:#1e1e2e)]($style)'
+style = "bg:#1a1a2e"
+format = '[[($all_status$ahead_behind )](fg:#ffffff bg:#1a1a2e)]($style)'
 
 [nodejs]
 symbol = ""
-style = "bg:#414868"
-format = '[[ $symbol ($version) ](fg:#9ece6a bg:#414868)]($style)'
+style = "bg:#353b52"
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#353b52)]($style)'
 
 [rust]
 symbol = ""
-style = "bg:#414868"
-format = '[[ $symbol ($version) ](fg:#9ece6a bg:#414868)]($style)'
+style = "bg:#353b52"
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#353b52)]($style)'
 
 [golang]
 symbol = ""
-style = "bg:#414868"
-format = '[[ $symbol ($version) ](fg:#9ece6a bg:#414868)]($style)'
+style = "bg:#353b52"
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#353b52)]($style)'
 
 [php]
 symbol = ""
-style = "bg:#414868"
-format = '[[ $symbol ($version) ](fg:#9ece6a bg:#414868)]($style)'
+style = "bg:#353b52"
+format = '[[ $symbol ($version) ](fg:#ffffff bg:#353b52)]($style)'
 
 [time]
 disabled = false
 time_format = "%R"
 style = "bg:#16161e"
-format = '[[   $time](fg:#e0af68 bg:#16161e)]($style)'
+format = '[[   $time](fg:#565f89 bg:#16161e)]($style)'
 
 [character]
 disabled = false
