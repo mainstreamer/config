@@ -28,7 +28,7 @@ MCowBQYDK2VwAyEA3bLWzARwyxqxk48f1bq+IJhfZfjPVEA+5l2BqupFwTU=
 -----END PUBLIC KEY-----"
 
 # Config
-VERSION="3.3.8"
+VERSION="3.3.9"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -199,7 +199,7 @@ setup_config_dir() {
     # Always extract to temporary directory first
     TEMP_EXTRACT=$(mktemp -d)
     local archive_file
-    archive_file="$(mktemp --suffix=.tar.gz)"
+    archive_file="$(mktemp).tar.gz"
 
     # Download archive to file (needed for signature verification)
     local archive_from_self=true
