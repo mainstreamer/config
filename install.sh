@@ -28,7 +28,7 @@ MCowBQYDK2VwAyEA3bLWzARwyxqxk48f1bq+IJhfZfjPVEA+5l2BqupFwTU=
 -----END PUBLIC KEY-----"
 
 # Config
-VERSION="3.3.9"
+VERSION="3.4.0"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -40,6 +40,7 @@ OS="$(uname -s)"
 DEV_MODE=false
 LOCAL_MODE=false
 FORCE_DOWNLOAD=false
+REQUESTED_VERSION=""
 
 # Colors
 RED='\033[0;31m'
@@ -191,6 +192,12 @@ setup_config_dir() {
             print_install_hint "curl"
             return 1
         fi
+    fi
+
+    # Override archive URL when a specific version is requested
+    if [ -n "$REQUESTED_VERSION" ]; then
+        ARCHIVE_URL_SELF="${BASE_URL}/v${REQUESTED_VERSION}.tar.gz"
+        info "Installing version $REQUESTED_VERSION..."
     fi
 
     # Download and extract archive
@@ -397,6 +404,11 @@ parse_args() {
                 FORCE_DOWNLOAD=true
                 shift
                 ;;
+            --version)
+                REQUESTED_VERSION="$2"
+                FORCE_DOWNLOAD=true
+                shift 2
+                ;;
             --help|-h)
                 show_help
                 exit 0
@@ -427,6 +439,7 @@ COMMANDS:
     ./install.sh version            Show installed version
     ./install.sh check              Check for updates
     ./install.sh update             Update to latest version
+    ./install.sh update --version 3.3.7  Install a specific version
     ./install.sh force-update       Force fresh installation (bypass version check)
     ./install.sh uninstall          Remove everything
 

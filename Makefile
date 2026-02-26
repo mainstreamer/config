@@ -345,8 +345,10 @@ sign:
 deploy: archive sign
 	@echo "Deploying v$(VERSION) to $(SERVER):$(DEPLOY_PATH)..."
 	@scp install.sh install.sh.sig latest $(ARCHIVE_NAME) $(ARCHIVE_NAME).sig root@do:$(DEPLOY_PATH)/
+	@ssh root@do "cp $(DEPLOY_PATH)/master.tar.gz $(DEPLOY_PATH)/v$(VERSION).tar.gz && cp $(DEPLOY_PATH)/master.tar.gz.sig $(DEPLOY_PATH)/v$(VERSION).tar.gz.sig"
 	@rm -f $(ARCHIVE_NAME) install.sh.sig $(ARCHIVE_NAME).sig
 	@echo "Done. Live at: https://$(SERVER)/i"
+	@echo "Versioned:    https://$(SERVER)/v$(VERSION).tar.gz"
 	@echo "Signatures: https://$(SERVER)/i.sig  https://$(SERVER)/master.tar.gz.sig"
 
 archive:

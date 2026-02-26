@@ -153,17 +153,30 @@ _build_update_flags() {
 }
 
 cmd_update() {
+    local ver_arg=""
+    local profile_args=()
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --version) ver_arg="--version $2"; shift 2 ;;
+            *) profile_args+=("$1"); shift ;;
+        esac
+    done
+
     local local_ver=$(get_local_version)
     local remote_ver=$(get_remote_version)
-    local flags=$(_build_update_flags "$@")
+    local flags=$(_build_update_flags "${profile_args[@]}")
 
-    if [ $# -eq 0 ] && [ "$local_ver" = "$remote_ver" ]; then
+    if [ ${#profile_args[@]} -eq 0 ] && [ -z "$ver_arg" ] && [ "$local_ver" = "$remote_ver" ]; then
         ok "Already at $local_ver"
         return 0
     fi
 
-    info "Updating $local_ver -> $remote_ver${flags:+ (profile:$flags)}"
-    curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags
+    if [ -n "$ver_arg" ]; then
+        info "Installing $ver_arg..."
+    else
+        info "Updating $local_ver -> $remote_ver${flags:+ (profile:$flags)}"
+    fi
+    curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags $ver_arg
 }
 
 cmd_force_update() {
@@ -257,10 +270,18 @@ case "${1:-status}" in
         echo "Available: $remote_ver"
         [ "$local_ver" = "$remote_ver" ] && echo "Up to date." || echo "Run: $NAME update"
         ;;
-    update)
+    update|up)
         shift
-        flags=$(_build_flags "$@")
-        curl -fsSL "$URL/i" | bash -s -- --update $flags
+        ver_arg=""
+        profile_args=()
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --version) ver_arg="--version $2"; shift 2 ;;
+                *) profile_args+=("$1"); shift ;;
+            esac
+        done
+        flags=$(_build_flags "${profile_args[@]}")
+        curl -fsSL "$URL/i" | bash -s -- --update $flags $ver_arg
         ;;
     force-update|--force)
         shift
@@ -291,10 +312,11 @@ case "${1:-status}" in
         echo "Commands:"
         echo "  status              Show installed version and profile"
         echo "  check               Check for available updates"
-        echo "  update              Update (preserves current profile)"
+        echo "  update / up         Update (preserves current profile)"
         echo "  update --local      Upgrade to standard+local profile"
         echo "  update --dev        Upgrade to standard+dev profile"
         echo "  update --standard   Downgrade to standard only"
+        echo "  update --version X  Install a specific version (e.g. 3.3.7)"
         echo "  force-update        Force reinstall (ignore version check)"
         echo "  uninstall           Remove $NAME and all symlinks"
         echo "  man                 Full commands reference (paged)"
