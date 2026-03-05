@@ -60,8 +60,34 @@ jobs:
           cd homebrew-epicli
           git remote set-url origin "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/mainstreamer/homebrew-epicli.git"
 
-          sed -i "s|releases/download/v[^/]*/epicli-[^\"]*|releases/download/${TAG}/epicli-${VERSION}.tar.gz|" Formula/epicli.rb
-          sed -i "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Formula/epicli.rb
+          cat > Formula/epicli.rb << 'FORMULA'
+          class Epicli < Formula
+            desc "Shell environment manager — shortcuts, configs, and dev tools"
+            homepage "https://github.com/mainstreamer/config"
+            url "URL_PLACEHOLDER"
+            sha256 "SHA_PLACEHOLDER"
+            license "MIT"
+
+            def install
+              libexec.install Dir["*"]
+              (bin/"epicli").write <<~EOS
+                #!/usr/bin/env bash
+                export EPICLI_HOMEBREW=1
+                export DOTFILES_TARGET="#{libexec}"
+                exec bash "#{libexec}/install.sh" "$@"
+              EOS
+            end
+
+            def caveats
+              <<~EOS
+                Run 'epicli' to complete setup (install deps, create symlinks).
+                Run 'epicli help' for available commands.
+              EOS
+            end
+          end
+          FORMULA
+          sed -i "s|URL_PLACEHOLDER|https://github.com/mainstreamer/config/releases/download/${TAG}/epicli-${VERSION}.tar.gz|" Formula/epicli.rb
+          sed -i "s|SHA_PLACEHOLDER|${SHA256}|" Formula/epicli.rb
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

@@ -108,13 +108,13 @@ cmd_check() {
     echo "Available: $remote_ver"
 
     if [ "$local_ver" = "none" ]; then
-        echo -e "\n${YELLOW}Not installed.${NC} Run: curl -fsSL $BASE_URL/i | bash"
+        echo -e "\n${YELLOW}Not installed.${NC} Run: $PROJECT_NAME update"
         return 1
     elif [ "$local_ver" = "$remote_ver" ]; then
         echo -e "\n${GREEN}Up to date.${NC}"
         return 0
     else
-        echo -e "\n${YELLOW}Update available.${NC} Run: curl -fsSL $BASE_URL/i | bash"
+        echo -e "\n${YELLOW}Update available.${NC} Run: $PROJECT_NAME update"
         return 2
     fi
 }
@@ -176,13 +176,69 @@ cmd_update() {
     else
         info "Updating $local_ver -> $remote_ver${flags:+ (profile:$flags)}"
     fi
-    curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags $ver_arg
+
+    if [ "${EPICLI_HOMEBREW:-}" = "1" ]; then
+        if [ -n "$ver_arg" ]; then
+            warn "Homebrew install does not support --version. Use: brew install epicli@VERSION"
+            return 1
+        fi
+        _brew_update
+        _brew_apply $flags
+    else
+        curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags $ver_arg
+    fi
 }
 
 cmd_force_update() {
     local flags=$(_build_update_flags "$@")
     info "Forcing fresh installation${flags:+ (profile:$flags)}..."
-    curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags
+    if [ "${EPICLI_HOMEBREW:-}" = "1" ]; then
+        _brew_update
+        _brew_apply $flags
+    else
+        curl -fsSL "$BASE_URL/i" | bash -s -- --update $flags
+    fi
+}
+
+# Homebrew update helpers
+_brew_update() {
+    info "Updating via Homebrew..."
+    brew update --quiet
+    brew upgrade epicli 2>/dev/null || true
+}
+
+_brew_apply() {
+    # Apply configs from the (possibly upgraded) Cellar
+    local brew_libexec
+    brew_libexec="$(brew --prefix epicli 2>/dev/null)/libexec"
+    if [ ! -d "$brew_libexec/shared" ]; then
+        error "Cannot find configs in Homebrew prefix: $brew_libexec"
+        return 1
+    fi
+
+    # Point DOTFILES_DIR to the new Cellar and re-source updated libs
+    DOTFILES_DIR="$brew_libexec"
+    for f in "$DOTFILES_DIR/lib/"*.sh; do
+        [ -f "$f" ] && source "$f"
+    done
+
+    # Apply profile flags
+    for arg in "$@"; do
+        case "$arg" in
+            --dev)   DEV_MODE=true ;;
+            --local) LOCAL_MODE=true ;;
+        esac
+    done
+
+    detect_os
+    install_deps
+    [ "$DEV_MODE" = true ] && setup_dev_tools
+    link_configs
+    post_install
+    save_version
+    generate_manifest
+    install_cli
+    print_summary
 }
 
 # Generate and install the standalone CLI helper to ~/.local/bin
