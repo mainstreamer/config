@@ -653,7 +653,33 @@ verify_signature() {
 
 main() {
     # Handle CLI commands first (repo must already be installed)
-    case "${1:-}" in
+    # When invoked with no args and already installed, show status (don't re-bootstrap)
+    local cli_cmd="${1:-}"
+    if [ -z "$cli_cmd" ] && [ -f "$VERSION_FILE" ]; then
+        cli_cmd="status"
+    fi
+
+    case "$cli_cmd" in
+        status)
+            source_libs
+            cmd_version
+            exit 0
+            ;;
+        help|-h|--help)
+            echo "$PROJECT_NAME - dotfiles manager"
+            echo ""
+            echo "Commands:"
+            echo "  status              Show installed version and profile (default)"
+            echo "  check               Check for available updates"
+            echo "  update / up         Update (preserves current profile)"
+            echo "  update --dev        Upgrade to standard+dev profile"
+            echo "  update --local      Upgrade to standard+local profile"
+            echo "  update --standard   Downgrade to standard only"
+            echo "  force-update        Force reinstall (ignore version check)"
+            echo "  uninstall           Remove $PROJECT_NAME and all symlinks"
+            echo "  help                Show this help message"
+            exit 0
+            ;;
         version|--version|-v)
             source_libs
             cmd_version

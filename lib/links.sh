@@ -72,6 +72,12 @@ link_configs() {
 link_shell() {
     info "Installing shell config..."
 
+    # Safety: verify source configs exist before removing old ones
+    if [ ! -d "$DOTFILES_DIR/shared" ]; then
+        warn "Shell config source not found ($DOTFILES_DIR/shared), skipping"
+        return 0
+    fi
+
     # Remove old symlinks or stale dirs from previous installs.
     # All shell config targets are removed unconditionally — this handles legacy
     # symlink-based setups (e.g. ~/.bash_profile -> ~/.epicli/shared/.bash_profile)
@@ -101,8 +107,6 @@ link_shell() {
             cp "$DOTFILES_DIR/shared/.zshrc" "$HOME/.zshrc"
             cp "$DOTFILES_DIR/shared/.profile" "$HOME/.profile"
         fi
-    else
-        warn "Shell config not found, skipping"
     fi
 
     # Verify all config files were copied successfully
