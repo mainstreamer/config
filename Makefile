@@ -80,6 +80,9 @@ help:
 	@printf "  $(GREEN)make archive$(RESET)                 Create master.tar.gz\n"
 	@printf "  $(GREEN)make sign$(RESET)                    Sign install.sh → install.sh.sig\n"
 	@printf "  $(GREEN)make deploy$(RESET)                  Sign + deploy to server (script + sig + archive)\n"
+	@printf "  $(GREEN)make patch$(RESET)                  Bump patch, deploy to server, push (triggers GH release + Homebrew)\n"
+	@printf "  $(GREEN)make minor$(RESET)                  Bump minor version (same flow)\n"
+	@printf "  $(GREEN)make major$(RESET)                  Bump major version (same flow)\n"
 	@printf "  $(DIM)  SERVER=tldr.icu DEPLOY_PATH=/srv/dotfiles$(RESET)\n"
 	@printf "\n"
 
@@ -350,6 +353,7 @@ deploy: archive sign
 	@echo "Done. Live at: https://$(SERVER)/i"
 	@echo "Versioned:    https://$(SERVER)/v$(VERSION).tar.gz"
 	@echo "Signatures: https://$(SERVER)/i.sig  https://$(SERVER)/master.tar.gz.sig"
+
 
 archive:
 	@echo "Creating $(ARCHIVE_NAME)..."

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bump version in install.sh and latest file
+# Bump version in install.sh and latest file, then deploy + push
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,6 +24,24 @@ new="$major.$minor.$patch"
 sed -i "s/^VERSION=\".*\"/VERSION=\"$new\"/" "$INSTALL_SH"
 echo "$new" > "$LATEST_FILE"
 
-echo "$current -> $new"
+echo "Version: $current -> $new"
+
+# Commit and tag
+cd "$SCRIPT_DIR"
+git add install.sh latest
+git commit -m "v$new"
+git tag "v$new"
+
+# Deploy to server (archive + sign + scp)
 echo ""
-echo "Next: make deploy SERVER=tldr.icu"
+make deploy
+
+# Push commit and tag -> triggers GitHub Actions for GH release + Homebrew
+echo ""
+echo "Pushing to origin..."
+git push
+git push --tags
+
+echo ""
+echo "Done! v$new deployed to server and pushed to GitHub."
+echo "GitHub Actions will create the release and update Homebrew."
