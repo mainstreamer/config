@@ -85,6 +85,7 @@ link_shell() {
 
     if [ -d "$DOTFILES_DIR/shared" ]; then
         cp -r "$DOTFILES_DIR/shared/shared.d" "$HOME/.shared.d"
+        [ -d "$DOTFILES_DIR/shared/themes" ] && cp -r "$DOTFILES_DIR/shared/themes" "$HOME/.shared.d/themes"
 
         # Local profile: copy personal machine scripts
         if [ "$LOCAL_MODE" = true ] && [ -d "$DOTFILES_DIR/shared/local.d" ]; then
