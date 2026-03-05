@@ -50,8 +50,15 @@ jobs:
           SHA256="${{ steps.sha.outputs.sha256 }}"
           TAG="${{ github.ref_name }}"
 
-          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/mainstreamer/homebrew-epicli.git"
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "Token is set (${#HOMEBREW_TAP_TOKEN} chars)"
+
+          git clone https://github.com/mainstreamer/homebrew-epicli.git
           cd homebrew-epicli
+          git remote set-url origin "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/mainstreamer/homebrew-epicli.git"
 
           sed -i "s|releases/download/v[^/]*/epicli-[^\"]*|releases/download/${TAG}/epicli-${VERSION}.tar.gz|" Formula/epicli.rb
           sed -i "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Formula/epicli.rb
