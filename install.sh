@@ -34,6 +34,7 @@ ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
 DOTFILES_TARGET="${DOTFILES_TARGET:-$HOME/.$PROJECT_NAME}"
 VERSION_FILE="$HOME/.${PROJECT_NAME}-version"
+BACKUPS_DIR="$HOME/.${PROJECT_NAME}-backups"
 MANIFEST_FILE="$HOME/.${PROJECT_NAME}-manifest"
 
 OS="$(uname -s)"
@@ -141,6 +142,20 @@ migrate_old_names() {
     fi
 }
 
+migrate_old_backups() {
+    # Permanently migrate old scattered ~/.epicli-backup-* dirs into ~/.epicli-backups/
+    for d in "$HOME/.${PROJECT_NAME}-backup-"*; do
+        if [ -d "$d" ]; then
+            mkdir -p "$BACKUPS_DIR"
+            local dirname
+            dirname="$(basename "$d")"
+            local timestamp="${dirname#.${PROJECT_NAME}-backup-}"
+            info "Migrating old backup $d -> $BACKUPS_DIR/$timestamp"
+            mv "$d" "$BACKUPS_DIR/$timestamp"
+        fi
+    done
+}
+
 # ------------------------------------------------------------------------------
 # Bootstrap: detect environment and download repo if needed
 # (Must work standalone before lib/ files are available)
@@ -164,7 +179,8 @@ setup_config_dir() {
 
     # Backup existing config for fresh install
     if [ -d "$DOTFILES_TARGET" ]; then
-        local backup_dir="$HOME/.${PROJECT_NAME}-backup-$(date +%Y%m%d-%H%M%S)"
+        local backup_dir="$BACKUPS_DIR/v${VERSION}-$(date +%Y%m%d-%H%M%S)"
+        mkdir -p "$BACKUPS_DIR"
         info "Backing up existing config to $backup_dir..."
         mv "$DOTFILES_TARGET" "$backup_dir"
         ok "Backup created: $backup_dir"
@@ -676,6 +692,7 @@ main() {
     parse_args "$@"
     verify_signature
     migrate_old_names
+    migrate_old_backups
     setup_config_dir
     detect_os
 

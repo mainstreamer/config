@@ -5,7 +5,7 @@ backup_existing() {
     # Skip backup if epicli already manages these files (subsequent install/update)
     [ -f "${VERSION_FILE:-$HOME/.epicli-version}" ] && return 0
 
-    local backup_dir="$HOME/.${PROJECT_NAME}-backup-$(date +%Y%m%d-%H%M%S)"
+    local backup_dir="$BACKUPS_DIR/v${VERSION}-$(date +%Y%m%d-%H%M%S)"
     local needs_backup=false
 
     [ -f "$HOME/.bashrc" ] && needs_backup=true
