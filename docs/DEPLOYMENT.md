@@ -17,7 +17,9 @@ make patch (or minor / major)
 | Method | Command | Source |
 |--------|---------|--------|
 | Direct | `curl -fsSL https://tldr.icu/i \| bash` | Server (tldr.icu) |
-| Homebrew | `brew tap mainstreamer/epicli && brew install epicli` | GitHub release |
+| Homebrew | `brew install mainstreamer/epicli/epicli` | GitHub release |
+
+After Homebrew install, run `epicli` once to complete setup (install deps, create symlinks). This is a one-time bootstrap step.
 
 ---
 

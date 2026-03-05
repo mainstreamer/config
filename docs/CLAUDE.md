@@ -11,8 +11,11 @@ Personal developer environment configuration for Linux and macOS. Unified cross-
 ## Quick Install
 
 ```bash
-# Standard mode (default, no sudo required)
+# Option 1: Direct (one step)
 curl -fsSL https://tldr.icu/i | bash
+
+# Option 2: Homebrew (then run epicli once to complete setup)
+brew install mainstreamer/epicli/epicli && epicli
 
 # Developer mode (requires sudo)
 curl -fsSL https://tldr.icu/i | bash -s -- --dev
