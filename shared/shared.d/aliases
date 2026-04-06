@@ -106,7 +106,7 @@ if command -v fzf &>/dev/null; then
     # Enter = show commit, Alt+Enter = paste hash to command line
     gitlog() {
         local out key hash
-        out=$(git log --oneline --graph --color=always --all | \
+        out=$(git log --oneline --graph --color=always | \
             fzf --ansi --no-sort --reverse \
                 --preview 'echo {} | grep -o "[a-f0-9]\{7,\}" | head -1 | xargs git show --color=always' \
                 --preview-window=right:60% \
