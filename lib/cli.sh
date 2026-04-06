@@ -459,6 +459,10 @@ case "${1:-status}" in
         echo "  glog/gloga      log graph          gsh      show"
         echo ""
         echo "Other aliases: ll/la/lt/lta (eza) | d/dc/dce/ds/dsh/dclean (docker)"
+        echo ""
+        echo "Alternative install / update via Homebrew:"
+        echo "  brew install mainstreamer/epicli/epicli"
+        echo "  brew upgrade epicli"
         ;;
     *)
         echo "Usage: $NAME [status|check|update|force-update|uninstall|man|help]"
