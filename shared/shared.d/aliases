@@ -633,6 +633,20 @@ nethelp() {
   conns             snapshot of who is currently connected
   lsof -i -P -n     all open network files with ports
 
+ FILE TRANSFER (netcat)
+  Receiver (listens, saves incoming data to a file):
+    nc -l -p 12345 > received_file
+
+  Sender (connects to receiver's IP and streams the file):
+    nc <receiver-ip> 12345 < file_to_send
+
+  Notes:
+    - macOS/BSD nc doesn't take -p; use: nc -l 12345 > received_file
+    - Add -v for verbose output while transferring
+    - Pipe through tar to send whole directories:
+        receiver: nc -l -p 12345 | tar xzf -
+        sender:   tar czf - dir_to_send | nc <receiver-ip> 12345
+
 NETHELP
 }
 
@@ -729,6 +743,13 @@ extracthelp() {
   tar cjf out.tar.bz2 DIR   create .tar.bz2
   tar cJf out.tar.xz DIR    create .tar.xz
   zip -r out.zip DIR         create .zip
+
+ ZIP FILES / FOLDERS
+  unzip file.zip                extract into current directory
+  unzip file.zip -d dir/        extract into a specific directory (created if missing)
+  unzip -l file.zip              list contents without extracting
+  zip -r out.zip folder/         zip a folder (recursive)
+  zip out.zip file1 file2        zip individual files
 
  COMPRESSION ONLY (single file)
   Format    Compress           Decompress        Notes
