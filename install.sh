@@ -28,7 +28,7 @@ MCowBQYDK2VwAyEA3bLWzARwyxqxk48f1bq+IJhfZfjPVEA+5l2BqupFwTU=
 -----END PUBLIC KEY-----"
 
 # Config
-VERSION="3.4.19"
+VERSION="3.4.20"
 BASE_URL="${DOTFILES_URL:-https://tldr.icu}"
 ARCHIVE_URL_SELF="${BASE_URL}/master.tar.gz"
 ARCHIVE_URL_GITHUB="https://github.com/mainstreamer/config/archive/refs/heads/master.tar.gz"
@@ -42,6 +42,7 @@ DEV_MODE=false
 LOCAL_MODE=false
 FORCE_DOWNLOAD=false
 REQUESTED_VERSION=""
+SKIP_VERIFY=false
 
 # Colors
 RED='\033[0;31m'
@@ -238,7 +239,7 @@ setup_config_dir() {
     fi
 
     # Verify archive signature (only when downloaded from our server)
-    if [ "$archive_from_self" = true ] && ! [ "$LOCAL_MODE" = true ]; then
+    if [ "$archive_from_self" = true ] && ! [ "$LOCAL_MODE" = true ] && [ "${EPICLI_HOMEBREW:-}" != "1" ]; then
         _verify_archive_signature "$archive_file"
     fi
 
@@ -420,6 +421,10 @@ parse_args() {
                 FORCE_DOWNLOAD=true
                 shift
                 ;;
+            --skip-verify)
+                SKIP_VERIFY=true
+                shift
+                ;;
             --version)
                 REQUESTED_VERSION="$2"
                 FORCE_DOWNLOAD=true
@@ -484,6 +489,10 @@ OPTIONS:
   --deps-only   Install packages only, skip symlink creation
 
   --stow-only   Create symlinks only, skip package installation
+
+  --skip-verify Bypass install.sh/archive signature verification
+                Use only if you know why verification is failing (e.g.
+                offline dev testing) — this disables tamper detection.
 
   --help, -h    Show this help message
 
@@ -571,6 +580,11 @@ _load_pubkey() {
 _verify_archive_signature() {
     local archive_file="$1"
 
+    if [ "$SKIP_VERIFY" = true ]; then
+        warn "Archive signature verification skipped (--skip-verify)"
+        return 0
+    fi
+
     command -v openssl &>/dev/null || { warn "openssl not found — skipping archive verification"; return 0; }
 
     local sig_url="${BASE_URL}/master.tar.gz.sig"
@@ -600,6 +614,16 @@ _verify_archive_signature() {
 verify_signature() {
     # Skip verification in local/dev mode — only applies to remote installs
     [ "$LOCAL_MODE" = true ] && return 0
+
+    # Homebrew already verifies the download via the formula's SHA256
+    if [ "${EPICLI_HOMEBREW:-}" = "1" ]; then
+        return 0
+    fi
+
+    if [ "$SKIP_VERIFY" = true ]; then
+        warn "Signature verification skipped (--skip-verify)"
+        return 0
+    fi
 
     # Skip if openssl is not available (rare; warn and continue)
     if ! command -v openssl &>/dev/null; then
