@@ -118,11 +118,12 @@ link_shell() {
     local missing=0
     local files_to_check=(
         "$HOME/.shared.d"
-        "$HOME/.bashrc"
         "$HOME/.zshrc"
-        "$HOME/.bash_profile"
         "$HOME/.profile"
     )
+    if [ "$PLATFORM" = "linux" ]; then
+        files_to_check+=("$HOME/.bashrc" "$HOME/.bash_profile")
+    fi
     [ "$LOCAL_MODE" = true ] && files_to_check+=("$HOME/.local.d")
 
     for f in "${files_to_check[@]}"; do
