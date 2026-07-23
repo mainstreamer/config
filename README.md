@@ -23,13 +23,12 @@ epicli          # run once to complete setup (install deps, create symlinks)
 
 After the Homebrew install, running `epicli` once is required to bootstrap the environment (install dependencies, set up shell config, create symlinks).
 
-## Usage
 
+To install latest version
 ```bash
-epicli status    # Show installed version and profile
-epicli check     # Check for updates
-epicli update    # Update to latest version
-epicli uninstall # Remove epicli and all managed config
+brew update
+brew upgrade epicli
+epicli   # run after installing new version via brew
 ```
 
 ## Updating
@@ -38,6 +37,16 @@ epicli uninstall # Remove epicli and all managed config
 - **Homebrew install:** `brew upgrade epicli` or `epicli update`
 
 > **Tip:** Run `epicli help` to see all commands, shell extras, and the Homebrew install/update option.
+
+
+## Usage
+
+```bash
+epicli status    # Show installed version and profile
+epicli check     # Check for updates
+epicli update    # Update to latest version
+epicli uninstall # Remove epicli and all managed config
+```
 
 ## Uninstalling
 
