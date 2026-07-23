@@ -92,8 +92,6 @@ link_shell() {
     if [ -d "$DOTFILES_DIR/shared" ]; then
         cp -r "$DOTFILES_DIR/shared/shared.d" "$HOME/.shared.d"
         if [ -d "$DOTFILES_DIR/shared/themes" ]; then
-            # Remove the themes shell script to avoid conflict with themes directory
-            rm -f "$HOME/.shared.d/themes" 2>/dev/null || true
             cp -r "$DOTFILES_DIR/shared/themes" "$HOME/.shared.d/themes"
         fi
 
